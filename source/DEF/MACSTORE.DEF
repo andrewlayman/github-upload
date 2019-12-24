@@ -1,0 +1,53 @@
+DEFINITION MODULE MacStore;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+(*
+MODIFICATION HISTORY
+
+	20-Dec-89 LVK - Added PROC StoreReplacementMacro for replacement
+	                of a macro in an existing node on the macro tree.
+
+*)
+
+
+FROM MacNodes      IMPORT AMacroRecordPointer;
+
+FROM TreeObjects   IMPORT ATree, ATreeNode;
+
+EXPORT QUALIFIED   StoreMacro, FillMacroRecord, StoreReplacementMacro;
+
+PROCEDURE FillMacroRecord (VAR MacroRecordPointer : AMacroRecordPointer;
+                               length             : CARDINAL);
+
+
+PROCEDURE StoreMacro (VAR ABuffer            : ARRAY OF CARDINAL;
+                      VAR Length             : CARDINAL;
+                      VAR MacroNode          : ATreeNode;
+                          WhereNode          : ATreeNode;
+                      VAR AMacroTree         : ATree)
+                      :BOOLEAN;
+
+
+                      
+(*------------------------------------------------------------------------
+New PROC 20-Dec-89
+
+Prerequisite - A valid macro node already placed in the tree
+
+Result       - The node with filled data objects.
+------------------------------------------------------------------------*)
+
+PROCEDURE StoreReplacementMacro (VAR ABuffer            : ARRAY OF CARDINAL;
+                                 VAR Length             : CARDINAL;
+                                 VAR MacroNode          : ATreeNode)
+                                :BOOLEAN;
+
+END MacStore.

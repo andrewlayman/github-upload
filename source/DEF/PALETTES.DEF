@@ -1,0 +1,166 @@
+DEFINITION MODULE Palettes;
+
+    (*  MODIFICATION HISTORY --
+        10-Jun-89 LAA   First version.
+        19-Feb-91 RSC   Made overlay context.
+    *)
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM IlsaStatic             IMPORT
+    (* TYPE *)                  ATLGSChartType;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+TYPE
+    AnOverlayContext = RECORD
+        PaletteType     : ATLGSChartType;
+        Ulx             : ascreenx;
+        Uly             : ascreeny;
+        Lrx             : ascreenx;
+        Lry             : ascreeny;
+        PaletteName     : POINTER TO ARRAY [0..255] OF CHAR;
+        ReturnValue     : BOOLEAN;
+    END;
+
+
+
+
+
+
+(*  FindPaletteByName --
+
+    Find the tree node for a given palette name in the indicated tree of
+    palettes.
+
+    Preconditions:
+        IlsaStatic must have been initialized by TLStart.
+
+    Postconditions:
+        If the palette name can be located in the indicated tree of palettes,
+        its tree node will be returned.  If not, NIL will be returned.  The
+        palette name will not be modified.
+*)
+
+PROCEDURE FindPaletteByName(    PaletteType : ATLGSChartType;
+                                PaletteName : ARRAY OF CHAR ): ATreeNode;
+
+
+
+(*  FindPaletteByNumber --
+
+    Find the tree node of the Palette with ID equal to the MatchID.  Return
+    NIL if there is no match.
+
+    Preconditions:
+        IlsaStatic must have been initialized, and TLStart run.
+
+    Postconditions:
+        The tree node of the matched Palette will be returned, or NIL if
+        there was no match.
+*)
+
+PROCEDURE FindPaletteByNumber(     PaletteType: ATLGSChartType;
+                                   MatchID    : CARDINAL      ) : ATreeNode;
+
+
+
+(*  CreatePalette --
+
+    Create a new palette which is a copy of the prototype.  Use the
+    DefaultPalette exported from IlsaStatic if there's nothing else
+    appropriate.  Return the tree node of the new palette, or NIL if
+    one couldn't be created.
+
+    Preconditions:
+        IlsaStatic must have been initialized by TLStart.
+
+    Postconditions:
+        The new tree node will be returned, or NIL if one couldn't be
+        created.
+*)
+
+PROCEDURE CreatePalette(    Prototype       : ATreeNode): ATreeNode;
+
+
+
+
+(*  DiscardPalette --
+
+    Throw away the indicated palette, deallocatiing storage.
+
+    Preconditions:
+        The palette node must be valid.
+
+    Postconditions:
+        The node and it's FlexStor record will be discarded.
+*)
+
+PROCEDURE DiscardPalette(VAR PaletteNode : ATreeNode);
+
+
+
+(*  GetPaletteName --
+
+    Retrieve the name of the palette, given its tree node.
+
+    Preconditions:
+        The tree node must be from one of the palette trees.
+
+    Postconditons:
+        The palette name will be returned.
+*)
+
+PROCEDURE GetPaletteName(    PaletteNode    : ATreeNode;
+                         VAR PaletteName    : ARRAY OF CHAR);
+
+
+(*  SelectPalette --
+
+    Display a list of the palettes available in the indicated palette tree,
+    and allow one to be selected.
+
+    Preconditions:
+        IlsaStatic must have been initialized by TLStart.
+
+    Postconditions:
+        If a palette is selected, TRUE will be returned and the palette name
+        will be updated with the name of the newly selected palette.  Else
+        FALSE will be returned and the palette name will not have been 
+        changed.
+*)
+
+PROCEDURE SelectPalette(    PaletteType     : ATLGSChartType;
+                            Ulx             : ascreenx;
+                            Uly             : ascreeny;
+                            Lrx             : ascreenx;
+                            Lry             : ascreeny;
+                        VAR PaletteName     : ARRAY OF CHAR ) : BOOLEAN;
+
+
+(*  DoPaletteForm --
+
+    Display the indicated palette form, and allow the palette to be edited.
+
+    Preconditions:
+        The palette node must refer to a tree node for an existing palette.
+
+    Postconditons:
+        If the user exits the form with F10, the palette record for the 
+        tree node will be changed as indicated, and the code returned.  Else,
+        a code of CancelKey will be returned and the palette record will not
+        be changed.
+*)
+
+PROCEDURE DoPaletteForm(    PaletteType     : ATLGSChartType;
+                            PaletteNode     : ATreeNode     ) : ACode;
+
+END Palettes.
+
+

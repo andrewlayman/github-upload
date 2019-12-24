@@ -1,0 +1,47 @@
+DEFINITION MODULE MacroSelect;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+EXPORT QUALIFIED
+    (* PROC *)              SelectMacroName;
+
+
+
+(*----------------------------------------------------------------------------
+    SelectMacroName --
+
+    Display a picklist of macro names, with the cursor initially on the one
+    passed into Selected, and allow the user to select a name.  Selected will
+    be changed only if something is selected, and TRUE will be returned. 
+----------------------------------------------------------------------------*)
+                                                       
+PROCEDURE SelectMacroName(     ULX          : ascreenx;            (* in     *)
+                               ULY          : ascreeny;            (* in     *)
+                               LRX          : ascreenx;            (* in     *)
+                               LRY          : ascreeny;            (* in     *)
+                               Title        : ARRAY OF CHAR;
+                           VAR Selected     : ARRAY OF CHAR)       (* in/out *)
+                                                            : BOOLEAN;
+
+
+END MacroSelect.
+

@@ -1,0 +1,56 @@
+DEFINITION MODULE XTabColNumbers;
+
+    (* Column numbers for the cross tabulations. *)
+
+    (* MODIFICATION HISTORY:
+       
+       29-Oct-90  AJL  - Moved here from MagicNum which was getting
+                         overcrowded.
+       21-May-91 TGS    Easy come, easy go. Remove OT columns.
+        4-Jun-91 TGS    Oops, too zealous. Added XTabExtraDollars back in.
+    *)
+
+CONST
+    (* Cross Tabs *)
+
+    XTabModuleNumber        =  21409;  (* Overlaps TLCR! *)
+
+    XTabQuantity            =  1;
+    XTabBillable            =  2;
+    XTabSpentQuantity       =  3;
+    XTabYTGQuantity         =  4;
+    XTabTotalDollars        =  5;
+    XTabSpentDollars        =  6;
+    XTabYTGDollars          =  7;
+    XTabPercentAss          =  8;
+    XTabTWorkHours          =  9;
+    XTabTWorkDays           = 10;
+    XTabTWorkWeeks          = 11;
+    XTabTWorkHrsPerMax      = 12;
+    XTabAWorkHours          = 13;
+    XTabAWorkDays           = 14;
+    XTabAWorkWeeks          = 15;
+    XTabYWorkHours          = 16;
+    XTabYWorkDays           = 17;
+    XTabYWorkWeeks          = 18;
+    XTabDataExists          = 19;
+    XTabExtraDollars        = 20;
+    (* 21-May-91 TGS
+    XTabTOTWorkHours        = 20;  (* 22-Aug-90 TGS  *)
+    XTabAOTWorkHours        = 21;
+    XTabYOTWorkHours        = 22;
+    XTabTotalOTDollars      = 23;
+    XTabSpentOTDollars      = 24;
+    XTabYToGoOTDollars      = 25;
+    XTabTotalEffortDollars  = 27;  (* 2-Oct-90 TGS  *)
+    XTabSpentEffortDollars  = 28;
+    XTabToGoEffortDollars   = 29;
+    *)
+
+    XTabBaseLineOffset      = 20;       (* PlanID + Offset = BaseID *)
+    XTabFirstBaseCol        = XTabQuantity + XTabBaseLineOffset;    (* 6/12/89 EGK *)
+    XTabLastColumn          = XTabDataExists + XTabBaseLineOffset;  (* 6/12/89 EGK *)
+
+
+
+END XTabColNumbers.

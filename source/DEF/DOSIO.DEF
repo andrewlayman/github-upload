@@ -1,0 +1,311 @@
+DEFINITION MODULE DOSIO;
+
+
+    (* DOS IO  - Do file IO directly to DOS.  No Logitech I/O calls are used.
+
+        Idea:
+
+            IF you are doing full sector binary reads and writes, Logitech's
+               file I/O system is a needless middleman, and will slow down
+               our I/O.  Use this module to do all I/O directly.
+
+            DANGER:
+
+                DOS is at your mercy.  You have to remember to write all
+                dirty buffers and close all files.
+
+
+
+        RSC 18-Aug-88 - Initial version, for TLSwapF.
+        20-Sep-89 RSC - Removed FileNameZ from ADOSFileHandle.
+         9-Oct-90 RSC - Added support for caching and extra close-processing.
+                        Also added a "Raw" open and support for file name
+                        prep for DOS.
+
+        10-Oct-90 RSC - Added the ShortWrite procedure.
+
+    *)
+
+
+
+FROM FileSystem IMPORT Response;
+FROM SYSTEM     IMPORT ADDRESS;
+
+
+
+TYPE
+
+        (* A Close Proc, if present, is called just before the close
+           is executed, while the file is still open.  This could be used
+           to flush buffers or whatever.
+
+           The context passed will be the CloseContext.
+        *)
+    ACloseProc      = PROCEDURE (     (* Context *) ADDRESS );
+
+
+    ADOSFileHandle  = RECORD
+        RecsPerMaxcard,
+        RecordSize,
+        Handle,
+        BytesRead,
+        CachePriority,
+        CacheRecords,
+        CacheHint       : CARDINAL;
+        CloseProc       : ACloseProc;
+        CloseContext    : ADDRESS;
+        FileName        : ARRAY [0..127] OF CHAR;  (* LString *)
+        FileError       : Response;
+        DisplayErrors   : BOOLEAN;
+    END;
+
+    AnAccessType = (CreateFile,OpenFile,OpenReadOnly);
+
+
+
+
+
+
+ (* DOS Open - Open a file under direct DOS control.
+
+    Preconditions : FileName   - an LString with the file name.  May need to be
+                                 expanded, I'll take care of that here.
+                    AccessType - Create it, Open it, or Open it read only?
+                    RecordSize - How big is one record?
+
+    Postconditions: f        - The file handle to pass to other IO routines.
+                    RETURN is TRUE if file opened.  FALSE if not opened;
+                              an error box was shown to customer!
+ *)
+PROCEDURE DOSOpen( VAR TheFileName : ARRAY OF CHAR;
+                   VAR f           : ADOSFileHandle;
+                       AccessType  : AnAccessType;
+                       RecordSize  : CARDINAL     ) : BOOLEAN;
+
+
+
+
+
+
+ (* DOS Open Raw - Open a file under direct DOS control, with attributes.
+
+    Preconditions : FileName      - An LString with the file name.
+                                    May need to be expanded, If so,
+                                    I'll take care of that here.
+                    Attributes    - Attribute bits for file.
+                    Create        - Dispose of the file before opening??
+                    RecordSize    - How big is one record?
+                    DisplayErrors - Display file errors?
+
+    Postconditions: f        - The file handle to pass to other IO routines.
+                    RETURN is TRUE if file opened.  FALSE if not opened;
+                              an error box was shown to customer!
+ *)
+PROCEDURE DOSOpenRaw( VAR TheFileName   : ARRAY OF CHAR;
+                      VAR f             : ADOSFileHandle;
+                          Attributes    : CARDINAL;
+                          Create        : BOOLEAN;
+                          TheRecordSize : CARDINAL;
+                          DisplayErrors : BOOLEAN
+                     ) : BOOLEAN;
+
+
+
+
+ (* DOS Read - Read record number N from the file.
+
+    Preconditions : f        is the opened file handle.
+                    Record   is the record number to read.
+                    Address  is where to put the read record.
+
+    Postconditions: Address contains the data read from the file.
+                    EOF is TRUE if we are at the end of the file.
+                    RETURN is TRUE if ok, FALSE if error displayed.
+ *)
+PROCEDURE DOSRead( VAR f       : ADOSFileHandle;
+                       Record  : CARDINAL;
+                       Address : ADDRESS;
+                   VAR EOF     : BOOLEAN    ) : BOOLEAN;
+
+
+
+
+
+ (* DOS Write - Write record number N to the file.
+
+    Preconditions : f        is the opened file handle.
+                    Record   is the record number to write.
+                    Address  is where to get the written record.
+
+    Postconditions: Full is TRUE if the disk is full.
+                    RETURN is TRUE if ok, FALSE if error displayed.
+ *)
+PROCEDURE DOSWrite( VAR f       : ADOSFileHandle;
+                        Record  : CARDINAL;
+                        Address : ADDRESS;
+                    VAR Full    : BOOLEAN     ) : BOOLEAN;
+
+
+
+
+ (* DOS Short Write - Write record number N to the file, for the
+                      given number of bytes.
+
+    Preconditions : f        is the opened file handle.
+                    Record   is the record number to write.
+                    Address  is where to get the written record.
+                    Length   is the number of bytes to write.
+                                It must be L.E. the recordsize.
+
+    Postconditions: Full is TRUE if the disk is full.
+                    RETURN is TRUE if ok, FALSE if error displayed.
+ *)
+PROCEDURE DOSShortWrite( VAR f       : ADOSFileHandle;
+                             Record  : CARDINAL;
+                             Address : ADDRESS;
+                             Length  : CARDINAL;
+                         VAR Full    : BOOLEAN     ) : BOOLEAN;
+
+
+
+ (* DOS Close - Close A File Handle
+
+    Preconditions  : f  - The handle returned from Open
+    Postconditions : File is closed.  RETURNs TRUE if successfull,
+                     FALSE if error occured.  Error was displayed.
+ *)
+PROCEDURE DOSClose( VAR f : ADOSFileHandle ) : BOOLEAN;
+
+
+
+ (* DOS Delete - Delete a file previously opened/created.  If the file is not
+                 yet closed, it is closed for you.
+
+    Preconditions  : f  - The handle returned from Open
+    Postconditions : File is deleted.  RETURNs TRUE if successfull,
+                     FALSE if error occured.  Error was displayed.
+ *)
+PROCEDURE DOSDelete( VAR f : ADOSFileHandle ) : BOOLEAN;
+
+
+
+ (* DOS Refresh - Refresh the file directory.  This is done by making
+                  a copy of the file handle and closing the copy.
+ *)
+PROCEDURE DOSRefresh( VAR f : ADOSFileHandle ) : BOOLEAN;
+
+
+
+(* Install Close Proc - Install a procedure to be called upon closing
+                        of the file.
+
+    Preconditions:
+
+        Handle is a handle of an OPEN file.
+        CloseProc, if not NIL, is a procedure that will be around when
+               the file is closed.
+
+    Postconditions:
+
+        When the file is closed, the CloseProc will be called with the
+        CloseContext.
+
+    Input:  Handle          The OPEN file handle
+            CloseProc       NIL for "no proc" or a valid procedure to call
+                            on close.
+            CloseContext    the context to give to the CloseProc.
+
+    Output: Handle          Updated with the new information.
+*)
+PROCEDURE InstallDOSCloseProc( VAR Handle          : ADOSFileHandle;
+                                   CloseProc       : ACloseProc;
+                                   CloseContext    : ADDRESS   );
+
+
+
+
+
+
+
+(* Cache File - Cache a DOS file, if possible, in EMS or XMS.
+
+    Preconditions:
+
+        Handle is a handle of an OPEN file.
+
+    Postconditions:
+
+        If possible, the file will be cached in EMS or XMS, given the
+        priority and availability of EMS or XMS.
+
+    Input:  Handle          The OPEN file handle
+
+            CacheKB         Size in KB to allocate for the cache.
+                            This is an UPPER LIMIT.
+
+                            Setting this very high costs no permanant
+                            space, just increases the total POSSIBLE
+                            space to be cached.  This can be used as a
+                            low number to cache, say, a file where you
+                            write the index in the first KB or so.
+
+            Priority        Where does this file rank with others over
+                            who gets space first?
+
+                            The HIGHER the number, the HIGHER the
+                            priority.
+
+
+    Output: Handle          Updated with the new information.
+
+    Tech Note:
+
+        Writes are cached in this manner:
+
+            If the record would extend the file, then the write is
+            applied to the disk AND the cache.
+
+            Otherwise, the write is buffered until the cache is flushed
+            or the file is closed.
+
+*)
+PROCEDURE CacheDOSFile( VAR Handle     : ADOSFileHandle;
+                            CacheKB    : CARDINAL;
+                            Priority   : CARDINAL );
+
+
+
+
+
+
+(* Translate File String For DOS
+
+    Given an LString of the logical file name, create a DOS TString
+    ready for DOSCALLs.  This also translates DK: to the current drive.
+    The file name is returned both for DOSCALLs and in LString format
+    in the passed string.
+
+    Preconditions:
+
+        A valid file name (fragment) is passed in.  No wildcards.
+
+    Postconditions:
+
+        A name ready to be passed to DOS.
+        Another LString also expanded
+
+    Input:  TheFileName     LString containing file name fragments
+
+    Output: TheFileName     LString containing fully expanded name.
+            DOSFileName     TString with fully expanded name.
+
+*)
+PROCEDURE TranslateFileStringForDOS( VAR TheFileName    : ARRAY OF CHAR;
+                                     VAR DOSFileName    : ARRAY OF CHAR );
+
+
+
+
+
+END DOSIO.
+

@@ -1,0 +1,49 @@
+DEFINITION MODULE SchedKey;
+
+    (* ---------------------------------------------------------------
+
+       Returns the keyword substitutions for use by KeywdSub.
+
+     ------------------------------------------------------------------ *)
+
+    (* MODIFICATION HISTORY
+
+       Aug-22-89  AJL Original version of the DEF.  Most of the coding is
+                      taken from earlier work by Ken Chiu.
+
+    *)
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)          ADDRESS;
+
+
+    (* -------------------------------------------------------------------
+
+       GetKeyWordValueProc
+
+       Purpose:  Given the text of a keyword, return a substitution value.
+                 This procedure makes substitutions for keywords relating
+                 to the schedule as a whole.
+
+
+       Preconditions:  KeyWord is an LString.
+                       Context may be anything (is ignored).
+                     
+       PostConditions: KeyValue is an LString containing the corresponding
+                       value indicated by KeyWord.
+
+       Exceptions:     Failures to match any known keyword generally return
+                       a null string in KeyValue.
+
+
+    ---------------------------------------------------------------------- *)
+
+
+
+    PROCEDURE GetKeyWordValue(
+                               VAR KeyWord : ARRAY OF CHAR;
+                               VAR KeywordValue : ARRAY OF CHAR;
+                                   Context : ADDRESS 
+                             );
+END SchedKey.
+

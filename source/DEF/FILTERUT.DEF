@@ -1,0 +1,108 @@
+DEFINITION MODULE FilterUtility;
+
+    (*  MODIFICATION HISTORY
+
+        16-Aug-89 EGK   First version.  Moved procedures from FilterRc and
+                        Filters to here.
+
+        24-Jan-91 RSC   Added CleanFilterRecord as part of Speed and Size
+                        improvements.
+    *)
+
+
+FROM FilterRc               IMPORT
+    (* TYPE *)                  AFltrSet, AFltrType, AFilterRecord;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+(*----------------------------------------------------------------------------
+    FilterDefaults --
+
+    Give the filter record default values.
+----------------------------------------------------------------------------*)
+
+PROCEDURE FilterDefaults(  Filter         : ATreeNode);
+
+
+
+(*----------------------------------------------------------------------------
+    FindFilterByName --
+
+    Look up the filter name given in the group of all filters, and return the
+    corresponding tree node if it can be found.  If it's not found, return
+    NIL. 
+----------------------------------------------------------------------------*)
+
+PROCEDURE FindFilterByName (VAR FilterName   : ARRAY OF CHAR)       (* in     *)
+                                                             : ATreeNode;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    SortFilters --
+
+    Place the filter list into ascending alphabetical order.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SortFilters();
+
+
+
+(*----------------------------------------------------------------------------
+    CreateFilter --
+
+    Create a new tree node whose data object is a pointer to a defaulted
+    filter record.  Return TRUE iff successful.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateFilter (VAR Node    : ATreeNode)
+                                                : BOOLEAN;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    SetFilterBit --
+
+    Set the bit, identified by FilterType, in the specified FilterSet to the
+    given value.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SetFilterBit  (VAR FilterSet          : AFltrSet;
+                             FilterType         : AFltrType;
+                             Value              : BOOLEAN   );
+
+
+
+(*----------------------------------------------------------------------------
+    TestFilterBit --
+
+    Test the bit, identified by FilterType, in the specified FilterSet, and
+    return its value.
+----------------------------------------------------------------------------*)
+
+PROCEDURE TestFilterBit (   FilterSet           : AFltrSet;
+                            FilterType          : AFltrType
+                                                            ): BOOLEAN;
+
+
+
+
+
+PROCEDURE CleanFilterSet( Filter : ATreeNode );
+
+(* 24-Jan-91 RSC Added this to speed up TLFilter.
+*)
+PROCEDURE CleanFilterRecord( VAR FilterRecord : AFilterRecord  );
+
+
+
+
+END FilterUtility.
+

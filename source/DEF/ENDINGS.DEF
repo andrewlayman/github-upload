@@ -1,0 +1,13 @@
+DEFINITION MODULE Endings;
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+VAR
+    CompletionCode : CARDINAL;
+    QuitDammitCode : ACode;
+
+PROCEDURE EndWithErrorLevel( ErrorLevel : CARDINAL );
+
+END Endings.
+

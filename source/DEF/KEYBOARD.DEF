@@ -1,0 +1,99 @@
+DEFINITION MODULE Keyboard;
+
+
+    (* This module provides the interface to the keyboard.
+       Procedures are declared as VARs so that they can be replaced
+       or intercepted by other modules.
+    *)
+
+
+
+TYPE
+    AGetCodeProcedure = PROCEDURE():CARDINAL;
+    APutCodeProcedure = PROCEDURE(CARDINAL);
+    AYesNoProcedure   = PROCEDURE():BOOLEAN;
+    AServiceProcedure = PROCEDURE();
+
+
+
+VAR
+        (* GetAnyCode -- Returns the next keyboard event code.  This
+                         will be the next code waiting in the keyboard
+                         buffer unless the BreakKey has been pressed,
+                         in which case it will return an Esc code
+                         (Keys.CancelKey).
+                             If there is no input ready, this procedure
+                         will wait until input becomes ready.
+                         *)
+
+    GetAnyCode       : AGetCodeProcedure;
+
+
+        (* KeyPress -- Returns TRUE iff there is input ready to be
+                       returned by GetAnyCode. *)
+
+    KeyPress         : AYesNoProcedure;
+
+
+
+        (*  ScrollMode -- tells us if the machine has been placed into
+                          Scroll-Lock state. *)
+
+    ScrollMode       : AYesNoProcedure;
+
+
+        (* FlushKeyboardBuffer -- Purge the keyboard of any waiting
+                                  characters.  Does not, however,
+                                  clear any BreakReuested. *)
+
+    FlushKeyboardBuffer : AServiceProcedure;
+
+
+
+
+        (*  BreakRequested -- Returns TRUE iff the user has pressed the
+                              Break key. *)
+
+    BreakRequested   : AYesNoProcedure;
+
+
+        (*  ClearBreak     -- Resets Break so that BreakRequested no
+                              longer returns TRUE (until the key is
+                              pressed again. *)
+
+    ClearBreak       : AServiceProcedure;
+
+
+        (*  BreakHandler -- This will be called by a routine within
+                            Keyboard whenever the Break key is pressed.
+                            The BreakHandler normally sets an internal
+                            flag so that BreakRequested will return
+                            TRUE.
+                            WARNING--Do not do anything in the BreakHandler
+                            that might call DOS--it is not reentrant.
+                            *)
+
+    BreakHandler        : AServiceProcedure;
+
+
+
+
+    (*  KeyboardInit -- Initialize the Keyboard module.
+                        Other calls in this module are only valid
+                        after this has been called. *)
+
+PROCEDURE KeyboardInit;
+
+    (*  KeyboardTerminate -- Do whatever is necessary to clean up when
+                             the program ends.  Further calls to other
+                             procedures in this module
+                             are invalid after this has
+                             been called.    *)
+
+PROCEDURE KeyboardTerminate;
+
+
+
+
+END Keyboard.
+

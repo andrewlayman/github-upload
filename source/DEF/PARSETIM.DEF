@@ -1,0 +1,105 @@
+DEFINITION MODULE ParseTime;
+
+(* Parse Time:
+
+            Parse strings representing Time.
+
+    RSC 12/20/88  Moved here from Timeu.
+    19-Sep-89  RSC  Added requirement that ParseDate and StoEndxxxx
+                    take a suggested "default date".
+    30-Mar-90  RSC  Made Timeu to Timei/TimeForm conversions.
+    14-May-91 AJL  -Parse the keyword "FY" in a date to indicate that the
+                    date contains a fiscal year.
+*)
+
+
+FROM Timei       IMPORT
+    (* TYPE *)      ADate, ASetOfADurationUnit, ATimeInfo;
+
+
+
+
+
+    (*  ParseDate -- Parses the string.   Like
+
+        PROCEDURE ParseDate (VAR s:ARRAY OF CHAR;
+                             VAR Year,Month,Day,Hour,Minute:CARDINAL;
+                             VAR TimeUnitsFound : ASetOfATimeUnit )
+                            : BOOLEAN;
+
+        This is declared as a VAR PROC so that it can be replaced
+        by an installed overlay to supply other rules for parsing.
+
+        19-Sep-89 RSC
+
+        Pass down a start date for use in determining the defaults
+        for end dates!!
+
+        This always returns the date as a fiscal date, even if it was
+        not so specified in the input.  So, if the start of the year is
+        not January, and the date string does not explicitly indicate that
+        the year is already a fiscal year, the year may be adjusted from
+        what was entered.
+
+    *)
+
+TYPE
+    AParseDateProc = PROCEDURE  (VAR ARRAY OF CHAR,
+                                 VAR ATimeInfo,
+                                 VAR ASetOfADurationUnit):BOOLEAN;
+VAR
+    ParseDate : AParseDateProc;
+
+
+
+
+    (*  StoTimeU -- Parses the string.  Converts the date to internal format. *)
+
+PROCEDURE StoTimeU (VAR s: ARRAY OF CHAR; VAR Date:ADate) : BOOLEAN;
+
+
+    (*  StoD -- Parses the string. *)
+
+PROCEDURE StoD (VAR s:ARRAY OF CHAR; VAR TimeInfo: ATimeInfo ) : BOOLEAN;
+
+
+
+
+
+
+    (*  StoEndTimeU -- Parses the string.  Returns the latest moment that
+                   could be within the period named by the string.  For
+                   example, "June" would yield the last moment of the
+                   last day in June.  And, what is so rare as a day in
+                   June?
+
+                   19-Sep-89 RSC
+
+                   Pass down a start date for use in determining the defaults
+                   for end dates!!
+    *)
+PROCEDURE StoEndTimeU(VAR s    : ARRAY OF CHAR;
+                      VAR Date : ADate):BOOLEAN;
+
+
+
+
+
+    (*  StoEndD -- Parses the string.  Returns the latest moment that
+                   could be within the period named by the string.  For
+                   example, "June" would yield the last moment of the
+                   last day in June.
+
+                   19-Sep-89 RSC
+
+                   Pass down a start date for use in determining the defaults
+                   for end dates!!
+    *)
+PROCEDURE StoEndD (VAR s:ARRAY OF CHAR; VAR TimeInfo : ATimeInfo )
+                     : BOOLEAN;
+
+
+
+
+END ParseTime.
+

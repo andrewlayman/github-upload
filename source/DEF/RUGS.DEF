@@ -1,0 +1,187 @@
+DEFINITION MODULE Rugs;
+
+FROM Kbio                   IMPORT 
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+
+VAR RugBytes,               (* How many bytes are currently taken by rugs? *)
+    RugsInUse   : CARDINAL; (* Rugs currently allocated. *)
+
+
+TYPE ARug;
+
+
+    (*  PutRug -- Restores a stored area of the screen and deallocates
+                  the heap space used by it. *)
+
+PROCEDURE PutRug(    ULX                    : ascreenx; 
+                     ULY                    : ascreeny;
+                     LRX                    : ascreenx; 
+                     LRY                    : ascreeny;
+                 VAR Rug                    : ARug);
+                 
+
+
+    (* GetRug -- Reads an area of the screen bounded at the upper left
+                 by (ULX,ULY) and at the lower right by (LRX,LRY).  This
+                 allocates temporary storage from the heap for the
+                 screen data, and returns a pointer to it. *)
+
+PROCEDURE GetRug(    ULX                    : ascreenx; 
+                     ULY                    : ascreeny;
+                     LRX                    : ascreenx; 
+                     LRY                    : ascreeny;
+                 VAR Rug                    : ARug)
+                                                   : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    ThrowRug --
+    
+    Throw the rug away without displaying it's contents on the screen.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ThrowRug(VAR Rug                  : ARug);
+
+
+
+
+(*----------------------------------------------------------------------------
+    DisplayRug --
+    
+    Put the contents of the rug back on the screen at the specified
+    coordinates, but do not dispose of the rug.  If you want to both display
+    and dispose of the rug, use PutRug.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DisplayRug(    ULX                : ascreenx;
+                         ULY                : ascreeny;
+                         LRX                : ascreenx;
+                         LRY                : ascreeny;
+                         Rug                : ARug);
+                         
+
+
+
+(*----------------------------------------------------------------------------
+    CreateBlankRug --
+
+    Create a rug of the indicated height and width, where all characters are
+    blank with videonormal mode.
+
+    Preconditions:
+        The height must be in the range 1..maxrow + 1, and the width must be
+        in the range 1..maxcol + 1.
+
+    Postcondtions:
+        If sufficient memory is available, the rug will be created and
+        initialized as indicated above, and the rug will be returned.  If
+        there isn't sufficient memory, NIL will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateBlankRug(    Width          : CARDINAL;
+                             Height         : CARDINAL)
+                                                       : ARug;
+
+
+
+
+(*----------------------------------------------------------------------------
+    CopyOfRug --
+
+    Create a new rug which is an exact copy of the one given.
+
+    Preconditions:
+        The rug to be copied must be a valid rug.
+
+    Postcondtions:
+        If there is sufficient memory to create a new rug of the appropriate
+        size, it will be created, initialized to be a copy of the source
+        rug, and returned.  Otherwise, NIL will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CopyOfRug(    SourceRug           : ARug)
+                                                   : ARug;
+
+
+
+
+(*----------------------------------------------------------------------------
+    PutStringToRug --
+
+    Write the given LString onto the rug with the video mode indicated.  The
+    x and y coordinates are relative to the upper left corner of the rug.
+
+    Preconditions:
+        The LString and rug must be valid.  The coordinates given must be
+        within the height and width of the rug.
+
+    Postconditions:
+        As much of the LString as will fit will be written to the rug at the
+        indicated coordinates.  If the LString is null, nothing will be
+        changed.
+----------------------------------------------------------------------------*)
+
+PROCEDURE PutStringToRug(VAR String         : ARRAY OF CHAR;
+                             X              : ascreenx;
+                             Y              : ascreeny;
+                             VideoMode      : avidmode;
+                             Rug            : ARug         );
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    PutVideoModeToRug --
+
+    Change the video mode of the characters in the rug to be as indicated.
+    This starts at the x and y coordinates given, and continues for the
+    length specified, or until the end of that line is encountered.
+
+    Preconditions:
+        The x and y coordinates must be within the rug, and are relative to
+        the upper left corner of the rug.  The rug must already exist.
+
+    Postconditions:
+        The video mode of characters at the indicated position, for the
+        given length, will be set as appropriate to the video mode.  The
+        data characters will not be altered.
+----------------------------------------------------------------------------*)
+
+PROCEDURE PutVideoModeToRug(    VideoMode   : avidmode;
+                                Length      : CARDINAL;
+                                X           : ascreenx;
+                                Y           : ascreeny;
+                                Rug         : ARug    );
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    PutRugAt --
+
+    Restore the contents of the rug to the screen at the indicated 
+    coordinates, and discard the rug.
+
+    Preconditions:
+        The coordinates must be within the screen area.  The rug must be
+        valid.
+
+    Postconditions:
+        The contents of the rug will be written into screen display memory,
+        and the rug disposed of.
+----------------------------------------------------------------------------*)
+
+PROCEDURE PutRugAt(    ULX                  : ascreenx; 
+                       ULY                  : ascreeny;
+                       LRX                  : ascreenx; 
+                       LRY                  : ascreeny;
+                   VAR Rug                  : ARug   );
+ 
+
+END Rugs.
+

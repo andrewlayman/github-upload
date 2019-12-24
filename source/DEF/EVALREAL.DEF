@@ -1,0 +1,49 @@
+DEFINITION MODULE EvalReal;
+
+
+
+FROM RealFormat     IMPORT
+    (* TYPE *)          AnAmountFormat;
+
+
+    (* EvaluateRealExpression -- Four-function, parenthesized,
+                                 operator priority evaluation.
+                                 Reference "Compilers: Principles,
+                                 Techniques and Tools" by Aho,
+                                 Sethi and Ullman, 1986, algorithm
+                                 4.5.
+
+                                 Any expression found in the Expression
+                                 string beginning at position ScanPosition
+                                 will be evaluated.
+
+                                 Evaluation will continue to match the
+                                 longest valid numeric expression possible.
+
+                                 On return:
+
+                                 ScanPosition will point to just past the
+                                 expression (if any) matched and evaluated.
+
+                                 Either Value will contain the evaluation
+                                 of the expression, or ErrorFlag will be
+                                 TRUE.
+
+                                 Mismatched parenthesis or invalid syntax
+                                 will cause the ErrorFlag value to be
+                                 returned as TRUE.
+
+                                 *)
+
+
+PROCEDURE EvaluateRealExpression( VAR Expression    : ARRAY OF CHAR;
+                                  VAR ScanPosition  : CARDINAL;
+                                  VAR Value         : REAL;
+                                  VAR AmountFormat  : AnAmountFormat;
+                                  VAR ErrorFlag     : BOOLEAN
+                                 );
+
+
+
+END EvalReal.
+

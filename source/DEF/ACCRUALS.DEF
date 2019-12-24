@@ -1,0 +1,19 @@
+DEFINITION MODULE Accruals;
+
+    (* Accruals -- defines methods to accrue costs into time periods.
+
+       29-May-90  AJL  - Initial version. 
+
+    *)
+
+
+TYPE
+    ACostPlace   =  (AllAtStart, AllAtEnd, ProRate, IgnoreIt);
+
+ 
+
+
+
+
+END Accruals.
+

@@ -1,0 +1,104 @@
+DEFINITION MODULE CapData;
+
+(*  =========================================================================
+    Last Edit : March 21, 1991 1:06PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Static data for TLCaptions.
+
+    MODIFICATION HISTORY:
+
+        5-Oct-90 RSC  Created.
+       19-Oct-90 PFG  Made AFormatSpecsArray a type.
+       14-Mar-91 RSC  Removed FormatSpecsHandle, TLCaptionsHasBeenAlive,
+                      And TLCaptionsIsAlive.
+       21-Mar-91 RSC  Added TotalByRsrc to the FormatSpecs.  This was being
+                      used in the LayoutForm and others when building the
+                      column tree of percentage columns.  For EVERY column,
+                      a check was being made as to if TotalByRsrc (which,
+                      for task columns, is REALLY "Is this a percentage
+                      column?") was on or off.  This made 140 swapped calls
+                      to TLCaptions.
+        8-Apr-91 TGS  Import from TaskColNumbers instead of MagicNum.
+    =========================================================================
+*)
+
+
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  ATaskStatus;
+
+FROM Captions               IMPORT
+    (* TYPE *)                  ASetOfColumnDataFields;
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM Gantt                  IMPORT
+    (* TYPE *)                  AGanttLineType;
+
+FROM TaskColNumbers         IMPORT
+    (* CONST *)                 HighestRootColumn;
+
+
+
+(* 5-Oct-90 RSC Moved here from TLCaptions to preserve his global
+                data.
+
+                HEY!!  KEEPA YOU HANDS OFF!!  This is just for
+
+                communications between CAPTIONS and TLCAPTIONS.
+*)
+TYPE
+    ALineTypeSet            = SET OF AGanttLineType;
+    AFormatSpecAttribute    = (KnownColumn, BaseDifferentColumn,
+                               RequiresBaseColumn, RjustColumn,
+                               TotalByRsrc);  (* 21-Mar-91 RSC  *)
+
+    AFormatSpecAttributeSet = SET OF AFormatSpecAttribute;
+
+(*$A-*)
+    AFormatSpec             = RECORD
+                                Decimals    : CARDINAL;
+                                SortOrder   : CARDINAL;
+                                DataFields  : ASetOfColumnDataFields;
+                                Attributes  : AFormatSpecAttributeSet;
+                                TypeOfValue : CHAR;
+                                OutputFormat: CHAR;
+                              END;
+
+    AFormatSpecsArray    = ARRAY [1..HighestRootColumn] OF 
+                               AFormatSpec;
+(*$A=*)
+
+VAR
+    StatusPosition       : ARRAY ATaskStatus OF CARDINAL;
+
+    FormatSpecs          : POINTER TO AFormatSpecsArray;
+
+    SummaryString,
+    AssignmentString,
+    DelayString,
+    SplitString,
+    DurationString,
+    EffortString         : ARRAY [0..29] OF CHAR;
+    StatusString,
+    PSString             : ARRAY [0..9]  OF CHAR;
+    TrueChar,
+    FalseChar            : CHAR;
+
+    OutputField          : ARRAY BOOLEAN OF     (* Baseline required?  *)
+                           ARRAY BOOLEAN OF     (* Baseline Available? *)
+                           ARRAY BOOLEAN OF     (* Baseline different? *)
+                                           ALineTypeSet;
+
+    ChildIndicator          : ARRAY [0..5] OF CHAR;
+    OpenParentIndicator     : ARRAY [0..5] OF CHAR;
+    ClosedParentIndicator   : ARRAY [0..5] OF CHAR;
+
+
+
+
+END CapData.
+

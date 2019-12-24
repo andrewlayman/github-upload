@@ -1,0 +1,12 @@
+DEFINITION MODULE GraphSupport;
+
+    (*  MODIFICATION HISTORY
+        21-Mar-89 WKH   Added procedure GetConversionFactor()
+    *)
+
+PROCEDURE GetDefaultBorder() : CARDINAL;
+
+PROCEDURE GetConversionFactor() : REAL;
+
+END GraphSupport.
+

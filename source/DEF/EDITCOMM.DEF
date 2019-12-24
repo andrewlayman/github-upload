@@ -1,0 +1,185 @@
+DEFINITION MODULE EditCommon;
+
+(* Edit Common  - Support routines for TaskEdit, RsrcEdit, AssEdit,
+                  and EdgeEdit.
+
+
+    Modification History:
+
+        21-Feb-89  RSC  Initial Version.
+
+*)
+
+
+
+
+
+
+
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord, AColumnInfoChoice;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM IntFileIO      IMPORT
+                        AnIntDataRecord;
+
+FROM RealFormat     IMPORT
+    (* TYPE *)          AnAmountFormat;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+TYPE
+    (* A Get Info Proc is used within "GetAColumnID".  Typicaly, these come
+       from "XXXXFormat" modules.
+    *)
+    AGetInfoProc = PROCEDURE (     CARDINAL,           (* ColumnID       *)
+                                   AColumnInfoChoice,  (* InfoChoice     *)
+                                   CARDINAL,           (* Length         *)
+                               VAR AColumnDataRecord   (* InfoRecord     *)
+                              ) :  BOOLEAN;            (* Does it exist? *)
+
+
+
+
+(*
+    Get A Column ID
+
+        Preconditions
+                        > "ColumnName" is an LString containing the FORMAL
+                          NAME of a column.
+                          The caller must resolve any differences between
+                          the name read in from a file and the "official"
+                          formal name.  For example, DBase translates some
+                          charactors.
+
+                        > "GetInfoProc" is the procedure that supplies
+                          information about columns.  Typicaly, these come
+                          from "XXXXFormat" modules.
+
+        Postconditions
+                        > Returns TRUE if the ColumnName is a known
+                          column name, or FALSE if it is unknown.
+
+                        > ColumnID is the internal number to use for
+                          changing the data, if TRUE is returned.
+*)
+PROCEDURE GetAColumnID(     GetInfoProc      : AGetInfoProc;
+                        VAR ColumnName       : ARRAY OF CHAR;
+                        VAR ColumnID         : CARDINAL ) : BOOLEAN;
+
+
+
+
+
+
+
+(*
+    Digest A String
+
+        Convert a text string into the internal data record format.
+
+        Preconditions
+                        > "GetInfoProc" is the proc that returns information
+                          about the columns in question.
+
+                        > "ColumnID" is a valid column id for the InfoProc.
+
+                        > "TextString" is the string to be digested into
+                          "ColumnData".  It is not modified (VAR only for
+                          efficiency).
+
+                        > "Amount Format" is the real number format to use
+                          in analizing REAL numbers.  It is not altered.
+                          VAR is just for efficiency.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty text string.
+                          This is not allowed for all columns.
+
+        Postconditions
+                        > "ColumnData" is the data to be applied to the
+                          assignment.
+
+                        > The text is checked within the context of the
+                          column in question, and the "ColumnData" record
+                          is filled in appropriately.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.  Errors would all be simple formatting
+                          errors.
+
+                        > Returns TRUE if there were no formatting errors,
+                          FALSE if there were.
+*)
+PROCEDURE DigestAString(     GetInfoProc      : AGetInfoProc;
+                             ColumnID         : CARDINAL;
+                         VAR TextString       : ARRAY OF CHAR;
+                         VAR AmountFormat     : AnAmountFormat;
+                         VAR ColumnData       : AColumnDataRecord;
+                             ErrorHandler     : AnErrorHandlerProc;
+                             HandlersContext  : ADDRESS
+                         ) : BOOLEAN;
+
+
+
+PROCEDURE DigestAIntString(     GetInfoProc      : AGetInfoProc;
+                                ColumnID         : CARDINAL;
+                                Type             : CARDINAL;
+                            VAR Data             : AnIntDataRecord;
+                            VAR AmountFormat     : AnAmountFormat;
+                            VAR ColumnData       : AColumnDataRecord;
+                                ErrorHandler     : AnErrorHandlerProc;
+                                HandlersContext  : ADDRESS
+                         ) : BOOLEAN;
+
+
+
+
+(*
+    Find Task With WBS
+
+        Preconditions
+                        > WBSToMatch   is the WBS to find.  It is passed as a
+                                       VAR only for effeciency, it is not
+                                       altered.
+
+        Postconditions
+                        > TaskNode     is the found task node.  If NIL, no
+                                       matching task was found.  If not NIL,
+                                       it is the found task node.
+*)
+PROCEDURE FindTaskWithWBS( VAR WBSToMatch   : ARRAY OF CHAR;
+                           VAR TaskNode     : ATreeNode );
+
+
+
+
+
+
+(*
+    Ajust Name
+
+    In version 4, task and resource names cannot have these charactors:
+
+           \, ^, *, ], or [.
+
+*)
+PROCEDURE AjustName( VAR NewName : ARRAY OF CHAR );
+
+
+
+
+END EditCommon.
+
+

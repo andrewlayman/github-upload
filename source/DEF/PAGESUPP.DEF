@@ -1,0 +1,195 @@
+DEFINITION MODULE PageSupply;
+
+    (*-------------------------------------------------------------
+
+        PageSupply
+
+        This module is responsible for creating and managing the
+        storage and location of pages of data.  It is a support module
+        for the ExtStorage module.
+
+
+    --------------------------------------------------------------- *)
+
+    (* MODIFICATION HISTORY
+
+        3/8/88  AJL -Changed APageClassStatusProc to return a record 
+                     containing several items of information.
+                    -Removed the explicit export statement.
+   
+     *)
+          
+
+
+
+FROM SYSTEM IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+
+
+TYPE
+    APageHandle;
+
+    APageClass   =  ( PageFast, PageMedium, PageSlow );
+
+    APageClassStatus = RECORD
+                           Present       : BOOLEAN;
+                           Busy          : BOOLEAN;    (* Interlocked. *)
+                           Condition     : CARDINAL;   (* Good, Queasy, Error *)
+                           PageSize      : CARDINAL;   (* In K *)
+                           NumberOfPages : CARDINAL;   (* Max. Available. *)
+                           FreePages     : CARDINAL    (* Unallocated from media *)
+                       END;
+
+        (*-----------------------------------------------------------
+
+            APageCreateProc
+
+            Attempts to create a new page of the indicated class.
+
+            Preconditions:
+                AStartupProc must have returned TRUE for this
+                class.
+
+            PostConditions:
+                Either sets PageTable[PageNo] to the newly created
+                page, or else FALSE.   When a handle is returned,
+                the page is mapped into normal memory and its address
+                and size is also returned.  The page table is updated
+                by having its HomeAddress filled in and also its
+                location set to the address of the page.
+
+        -------------------------------------------------------------*)
+
+
+    APageCreateProc  = PROCEDURE (     APageClass,
+                                       CARDINAL,   (* PageNo *)
+                                   VAR CARDINAL    (* Size *)   ) : BOOLEAN;
+
+
+        (*-----------------------------------------------------------
+
+            APageDiscardProc
+
+            Attempts to discard the page.
+
+            Preconditions:
+                The page handle must have been created by APageCreateProc.
+
+            PostConditions:
+                The page handle is no longer valid.
+
+        -------------------------------------------------------------*)
+
+
+    APageDiscardProc = PROCEDURE (     APageClass,
+                                   VAR APageHandle ) : BOOLEAN;
+
+
+        (*-----------------------------------------------------------
+
+            APageRetrieveProc
+
+            Attempts to get the page.
+
+            Preconditions:
+                The page class must be started.
+
+            PostConditions:
+                The page whose handle is in PageTable[PageNo] will
+                be mapped into physical memory and PageTable[PageNo]
+                .Location will contain the address of the page, or
+                else FALSE.
+
+        -------------------------------------------------------------*)
+
+
+    APageRetrieveProc = PROCEDURE (     APageClass,
+                                        CARDINAL (* PageNo *)   ) : BOOLEAN;
+
+
+
+
+
+        (*-----------------------------------------------------------
+
+            APageSynchProc
+
+            Synchronizes all copies of the page.
+
+            Preconditions:
+                The page handle must have been created by APageCreateProc.
+
+            PostConditions:
+                Any copies of the pages on secondary media for pages
+                that were marked as changed through APageWirteProc will
+                match their physical memory copies, or else
+                FALSE is returned.
+
+        -------------------------------------------------------------*)
+
+    APageSynchProc = PROCEDURE (     APageClass    ) : BOOLEAN;
+
+
+
+
+        (*-----------------------------------------------------------
+
+            AStartupProc
+
+            Starts a class of page storage.
+
+            Preconditions:
+
+            PostConditions:
+                If the page class of storage is available, it will be
+                made ready, and the size of page that it will create
+                by APageCreateProc is returned, else zero.
+
+        -------------------------------------------------------------*)
+
+    AStartupProc = PROCEDURE (     APageClass    ) : CARDINAL;
+
+
+
+
+        (*-----------------------------------------------------------
+
+            AShutdownProc
+
+            Ends a class of page storage.
+
+            Preconditions:
+
+            PostConditions:
+                The class of storage is no longer available.
+
+        -------------------------------------------------------------*)
+
+    AShutdownProc = PROCEDURE (     APageClass    );
+
+    
+    APageClassStatusProc = PROCEDURE (   APageClass, VAR APageClassStatus );
+
+
+
+VAR
+
+    CreatePage  : APageCreateProc;
+
+    DiscardPage : APageDiscardProc;
+
+    RetrievePage : APageRetrieveProc;
+
+    SynchPage    : APageSynchProc;
+
+    StartupPageClass : AStartupProc;
+
+    ShutdownPageClass : AShutdownProc;
+
+    PageClassStatus   : APageClassStatusProc;
+
+
+END PageSupply.
+

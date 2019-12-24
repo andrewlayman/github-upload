@@ -1,0 +1,63 @@
+DEFINITION MODULE XTabFormat;
+
+  (*
+    XTab Format - Format XTab Information
+
+        This module is intended to do for XTabs what Captions does for
+        tasks.  That is, given a column ID, return information about a
+        Cross Tab column.
+
+
+        MODIFICATION History - 
+
+        21-Mar-89 RSC First version, for Ken's "Better Reports" project.
+  *)
+
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnInfoChoice, AColumnDataRecord;
+
+
+
+
+
+
+
+
+
+TYPE
+
+(*
+    Get XTab Info
+
+        Preconditions
+                        > ColumnID  is the column to return information about.
+
+                        > InfoChoice is the kind of information you are
+                          interested in.  See Captions.Def for the choices.
+
+                        > Length is the length of the string to return,
+                          important mostly for Right Justified strings.
+
+        Postconditions
+                        > If TRUE, InfoValue contains the desired information.
+                          If a string value is being returned, it may be right
+                          justified, and is always exactly "Length" bytes long.
+
+                        > If FALSE, The column does not exist.  This allows
+                          looking for information on ALL columns.
+*)
+    AGetXTabInfoProc      = PROCEDURE(     CARDINAL,           (* ColumnID   *)
+                                           AColumnInfoChoice,  (* InfoChoice *)
+                                           CARDINAL,           (* Width *)
+                                       VAR AColumnDataRecord)  (* InfoValue *)
+                                       : BOOLEAN;
+
+
+
+VAR
+    GetXTabInfo     : AGetXTabInfoProc;
+
+
+END XTabFormat.
+

@@ -1,0 +1,115 @@
+DEFINITION MODULE V3Tasks;
+
+
+(* MODIFICATION HISTORY:
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+        12-Sep-90 RSC   Fixed for new Allocs.Def
+*)
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  arectag, ATaskName, ADurationMethod, ATask,
+                                AFixType, ATaskFlagSet,
+                                ATaskFilterSet, ATaskStatusSet,
+                                AStartStatus, ARollupStatus,
+                                AnAssignmentSummary;
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM Edges                  IMPORT
+    (* TYPE *)                  AnEdgePtr;
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  BYTE, ADDRESS;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADuration, ADurationUnit, ADate;
+
+
+TYPE
+    AV3DateBlock = RECORD
+        FixedStart,
+        EarlyStart,
+        EarlyEnd,
+        LateFreeStart,
+        LateFreeEnd,
+        LateTotalStart,
+        LateTotalEnd        : ADate;
+    END;
+
+    AV3BigDateBlock = RECORD
+        FixedStart,
+        FixedEnd,
+        EarlyStart,
+        EarlyEnd,
+        LateFreeStart,
+        LateFreeEnd,
+        LateTotalStart,
+        LateTotalEnd        : ABigTime;
+    END;
+
+    AV3DateAssignmentBlock = RECORD
+        Dates        : AV3DateBlock;
+        Assignments  : AnExtHandle;
+    END;
+
+
+
+    ATaskV3 = RECORD
+                rectag                      : arectag;
+                TaskID                      : INTEGER;   (* Unique identifier *)
+                taskname                    : ATaskName; (* 31 bytes *)
+                DurationMethod              : ADurationMethod;
+                duration                    : ADuration;
+                fixation                    : AFixType;
+                scale                       : ADurationUnit;
+                EffortScale                 : ADurationUnit;
+                CostPlace                   : BYTE;     (* ACostPlace *)
+                priority                    : CARDINAL;
+                TaskFlags                   : ATaskFlagSet;
+                FilterSet                   : ATaskFilterSet;
+                PercentComplete             : CARDINAL;
+                TaskStatusSet               : ATaskStatusSet;
+                StartStatus                 : AStartStatus;
+                rollupstatus                : ARollupStatus;
+                X,Y                         : CARDINAL;
+                count,
+                count2                      : CARDINAL;
+                TaskSortOrder               : CARDINAL; 
+                antetasks                   : AnEdgePtr;  (* List of tasks that must
+                                                             precede this one. *)
+                desctasks                   : AnEdgePtr;  (* List of tasks that must follow
+                                                             this one. *)
+                Prevlink                    : AnExtHandle;  (* Prior task. *)
+                Nextlink                    : AnExtHandle;  (* Next task.  *)
+                WorkSpace                   : ADDRESS; (* Temporary use *)
+                BaseLineSummary             : AnAssignmentSummary;
+                ToGoSummary                 : AnAssignmentSummary;
+                CompletedSummary            : AnAssignmentSummary;
+                Plan                        : AV3DateAssignmentBlock;
+                BaseLine                    : AV3DateAssignmentBlock;
+                WBS                         : ARRAY [0..15] OF CHAR;
+                OBS                         : ARRAY [0..10] OF CHAR;
+                AUX                         : ARRAY [0..10] OF CHAR;
+                notes                       : AText;
+                summarizes                  : AText;  (* other file name. *)
+                BCWSDollars                 : REAL;   (* RSC 10/13/87     *)
+                BCWP                        : REAL;   (* RSC  2/01/88     *)
+            END;
+
+
+
+PROCEDURE ConvertTaskFromV3 (   VAR OldTask         : ATaskV3;
+                                VAR NewTask         : ATask;
+                                    CodingFields    : BOOLEAN   );
+
+
+END V3Tasks.
+

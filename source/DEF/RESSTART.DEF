@@ -1,0 +1,212 @@
+DEFINITION MODULE ResStartDates;
+
+    (* This module provides procedures to find earliest and latest
+       start dates for tasks (and various other helpful information)
+       for use in resource levelling.
+
+    MODIFICATION HISTORY:
+
+    Feb 23, 89  JES -Created. Original versions of some of these
+                     procedures were part of the old Tlrplan.
+                     All the procedures now use the new resource
+                     availability structures.
+    30-Mar-90  RSC   Made Timeu to Timei/TimeForm conversions.
+
+    18-Jul-90    JES  AllResourcesAreAvailable now requires that at least
+                      one resource is not on vacation to return TRUE.
+                      In general, changed procedures to
+                      to deal with vacations (i.e., multiple calendars).
+    Sep-06-90  JES    Added boolean parameters AllowOverbookings and
+                      UseLowerBounds to procedure EarliestStartDate
+                      (and lower level procedures it calls).
+                      (So that cpm can use the procedure with overbookings
+                      allowed and no automatic lower bounds except the
+                      one input.)
+    Sep 12, 90 JES    Removed parameter "UseLowerBounds" from procedure
+                      EarliestStartDate, and changed name of parameter
+                      "Day" to "StartSearchAt". Any lower bounds to be
+                      used will be incorporated into "StartSearchAt"
+                      by the caller. (I.e., the procedure no longer
+                      automatically incorporates latest antecedant end
+                      date, as of date, or max end of actual dates.)
+    Oct 5,  90  JES   Incorporated an upper bound parameter into
+                      procedure EarliestStartDate. This will typically
+                      take into account the "Day" variable and the
+                      task's upper bound on the start date (i.e., the
+                      late total start if levelling within slack).
+                      This avoids having the procedure calculate way out
+                      in time, only to have the caller decide that the
+                      result is too high and we have to bump and start
+                      over. Also added a VAR parameter "FoundADate"
+                      indicating whether or not the bounds were feasible.
+                      This is returned as true if the procedure
+                      succeeded in finding a start date between the lower
+                      and upper bound; otherwise, it is returned as false,
+                      and no valid start date is returned.
+    1-Nov-90   CL 	- Change resource-driven to effort-driven in the
+	                  comments.
+    Nov 30, 90  JES   Added procedure FindCpmEarliestStartDate.
+                      Calls either FindEarliestStartDate or 
+                      FindStartDateForEffortDrivenSplit, with the
+                      appropriate parameters.
+    Dec 12, 90  JES   Rewrote procedure LatestStartDate to support
+                      calendars.  Also added TaskEndDate as an
+                      out parameter to FindEarliestStartDate.
+    Dec 21, 90  JES   Moved all FindLatestStartDate procedures into
+                      a ResLateDates.
+                      Moved AllResourcesAreAvailable into ResAvailability
+                      so it can be called both from here and from ResLateDates.
+    Jan 14, 91  JES   Added "DoWe" to some BOOLEAN parameters.
+    Apr 26, 91 JES -  Changed TaskFitsAtDate to CheckIfTaskFitsAtDate, which
+                       returns both DateIsGood and TaskEndDate (and not just
+                       a BOOLEAN equivalent to DateIsGood). The procedure
+                       simply calls FindEarliestStartDate with StartSearch =
+                       EndSearch = the given date, and with DoWeAllowOverbookings
+                       = FALSE. 
+    June 25, 91 JES - Added BOOLEAN VAR parameter TaskIsInfeasible to
+                        FindEarliestStartDate and CheckIfTaskFitsAtDate,
+                        and BOOLEAN VAR parameter
+                        AllWorkDone back into procedure FindEarliestStart
+                        ForEffortSplit.
+
+    *)
+
+FROM Allocs         IMPORT ATaskPtr;
+    (* TYPE *)
+
+FROM Timei          IMPORT ADate, ADuration;
+    (* TYPE *)
+
+
+
+(*------FindEarliestStartDate--------------------------------------------
+
+    Finds the earliest possible date in the interval
+    [StartSearchAt, EndSearchAt] on which the
+    task could start, taking into account vacations and required
+    remaining duration(s).
+
+    If such a date is found, FoundADate is returned as TRUE and
+    StartDate holds the date, and TaskEndDate holds the resulting
+    task end date.
+    Otherwise, FoundADate is returned
+    as FALSE and StartDate holds no valid date.
+
+    [If at any point the procedure finds that the only possible start
+    date on or after StartSearchAt is MaxDate (regardless of the value of
+    EndSearchAt), the task is flagged as unschedulable, a warning to
+    that effect is issued, and the procedure returns FoundADate as
+    FALSE and StartDate as the task duration minus MaxDate.]
+
+    If AllowOverbookings is FALSE, then resource-level
+    constraints are in effect; otherwise they are ignored.
+
+    Note:
+        (1) If the task is effort-driven split, the ONLY requirement
+            for the start date (other than being >= StartSearchAt
+            and <= EndSearchAt) is that at least one resource is
+            available at the required level and is not on vacation.
+            Also, all the required work must be able to be squeezed
+            into the available time. If the first requirement is
+            satisfied but not all the work can be done, then we
+            know the task is infeasible, and TaskIsInfeasible is
+            set to TRUE. 
+
+        (2) For other split-type tasks, the requirements are that
+            (1) at least one resource is not on vacation, (2) and
+            all resources are available at the required levels (except
+            possibly for vacations) throughout whatever duration is required.
+            (In duration-driven tasks, vacations count in the required
+            duration; in assignment-driven tasks, the required duration
+            is a function of each resource assignment.)
+        (3) For delay-type tasks, the requirements are (1) no resource is
+            on vacation and (2) all resources are available at the
+            required levels, and are never on vacation, during the whole
+            required duration starting at the date.
+
+    Preconditions -
+       A valid task. StartSearchAt <= EndSearchAt.
+
+    Postconditions -
+       No effects.
+
+*)
+
+PROCEDURE FindEarliestStartDate (Task                  : ATaskPtr;
+                                 StartSearchAt         : ADate;
+                                 EndSearchAt           : ADate;
+                                 DoWeAllowOverbookings : BOOLEAN;
+                             VAR FoundADate        : BOOLEAN;
+                             VAR StartDate         : ADate;
+                             VAR TaskEndDate       : ADate;
+                             VAR TaskIsInfeasible  : BOOLEAN);
+
+(* -- FindCpmEarliestStartDate ---- 
+       This is a version of FindEarliestStartDate specifically for use
+       by cpmactivate. It does the following:
+
+       - For non effort-split tasks: calls FindEarliestStartDate with
+          AllowOverbookings = TRUE;
+       - For effort-split tasks: calls FindStartDateForEffortDrivenSplit
+          with AllowOverbookings = TRUE, MaxEndDate = MaxDate, and
+          Contour = FALSE.
+*)
+
+
+PROCEDURE FindCpmEarliestStartDate (Task          : ATaskPtr;
+                                    StartSearchAt : ADate;
+                                    EndSearchAt   : ADate;
+                                VAR FoundADate    : BOOLEAN;
+                                VAR DateFound     : ADate);
+
+
+(* ------------------ CheckIfTaskFitsAtDate ------------------------------
+
+   Sets DateIsGood to TRUE if Date is a feasible start date for Task.
+   Otherwise sets DateIsGood to FALSE. If DoWeComputeEndDate is
+   TRUE, also returns the resulting TaskEndDate (but only provided that
+   DateIsGood turns out to be true).
+*)
+
+PROCEDURE CheckIfTaskFitsAtDate (Task              : ATaskPtr;
+                                 Date              : ADate;
+                             VAR DateIsGood        : BOOLEAN;
+                             VAR TaskEndDate       : ADate;
+                             VAR TaskIsInfeasible  : BOOLEAN);
+
+
+(* --- FindEarliestStartForEffortSplit - 
+
+    Returns, via DateFound, the first date in the interval
+    [StartSearchAt, EndSearchAt] such that at least one of the
+    required resources is not on vacation and is
+    available at the required level, i.e.:
+      - no requirement on level if resource is non-levellable;
+      - level >= 0 if DoWeContour is true and resource is levellable;
+      - level >= MaxRatePercent if DoWeContour is true and resource
+                      is levellable)
+    If DateIsGood turns out to be true and the procedure is called with
+    DoWeComputeEndDate set to true, then we call the dry-run version of 
+    CreateSubstitutableResourceAssignments) to determine the
+    resulting TaskEndDate. Otherwise the value of TaskEndDate
+    is not meaningful.
+
+    If DateIsGood turns out to be true and the procedure is called with
+    DoWeComputeEndDate set to true, then AllWorkDone is set to true if
+    all required effort can be accomplished within the resulting end date.
+    Otherwise, AllWorkDone is set to false.
+
+*)
+PROCEDURE FindEarliestStartForEffortSplit (Task               : ATaskPtr;
+                                           StartSearchAt      : ADate;
+                                           EndSearchAt        : ADate;
+                                           DoWeAllowOverbookings : BOOLEAN;
+                                           DoWeContour        : BOOLEAN;
+                                           DoWeComputeEndDate : BOOLEAN;
+                                       VAR FoundADate         : BOOLEAN;
+                                       VAR DateFound          : ADate;
+                                       VAR TaskEndDate        : ADate;
+                                       VAR AllWorkDone        : BOOLEAN);
+
+END ResStartDates.
+

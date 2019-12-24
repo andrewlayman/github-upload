@@ -1,0 +1,14 @@
+DEFINITION MODULE NetVideo;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  avidmode;
+
+(*----------------------------------------------------------------------------
+          GetLineColor --
+          Returns the video mode to use for lines, in network view,
+          critical or normal, tree view, always normal. 
+----------------------------------------------------------------------------*)
+
+PROCEDURE GetLineColor(CriticalPath : BOOLEAN):avidmode;
+
+END NetVideo.

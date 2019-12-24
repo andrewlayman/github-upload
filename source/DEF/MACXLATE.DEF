@@ -1,0 +1,43 @@
+DEFINITION MODULE MacXlate;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+
+FROM Text        IMPORT AText;
+
+FROM MacNodes    IMPORT AMacroRecordPointer;
+
+EXPORT QUALIFIED  CToStr, StrToC, MacToText, TextToMac;
+
+(* 
+Translates to/from CARDINALS to CHARACTERS.
+    - Uses CHR function for printable characters.
+    - Uses translation table for non-printable characters.
+*)
+
+
+
+PROCEDURE CToStr (C          : CARDINAL;
+                  VAR Str    : ARRAY OF CHAR;
+                  VAR InName : BOOLEAN);
+
+PROCEDURE StrToC (Str   : ARRAY OF CHAR;
+                  VAR C : CARDINAL):BOOLEAN;
+
+PROCEDURE MacToText (VAR macro : AMacroRecordPointer;
+                     VAR text  : AText);
+
+PROCEDURE TextToMac (TheText     : AText;
+                     VAR Buffer  : ARRAY OF CARDINAL;
+                     VAR CardLen : CARDINAL):BOOLEAN;
+
+END MacXlate.
+

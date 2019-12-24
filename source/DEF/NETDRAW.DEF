@@ -1,0 +1,47 @@
+DEFINITION MODULE NetDraw;
+
+    (*  MODIFICATION HISTORY --
+        21-Sep-89 LAA   Removed all reference to Animation.
+        18-Dec-89 EGK   Removed NetBefore and NetAfter from being exported.
+    *)
+
+    
+(*----------------------------------------------------------------------------
+    ShowNet --
+
+    Display the network diagram on the screen.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The network diagram will be displayed on the screen using the current
+        network layout specification.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ShowNet();
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+
+    NetDrawMain --
+   
+    Main driver routine for drawing network diagrams, called by TLNSHOW. 
+        
+    Preconditions: 
+        conditions...
+   
+    Postconditions:
+        conditions...
+        
+----------------------------------------------------------------------------*)
+
+
+PROCEDURE NetDrawMain();
+
+END NetDraw.
+

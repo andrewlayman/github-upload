@@ -1,0 +1,207 @@
+DEFINITION MODULE GeldedLStrings;
+
+    (******************************************************************)
+    (*                                                                *)
+    (*   LStrings:  A module to handle strings with implied lengths.  *)
+    (*                                                                *)
+    (*       This module provides operations for a special type,      *)
+    (*   an "LSTRING."  This is an ARRAY OF CHAR interpreted in a     *)
+    (*   special way.  Although declared to the compiler as an        *)
+    (*   array of characters, the LString is considered by these      *)
+    (*   procedures to be internally structured.  The HIGH bound of   *)
+    (*   the array gives the MAXIMUM length of the string, while the  *)
+    (*   zero-th element gives the actual (current) length.           *)
+    (*                                                                *)
+    (*       Actual lengths are allowed from 0 to 254 bytes, with     *)
+    (*   the length code of 255 reserved for future expansion in the  *)
+    (*   encoding scheme.                                             *)
+    (*                                                                *)
+    (*       A representation that uses the byte at the beginning     *)
+    (*   of the array to give the current string length is one basic  *)
+    (*   way of controlling the length of a string, the other way is  *)
+    (*   to note the end of the string with a special character. This *)
+    (*   module uses an explicit count so that it doesn't need to     *)
+    (*   make any assumptions about the underlying character set.     *)
+    (*                                                                *)
+    (*   Copyright (c) Andrew Layman, 1983, All Rights Reserved       *)
+    (*   Except as noted here:                                        *)
+    (*       These routines may be used for non-commercial            *)
+    (*       purposes provided that this copyright notice is          *)
+    (*       included in all copies.                                  *)
+    (*                                                                *)
+    (******************************************************************)
+
+
+    (*  Set the target LString to the source String.  Source is
+        not an LSTRING, but a normal array of characters.  Use this
+        procedure to create an LString. *)
+
+PROCEDURE SetString(VAR Target:ARRAY OF CHAR; Source: ARRAY OF CHAR);
+
+    (*  Concatenate the Addend Lstring onto the end of the Target
+        Lstring.  *)
+
+PROCEDURE ConcatLS (VAR Target:ARRAY OF CHAR; Addend: ARRAY OF CHAR);
+
+    (*  Concatenate the Addend normal string to the end of the Target
+        Lstring. *)
+
+PROCEDURE ConcatS  (VAR Target:ARRAY OF CHAR; Addend: ARRAY OF CHAR);
+
+    (*  Insert the addend Lstring into the Target Lstring beginning
+        at character position Index. *)
+
+PROCEDURE Insert(VAR Target, Addend: ARRAY OF CHAR; Index:CARDINAL);
+
+    (*  Remove characters from the target Lstring beginning at position
+        Index.  If Index is greater than the length of Target, no characters
+        are removed.  If Index+Length is greater than the length of the
+        Target, as many characters as possible are removed. *)
+
+PROCEDURE Remove(VAR Target: ARRAY OF CHAR; Index, Length:CARDINAL);
+
+    (*  Shift the contents of the string left, removing spaces from the
+        front of the string to the end. *)
+
+PROCEDURE LJust    (VAR Target:ARRAY OF CHAR);
+
+    (*  Shift the contents of the string to the right. *)
+
+PROCEDURE RJust    (VAR Target:ARRAY OF CHAR);
+
+    (*  Force the Lstring to have the indicated length.  If possible,
+        remove leading or trailing blanks to do this, or add trailing
+        blanks.  However, remove trailing characters if necessary. *)
+
+PROCEDURE Procustes(VAR Target:ARRAY OF CHAR; Length:CARDINAL);
+
+    (*  Set the target Lstring to the indicated length, and fill it
+        with the indicated character. *)
+
+PROCEDURE Fill     (VAR Target:ARRAY OF CHAR; Char:CHAR; Length:CARDINAL);
+
+    (*  Set Dest Lstring to a copy of the characters in positions
+        Index through Index+Length-1 of the Source Lstring.  If
+        Index+Length-1 is greater than the length of Source, then
+        the Dest Lstring will be returned with fewer than Length
+        characters.   This is the usual way to copy from one string to
+        another. *)
+
+PROCEDURE SubStr   (VAR Source, Dest:ARRAY OF CHAR;
+                    Index, Length:CARDINAL);
+
+    (*  Remove spaces from the front of the Target Lstring. *)
+
+PROCEDURE TrimFront (VAR Target:ARRAY OF CHAR);
+
+    (*  Remove spaces from the rear of the target Lstring. *)
+
+PROCEDURE TrimRear (VAR Target:ARRAY OF CHAR);
+
+    (*  Change all lower-case letters in the target Lstring to upper
+        case ones. *)
+
+PROCEDURE Upshift  (VAR Target:ARRAY OF CHAR);
+
+    (*  Convert the Source Lstring to a CARDINAL number.  Ignore leading
+        spaces.  Begin conversion at character position Index.  On return,
+        Index will be the position of the first character position not
+        used in the conversion.  Conversion will stop at the end of the
+        source lstring, or at the first non-numeric character encountered. *)
+
+PROCEDURE StoC     (VAR Source:ARRAY OF CHAR; VAR Index:CARDINAL):CARDINAL;
+
+    (*  Convert the CARDINAL number to an Lstring. *)
+
+PROCEDURE CtoS     (Card:CARDINAL; VAR String:ARRAY OF CHAR);
+
+    (*  Compare two strings.  Returns 0 if they are equal, a negative
+        number if the first is less than the second, and a positive
+        number if the second is greater than the first.  The absolute
+        value of the number will indicate the position of the first
+        character that did not match.  If one string is shorter than
+        the other, it is considered to be extended with low values. *)
+
+PROCEDURE Compare (VAR First, Second: ARRAY OF CHAR) : INTEGER;
+
+    (*  Convert a string from its representation as an LString to
+        an alternate representation: move the characters of the
+        string into positions 0 through length-1 of the TString
+        array and then terminate the TString with a "terminator"
+        character.  In this case, the terminator will always be a
+        null, 0C.  TString and LString may be the same string. *)
+
+PROCEDURE LStringToTString (VAR LString, TString: ARRAY OF CHAR);
+
+    (*  TStringToLString  -- convert string from T-String to L-String.
+                             TString and LString may be same array. *)
+
+PROCEDURE TStringToLString(VAR TString, LString : ARRAY OF CHAR);
+
+
+    (*  Overlay: Replace Len letters in Dest, beginning at position
+        Index, with the contents of Source. *)
+
+PROCEDURE Overlay (VAR Dest, Source : ARRAY OF CHAR; Index, Len : CARDINAL);
+
+    (*  Search the LString s for the pattern.  Return the index of the
+        position within s that the first occurrance of pattern appears,
+        or 0 if pattern is not within s.  Searching starts at index
+        "Start" within s.  If "pattern" is of zero length, a 0 is
+        returned. *)
+
+PROCEDURE Search (VAR s, pattern : ARRAY OF CHAR; Start:CARDINAL) : CARDINAL;
+
+
+(*----------------------------------------------------------------------------
+    Copy --
+
+    Copy one LString into another, truncating whatever won't fit.
+
+    Preconditions:
+        The source must be an LString.
+
+    Postconditions:
+        The destination will contain as much of the beginning of the source as
+        will fit.
+----------------------------------------------------------------------------*)
+
+PROCEDURE Copy(VAR Source       : ARRAY OF CHAR;
+               VAR Destination  : ARRAY OF CHAR);
+
+
+
+(*----------------------------------------------------------------------------
+    LengthOf --
+
+    Return the length of the given LString.
+
+    Preconditions:
+        The given string must be an LString.
+
+    Postconditions:
+        The length of the LString will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE LengthOf(VAR LString              : ARRAY OF CHAR): CARDINAL;
+
+
+
+(*----------------------------------------------------------------------------
+    SetLengthOf --
+
+    Force the length of the given LString to be as indicated.
+
+    Preconditions:
+        The given string must be an LString.
+
+    Postconditions:
+        The length of the LString will be set to the value given.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SetLengthOf(VAR LString           : ARRAY OF CHAR;
+                          Length            : CARDINAL);
+
+
+END GeldedLStrings.
+

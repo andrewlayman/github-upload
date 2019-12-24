@@ -1,0 +1,62 @@
+DEFINITION MODULE Edits;
+
+  (* MODIFICATION HISTORY:
+
+       Oct 15 1987 RSC - Added "Changed" to the parameters of EditText.
+
+  *)
+
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+
+  (* This typoe is just for communication between this module and
+     TLEDITS.MOD.  All others stay away.
+  *)
+TYPE   APrivateEditContext = RECORD
+            PUlx                  : ascreenx;
+            PUly                  : ascreeny;
+            PLrx                  : ascreenx;
+            PLry                  : ascreeny;
+            PHelpNumber           : CARDINAL;
+            PText                 : AText;
+            PBox                  : ABoxType;
+            PTitle                : ARRAY [0..29] OF CHAR;
+            PChanged              : BOOLEAN;
+       END;
+
+
+
+
+(*----------------------------------------------------------------------------
+    EditText --
+
+    Allow editing of the indicated text, and replace it if changed.
+
+    Preconditions:
+        The text must have been created by the Text module.
+
+    Postconditions:
+        The text, as changed, will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EditText(    Ulx                  : ascreenx;
+                       Uly                  : ascreeny;
+                       Lrx                  : ascreenx;
+                       Lry                  : ascreeny;
+                       Box                  : ABoxType;
+                   VAR Title                : ARRAY OF CHAR;
+                       HelpNumber           : CARDINAL;
+                   VAR Text                 : AText;
+                   VAR Changed              : BOOLEAN );
+
+
+END Edits.
+

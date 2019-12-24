@@ -1,0 +1,8 @@
+DEFINITION MODULE TreeBuild;
+
+EXPORT QUALIFIED                
+   (* PROC *)                       TreeMain;
+
+PROCEDURE TreeMain(    TreeType             : CARDINAL);
+
+END TreeBuild.

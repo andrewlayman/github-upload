@@ -1,0 +1,264 @@
+DEFINITION MODULE EdgeChange;
+
+
+    (*
+        Edge Change - Edit an edge record
+
+            This module provides the ability to make changes to an edge
+            record by changing "columns" of data.  It deals with the same
+            columns as are output by the "Captions" module.  For this reason,
+            this module and its cousins are sometimes refered to as
+            "AntiCaptions".
+
+
+        Terminology:
+
+            A Column HEADING is the formal name a column goes by.  This is the
+            name found in a Lotus, DBase, or CSV file.  This heading is
+            translated into a ColumnID, a "magic number" used to identify the
+            column.  Note that some exporters, notably DBase, may translate
+            the official formal name into a new name that is more compatible
+            with the external program.  It is the importer's job to translate
+            those names BACK into the "official" formal name.
+
+
+        Procedure Overview:
+
+            GetEdgeColumnID()   Given a column's formal name, return the
+                                internal Column ID.
+
+            BeginEdgeEdit()     Start the editing of an edge.
+
+            DigestEdgeString()  Change a text string into an internal format.
+
+            ChangeEdgeColumn()  Change the value of a column.
+
+            EndEdgeEdit()       End the editing of an edge, and commit the
+                                changes if there were no serious errors.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module does not use Undo.  It is the job of clients to
+            back out records deemed not valid.
+
+
+        Related Modules:
+
+            EdgeAcquire  is used to find the edge record to be edited.
+            TaskEdit     edits task records.
+            AssEdit      edits assignment records.
+            RsrcEdit     edits resource records.
+
+
+        Modification History:
+
+
+         9-Feb-89  RSC  First version.
+        14-Sep-89  MWP  Removed DigestAString decalration.
+         3-Oct-89  MWP  Created vars to hold edge names during import
+                        for journal messages.
+
+    *)
+
+
+FROM Allocs         IMPORT
+                        WBSLen;
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM IntFileIO      IMPORT
+                        AnIntDataRecord;
+
+FROM RealFormat     IMPORT
+    (* TYPE *)          AnAmountFormat;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+TYPE
+    AWhatsBeenSeenItem = (FromDur,
+                          FromTime,
+                          FromUnits,
+                          ToDur,
+                          ToTime,
+                          ToUnits
+                         );
+
+    AWhatsBeenSeenSet = SET OF AWhatsBeenSeenItem;
+
+
+    AEdgeEditContext = RECORD
+        ErrorHandler      : AnErrorHandlerProc;
+        HandlersContext   : ADDRESS;
+        WhatsBeenSeen     : AWhatsBeenSeenSet;
+    END;
+
+
+VAR
+    FromWBSCode           : ARRAY[0..WBSLen] OF CHAR;
+    ToWBSCode             : ARRAY[0..WBSLen] OF CHAR;
+
+
+
+(*
+    Get Edge Column ID
+
+        Preconditions
+                        > "ColumnName" is an LString containing the FORMAL
+                          NAME of the edge column.
+                          The caller must resolve any differences between
+                          the name read in from a file and the "official"
+                          formal name.  For example, DBase translates some
+                          charactors.
+
+        Postconditions
+                        > Returns TRUE if the ColumnName is a known edge
+                          column name, or FALSE if it is unknown.
+
+                        > ColumnID is the internal number to use for
+                          changing the data, if TRUE is returned.
+*)
+PROCEDURE GetEdgeColumnID( VAR ColumnName       : ARRAY OF CHAR;
+                           VAR ColumnID         : CARDINAL ) : BOOLEAN;
+
+
+
+
+
+
+
+(*
+    Begin Edge Edit
+
+        Preconditions
+                        > No edge is currently being edited (close off an edit
+                          with EndEdgeEdit)
+
+                        > FromTask and ToTask are the TreeNodes for the two
+                          tasks involved.  There must be an edge already
+                          existing between the two tasks.
+
+                        > ErrorHandler is the procedure to be called when an
+                          edit error occurs.
+
+        Postconditions
+                        > Edge is ready to be edited.
+*)
+PROCEDURE BeginEdgeEdit(     FromNode,
+                             ToNode          : ATreeNode;
+                             ErrorHandler    : AnErrorHandlerProc;
+                             HandlersContext : ADDRESS          );
+
+
+
+PROCEDURE DigestIntEdgeString(     ColumnID         : CARDINAL;
+                                   Type             : CARDINAL;
+                               VAR Data             : AnIntDataRecord;
+                               VAR AmountFormat     : AnAmountFormat;
+                               VAR ColumnData       : AColumnDataRecord;
+                                   LErrorHandler    : AnErrorHandlerProc;
+                                   LHandlersContext : ADDRESS  ) : BOOLEAN;
+
+
+
+
+
+
+(*
+    Change Edge Column
+
+        Preconditions
+                        > An Edge is being edited (BeginEdgeEdit has been
+                          called).
+
+                        > "ColumnID" is a valid column id.
+
+                        > "ColumnData" is the data to be applied to the edge.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty "DataFields" inside
+                          "ColumnData".  This is not allowed for all columns.
+
+        Postconditions
+                        > The data is checked within the context of the
+                          column in question, and the changes are applied,
+                          except as noted below.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.
+
+                        > If TRUE is returned, it is implied that no errors
+                          have yet been detected.  A call to EndEdgeEdit MIGHT
+                          succeed, unless other errors are encountered.
+
+                        > If FALSE is returned, no further edits will
+                          be accepted (further calls to "ChangeEdgeColumn"
+                          will return FALSE).  The changes should be ABORTED
+                          by the caller.
+*)
+PROCEDURE ChangeEdgeColumn(     ColumnID    : CARDINAL;
+                            VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+    End Edge Edit
+
+        Preconditions
+                        > An edge is being edited (BeginEdgeEdit has been
+                          called).
+
+        Postconditions
+                        > Any changes made to the edge after BeginEdgeEdit
+                          have been applied to the edge node, or else the
+                          ErrorHandler is called for each exception found.
+
+                        > If any errors were found that were not fixable, or
+                          where the error handler decided not to request
+                          fixing, FALSE is returned.  Otherwise, TRUE is
+                          returned.
+*)
+PROCEDURE EndEdgeEdit() : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+END EdgeChange.
+
+

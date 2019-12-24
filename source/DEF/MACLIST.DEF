@@ -1,0 +1,11 @@
+DEFINITION MODULE MacList;
+
+EXPORT QUALIFIED DoMacroList;
+
+
+
+PROCEDURE DoMacroList (VAR Name : ARRAY OF CHAR):BOOLEAN;
+
+
+
+END MacList.

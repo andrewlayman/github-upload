@@ -1,0 +1,124 @@
+DEFINITION MODULE Matches;
+
+(* Modification History:
+
+    21-Feb-89  RSC  Added "Match Boolean" for the importers.
+    30-Mar-90  RSC  Made Timeu to Timei/TimeForm conversions.
+*)
+
+
+FROM Timei    IMPORT ADate, ADurationUnit, ADuration;
+
+FROM Allocs   IMPORT AStartStatus, AFixType;
+
+
+PROCEDURE Alphabetic( C : CHAR ) : BOOLEAN;
+
+PROCEDURE Numeric( C : CHAR ) : BOOLEAN;
+
+PROCEDURE AlphaNumeric( C : CHAR ) : BOOLEAN;
+
+    (* EndOfWord -- Move End to termination of word. *)
+
+PROCEDURE EndOfWord( VAR S    : ARRAY OF CHAR;
+                         Start: CARDINAL;
+                     VAR End  : CARDINAL );
+
+
+PROCEDURE RemoveRestOfWord(  VAR S : ARRAY OF CHAR;
+                                 i : CARDINAL       );
+
+
+PROCEDURE InsertBlap( VAR S : ARRAY OF CHAR;
+                          i : CARDINAL );
+
+
+PROCEDURE ReplaceWordWithBlap( VAR S : ARRAY OF CHAR;
+                                   i : CARDINAL       );
+
+
+    (* MatchWord -- Search S for Word beginning at position >= Start.
+                    Word must match for at least MinLen chars.
+                    If found, then (a) set At to the words position.
+                    and (b) return TRUE. *)
+
+PROCEDURE MatchWord( VAR S      : ARRAY OF CHAR;
+                         Start  : CARDINAL;
+                         MinLen : CARDINAL;
+                         Word   : ARRAY OF CHAR;
+                     VAR At     : CARDINAL   ) : BOOLEAN;
+
+
+PROCEDURE MatchADurationUnit( VAR   S    : ARRAY OF CHAR;
+                                    i    : CARDINAL;
+                              VAR   TU   : ADurationUnit;
+                              VAR   At   : CARDINAL     ) :BOOLEAN;
+
+PROCEDURE MatchBoolean(   VAR   S    : ARRAY OF CHAR;
+                                i    : CARDINAL;
+                          VAR   B    : BOOLEAN;
+                          VAR   At   : CARDINAL     ) :BOOLEAN;
+
+PROCEDURE NumberPart( C : CHAR ) : BOOLEAN;
+
+
+
+PROCEDURE MatchAndRemoveADuration( VAR   S    : ARRAY OF CHAR;
+                                         i    : CARDINAL;
+                                   VAR   Dur      : ADuration;
+                                   VAR   TimeUnit : ADurationUnit ) : BOOLEAN;
+
+PROCEDURE MatchARealNumber( VAR S : ARRAY OF CHAR;
+                                i : CARDINAL;
+                            VAR At : CARDINAL;
+                            VAR R : REAL  ) : BOOLEAN;
+
+PROCEDURE MatchAndRemoveAPercentage( VAR   S    : ARRAY OF CHAR;
+                                           i    : CARDINAL;
+                                     VAR   Percentage : REAL
+                                     ) : BOOLEAN;
+
+PROCEDURE MatchAMonthName(  VAR S      : ARRAY OF CHAR;
+                            VAR Month  : CARDINAL;
+                            VAR At     : CARDINAL
+                          ) : BOOLEAN;
+
+
+PROCEDURE MatchADeadline( VAR S  : ARRAY OF CHAR;
+                          VAR At : CARDINAL ) : BOOLEAN;
+
+
+PROCEDURE MatchAFixation( VAR S  : ARRAY OF CHAR;
+                          VAR At : CARDINAL;
+                          VAR Fixation : AFixType
+                         ) : BOOLEAN;
+
+
+PROCEDURE MatchAMilestone( VAR S  : ARRAY OF CHAR;
+                           VAR At : CARDINAL
+                          ) : BOOLEAN;
+
+
+PROCEDURE MatchADate(     S       : ARRAY OF CHAR;
+                      VAR Date    : ADate;
+                      VAR At      : CARDINAL;
+                      VAR Length  : CARDINAL;
+                          EndDate : BOOLEAN ) : BOOLEAN;
+
+
+PROCEDURE CondensePlaceHolders( VAR S : ARRAY OF CHAR );
+
+PROCEDURE MatchAStartStatus( VAR S           : ARRAY OF CHAR;
+                             VAR At          : CARDINAL;
+                             VAR StartStatus : AStartStatus
+                         ) : BOOLEAN;
+
+PROCEDURE MatchParallel( VAR S  : ARRAY OF CHAR;
+                         VAR At : CARDINAL ) : BOOLEAN;
+
+PROCEDURE MatchSequential( VAR S  : ARRAY OF CHAR;
+                           VAR At : CARDINAL ) : BOOLEAN;
+
+
+END Matches.
+

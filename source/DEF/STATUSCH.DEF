@@ -1,0 +1,190 @@
+DEFINITION MODULE StatusChange;
+
+(* Status Change    - Manage task status changes.
+
+    When a task becomes Done,
+
+        For resource assignments and variable costs:
+
+            For duration-driven tasks, we may need to change
+            assignments to effort driven, and adjust percentages so that the
+            spent and planned efforts are the same on each.
+
+            For effort-driven tasks, we need to verify that the total of the 
+            spent effort on the assignments matches the task total.
+
+            For assignment-driven tasks, we may need to adjust the 
+            assignments so that the spent and planned efforts are the same
+            on each.
+
+        For other assignments:
+
+            We may need to change the total assigned to match the actual
+            completed amount.
+
+
+    Modification History:
+
+    16-May-89 RSC First version, based on ideas by Andrew.
+     1-Jun-89 RSC get the assignment proc from Assignments rather than
+                  from RsrcCalc.  Pass the assignment context around.
+    21-Jun-89 AJL Changed the name of the first parameter to the default
+                  dialog proc from "TreeNode" To "TaskNode" to clarify
+                  its meaning.
+    30-Mar-90 RSC Made Timeu to Timei/TimeForm conversions.
+    27-Aug-90 RSC Ajust for no assignments in trees.
+    28-Dec-90 AJL Changed documentation to reflect new behavior of 
+                  the procedures. 
+    04-Jan-91 TGS New procedure, CheckTaskEfforts, to make sure that 
+                  EffortDriven tasks do not have assigned Spent effort
+                  greater than Estimated effort.
+    29-Apr-91 TGS Added 2 AssignmentSummary parameters to CheckTaskEfforts.
+    12-Aug-91 AJL Expanded the AStatusDialogResponse to distinguish 
+                  CancelRemainingEffort from SpendRemainingEffort.  Formerly,
+                  these were combined into FixTheTask.
+*)
+
+
+FROM Allocs         IMPORT
+    (* TYPE *)          AStartStatus, AnAssignmentSummary;
+
+FROM Assignments    IMPORT
+    (* TYPE *)          AnAssignmentRecord;
+
+FROM Timei          IMPORT
+    (* TYPE *)          ADuration;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+TYPE
+    AStatusDialogResponse = (FixTheTask,              (* Generic "do something." *)
+                             CancelRemainingEffort,   (* Set To Go Effort to zero. *)
+                             SpendRemainingEffort,    (* Add To Go to spent, set to go to zero. *)
+                             RejectChange,            (* Generic "cancel" *)
+                             AllowCondition);         (* Generic "allow the condition." *)
+
+
+    (* A Status Dialog Proc
+
+        Return an indication how we should treat this task.
+
+        Preconditions
+                        TreeNode            The task node.
+                        StartStatus         The task's start status.
+
+                        IF FutureS, "ACTUAL forces rate to be too big"
+                        IF DoneS,   "Should we make TOTAL = ACTUAL?"
+        Postconditions
+                        RETURN is
+
+                        CancelRemainingEffort if you want this proc to take the
+                                          appropriate action, setting the ToGo
+                                          effort on each assignment to zero.
+
+                        SpendRemainingEffort like above, but means to 
+                                          add the to go effort to the spent 
+                                          effort, then set the to go effort
+                                          to zero.
+
+                        RejectChange   if "CheckStatusChange" should
+                                          return FALSE.
+
+                        AllowCondition if we should allow the inconsistency.
+    *)
+    AStatusDialogProc   = PROCEDURE (     ATreeNode,
+                                          AStartStatus ) : AStatusDialogResponse;
+
+
+
+
+
+
+
+
+
+
+(* Make Assignment Rate Match Total
+
+    Ajust an assignment record's rate match the total effort.
+    Only has an effect on Resources and Variable Costs.
+
+    Preconditions
+    Postconditions
+                    Assignment record may have been ajusted, or else
+                    FALSE is returned.
+
+                    FALSE is possible because:
+
+                        The assignment cannot be made that large;
+                        More than 260 @ 250%
+*)
+PROCEDURE MakeAssignmentRateMatchTotal( VAR Assignment      : AnAssignmentRecord;
+                                            TaskDuration    : ADuration
+                                      ) : BOOLEAN;
+
+
+
+
+
+(* Check Status Change
+
+    Check the passed task, checking assignments for consistency with the
+    task status.
+
+    Preconditions
+                    TaskNode            The task to check.
+                    StatusDialogProc    The way of getting answers to our
+                                        queries.
+    Postconditions
+                    RETURN              TRUE  Task is ok.
+                                        FALSE More editing is called for.
+*)
+PROCEDURE CheckStatusChange(     TaskNode           : ATreeNode;
+                                 StatusDialogProc   : AStatusDialogProc
+                           ) : BOOLEAN;
+
+
+
+
+
+
+(* Default Status Dialog Proc
+
+        A default dialog proc; one that interacts with the customer.
+*)
+PROCEDURE DefaultStatusDialogProc(    TaskNode          : ATreeNode;
+                                      StartStatus       : AStartStatus
+                                 ) : AStatusDialogResponse;
+
+(* CheckTaskEfforts :
+
+    Checks to see if task is Effort-driven, and if it is, makes sure
+    the sum of the assigned Spent effort(s) is not greater than the
+    Estimated task effort.
+
+    If task doesn't check out, we offer to make Estimated = Spent, or
+    to let the user fix the problem.
+
+    Preconditions
+                    TaskNode    The task to check
+                    PutUpDialog Shall we ask, or just go ahead and fix it?
+
+    Postconditions
+                    RETURN      TRUE    Task is ok (now).
+                                FALSE   More editing is needed.
+
+*)
+PROCEDURE CheckTaskEfforts(     TaskNode    : ATreeNode;
+                                PutUpDialog : BOOLEAN;
+                            VAR CompletedSum,
+                                ToGoSum     : AnAssignmentSummary
+                          ) : BOOLEAN;
+
+
+END StatusChange.
+

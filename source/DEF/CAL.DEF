@@ -1,0 +1,25 @@
+DEFINITION MODULE Cal;
+
+    (* MODIFICATION HISTORY --
+        23-Aug-89 KKC   Add one more parameter to RecomputeTable.
+        19-Jul-90 AJL   Changed parameters to DoYears.
+         2-Nov-90 RSC   Added CheckAndFixupWeekTable.
+    *)
+
+FROM Codes IMPORT ACode;
+
+FROM Timeu  IMPORT ATimeTable;
+
+FROM Timei  IMPORT ATimeInfo;
+
+PROCEDURE CheckAndFixupWeekTable( VAR TimeTable   : ATimeTable;
+                                      ProposedSMU : CARDINAL;
+                                      Warn        : BOOLEAN ) : BOOLEAN;
+
+PROCEDURE DoWeek (VAR TimeTable:ATimeTable) : ACode;
+PROCEDURE DoYears (VAR TimeTable:ATimeTable;VAR CursorDate : ATimeInfo):ACode;
+PROCEDURE RecomputeTable(VAR timetable:ATimeTable; DisplayMsg:BOOLEAN);
+
+END Cal.
+
+

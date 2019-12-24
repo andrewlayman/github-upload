@@ -1,0 +1,17 @@
+DEFINITION MODULE Paranoia;
+
+
+TYPE
+    AnAnxietyLevel          = (Calm, Nervous, Paranoid);
+
+    AProgramState           = (BeforeRootInit, RootInit,       RootRunning,
+                               TLStartInit,    TLStartRunning, TLStartDone,
+                               TLMainStarting, TLMainRunning,  TLMainDone);
+
+VAR
+    AnxietyLevel            : AnAnxietyLevel;
+    ProgramState            : AProgramState;
+    InitializationOK        : BOOLEAN;
+
+END Paranoia.
+

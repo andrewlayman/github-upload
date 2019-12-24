@@ -1,0 +1,318 @@
+DEFINITION MODULE GoToViews;              (* Subclass of ActiveViews *)
+
+    (*  GoToViews provides an object which is a view of a tree node.
+        The data object of the tree node can be a task, a resource, a memo,
+        etc.  depending on the caller of CreateGoToOutline.  Only the name of
+        the object is displayed, using indentation to reflect depth in its
+        tree, along with "-" and "+" symbols to show whether or not it has
+        children.  Any matched characters in the name are displayed in bright
+        video.  If the cursor is on this view, the unmatched characters are
+        displayed in reverse video.
+    *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AGoToViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM GoTo                   IMPORT
+    (* TYPE *)                  AGoToNameProc;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+TYPE
+        (*  AGoToView is a subclass of AnActiveView  *)
+
+    AGoToView               = POINTER TO AGoToViewRecord;
+
+    AGoToViewMethods        = POINTER TO AGoToViewMethodsRecord;
+
+    AGoToViewRecord         = RECORD
+                                Methods        : AGoToViewMethods;
+                              END;
+
+
+
+
+
+TYPE
+
+        (*  These types are re-definitions of types exported from ActiveViews. *)
+
+
+    AGoToViewStatus         = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               GoToViewSpare5, GoToViewSpare6, 
+                               GoToViewSpare7, GoToViewSpare8, 
+                               GoToViewSpare9);
+
+    AGoToViewStatusSet      = SET OF AGoToViewStatus;
+
+
+
+
+
+
+
+
+    (*  These are the methods for AGoToView objects.  They inherit and
+        redefine methods from ActiveViews, but do not add any new methods
+        of their own.
+    *)
+
+TYPE
+    AGoToViewMethodsRecord  = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    AGoToView,
+                                        VAR AGoToView )
+                                                       : BOOLEAN;
+          StoreOn           : PROCEDURE(    AGoToView,
+                                            AnObject  );
+
+          Discard           : PROCEDURE(VAR AGoToView );
+
+          SuperclassMethods : AnObjectMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    AGoToView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+          GetInternalXY     : PROCEDURE(    AGoToView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+          (*------------------------------------------------------------------
+            GetTitle --
+
+                In this module, GetTitle returns the text string which this
+                view is displaying, NOT the title of this view's box, which
+                may or may not be displaying.
+
+            Preconditions:
+                The view must be a valid GoTo view object.
+
+            Postconditions:
+                If the view object of this view is not NIL, the text string
+                associated with this view will be returned.  Otherwise, a
+                zero-length string will be returned.
+          ------------------------------------------------------------------*)
+
+          GetTitle          : PROCEDURE(    AGoToView,
+                                        VAR ARRAY OF CHAR);
+
+          SetObject         : PROCEDURE(    AGoToView,
+                                            ATreeNode );
+
+          GetObject         : PROCEDURE(    AGoToView )
+                                                       : ATreeNode;
+
+          Move              : PROCEDURE(    AGoToView,    
+                                            ascreenx,        
+                                            ascreeny  );
+
+          Display           : PROCEDURE(    AGoToView );
+
+          GetHelp           : PROCEDURE(    AGoToView );
+
+          HideView          : PROCEDURE(    AGoToView );
+
+          RevealView        : PROCEDURE(    AGoToView );
+
+          NotifyOfChange    : PROCEDURE(    AGoToView );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    AGoToView,
+                                            AnEvent   );
+
+          GetRecordedEvent  : PROCEDURE(    AGoToView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    AGoToView,
+                                            AnEvent,
+                                        VAR AnEvent   );
+
+          GetCursor         : PROCEDURE(    AGoToView )   
+                                                       : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    AGoToView,   
+                                            BOOLEAN   );
+
+          SetCursorMode     : PROCEDURE(    AGoToView,
+                                            avidmode  );
+
+
+          ActiveViewTag     : CARDINAL;
+
+
+          GoToViewTag       : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsGoToView --
+
+    Initialize the indicated object as a GoTo view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid GoTo view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsGoToView(      GoToView     : AGoToView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               NameProc     : AGoToNameProc;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateGoToView --
+
+    Allocate storage for, and initialize the indicated object as a GoTo 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid GoTo view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateGoToView(  VAR GoToView     : AGoToView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               NameProc     : AGoToNameProc;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL)
+                                                       : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsGoToView --
+
+    UnInitialize the indicated object as a GoTo view.
+
+    Preconditions:
+        The object will be a valid GoTo view object.
+
+    Postconditions:
+        The GoTo view will no longer be a valid GoTo view object, and any
+        side-effects of InitAsGoToView will be undone.  This procedure does
+        not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsGoToView(    GoToView : AGoToView);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneGoToViewMethods --
+
+    Make a copy of the GoTo view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The GoTo view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneGoToViewMethods(    MethodObject : AGoToViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateGoToView --
+
+    Determine that the indicated object is in fact a valid GoTo view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid GoTo view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateGoToView(    GoToView : AGoToView);
+
+
+
+END GoToViews.
+

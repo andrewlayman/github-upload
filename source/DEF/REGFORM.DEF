@@ -1,0 +1,20 @@
+DEFINITION MODULE RegForm;
+    (* RegForm - Code that actually brings up the Login form and checks
+                 the master file
+
+
+       MODIFICATION HISTORY:
+       20-Jun-89 WKH    Initial version
+    *)
+
+    (* InitRegistryForm - Initialize the code that brings up the Login form.
+                          This routine is tied closely to the Registry and
+                          RegSupport modules.  This call will "steal" the
+                          GetRegistryInfo procedure variable exported from
+                          Registry
+    *)
+
+PROCEDURE InitRegistryForm();
+
+END RegForm.
+

@@ -1,0 +1,409 @@
+DEFINITION MODULE FilterOutlines;        (*  a subclass of OutlineViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AFilterOutlineStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+TYPE
+
+        (*  AFilterOutline is a subclass of AnOutlineView  *)
+
+    AFilterOutline          = POINTER TO AFilterOutlineRecord;
+
+    AFilterOutlineMethods   = POINTER TO AFilterOutlineMethodsRecord;
+
+    AFilterOutlineRecord    = RECORD
+                                Methods     : AFilterOutlineMethods;
+                              END;
+
+
+
+
+
+    (*  These types are re-definitions of types exported from OutlineViews. *)
+
+
+    AFilterOutlineStatus    = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               FilterOutlineSpare5, FilterOutlineSpare6, 
+                               FilterOutlineSpare7, FilterOutlineSpare8, 
+                               FilterOutlineSpare9);
+
+    AFilterOutlineStatusSet = SET OF AFilterOutlineStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AFilterOutline to
+        them.
+    *)
+
+
+    AFilterOutlineCloneProc   = PROCEDURE(    AFilterOutline,
+                                          VAR AFilterOutline)
+                                                             : BOOLEAN;
+
+    AFilterOutlineStoreOnProc = PROCEDURE(    AFilterOutline,
+                                              AnObject       );
+
+    AFilterOutlineDiscardProc = PROCEDURE(VAR AFilterOutline);
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AFilterOutline
+        to them.
+    *)
+
+
+    AFilterOutlineGetObjectProc = PROCEDURE(    AFilterOutline)
+                                                               : ATree;
+
+    AFilterOutlineSetObjectProc = PROCEDURE(    AFilterOutline,
+                                                ATree          );
+
+    AFilterOutlineXYProc        = PROCEDURE(    AFilterOutline,
+                                            VAR ascreenx,
+                                            VAR ascreeny,
+                                            VAR ascreenx,
+                                            VAR ascreeny       );
+
+    AFilterOutlineTitleProc     = PROCEDURE(    AFilterOutline,
+                                            VAR ARRAY OF CHAR  );
+
+    AFilterOutlineProc          = PROCEDURE(    AFilterOutline );
+
+    AFilterOutlineMoveProc      = PROCEDURE(    AFilterOutline,    
+                                                ascreenx,        
+                                                ascreeny       );
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AFilterOutline 
+        to them.
+    *)
+
+
+
+    AFilterOutlineRecordProc    = PROCEDURE(    AFilterOutline,
+                                                AnEvent        );
+
+    AFilterOutlineGetEventProc  = PROCEDURE(    AFilterOutline,
+                                                CARDINAL,
+                                            VAR AnEvent        );
+
+    AFilterOutlineActOnProc     = PROCEDURE(    AFilterOutline,
+                                                AnEvent,
+                                            VAR AnEvent        );
+
+    AFilterOutlineGetCursorProc = PROCEDURE(    AFilterOutline )
+                                                                : BOOLEAN;
+
+    AFilterOutlineSetCursorProc = PROCEDURE(    AFilterOutline,
+                                                BOOLEAN        );
+
+    AFilterOutlineSetCursorModeProc = PROCEDURE(    AFilterOutline,
+                                                    avidmode      );
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AFilterOutline to
+        them.
+    *)
+
+
+
+    AFilterOutlineSetNodeProc   = PROCEDURE(    AFilterOutline,
+                                                ATreeNode      );
+
+    AFilterOutlineGetNodeProc   = PROCEDURE(    AFilterOutline )
+                                                                : ATreeNode;
+
+    AFilterOutlineForceProc     = PROCEDURE(    AFilterOutline,    (* View *)
+                                                ATreeNode,         (* Node *)
+                                                CARDINAL       );  (* Position *)
+
+    AFilterOutlineInquireProc   = PROCEDURE(    AFilterOutline,
+                                                ATreeNode      )
+                                                                : CARDINAL;
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from OutlineViews, so that we can pass objects of type AFilterOutline
+        to them.
+    *)
+
+
+    AFilterOutlineGetCountProc  = PROCEDURE(    AFilterOutline )
+                                                                : CARDINAL;
+
+    AFilterOutlineFindCharProc  = PROCEDURE(    AFilterOutline,
+                                                CHAR           )
+                                                                : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+
+    These are the methods for AFilterOutline objects.  They inherit and
+    redefine methods from OutlineViews, but do not add any new methods
+    of their own.
+
+----------------------------------------------------------------------------*)
+
+
+    AFilterOutlineMethodsRecord = RECORD
+
+        Methods                 : AnObjectMethods;
+        Clone                   : AFilterOutlineCloneProc;
+        StoreOn                 : AFilterOutlineStoreOnProc;
+        Discard                 : AFilterOutlineDiscardProc;
+        SuperclassMethods       : AnOutlineViewMethods;
+        MethodSize              : CARDINAL;
+        ObjectMethodsTag        : CARDINAL;
+
+        GetExternalXY           : AFilterOutlineXYProc;
+        GetInternalXY           : AFilterOutlineXYProc;
+        GetTitle                : AFilterOutlineTitleProc;
+        SetObject               : AFilterOutlineSetObjectProc;
+        GetObject               : AFilterOutlineGetObjectProc;
+        Move                    : AFilterOutlineMoveProc;
+        Display                 : AFilterOutlineProc;
+        GetHelp                 : AFilterOutlineProc;
+        HideView                : AFilterOutlineProc;
+        RevealView              : AFilterOutlineProc;
+        NotifyOfChange          : AFilterOutlineProc;
+        ObjectViewTag           : CARDINAL;
+
+        RecordEvent             : AFilterOutlineRecordProc;
+        GetRecordedEvent        : AFilterOutlineGetEventProc;
+        ActOnEvent              : AFilterOutlineActOnProc;
+        GetCursor               : AFilterOutlineGetCursorProc;
+        SetCursor               : AFilterOutlineSetCursorProc;
+        SetCursorMode           : AFilterOutlineSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AFilterOutline.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag           : CARDINAL;
+
+        SetFirst                : AFilterOutlineSetNodeProc;
+        GetFirst                : AFilterOutlineGetNodeProc;
+        GetLast                 : AFilterOutlineGetNodeProc;
+        SetCursorNode           : AFilterOutlineSetNodeProc;
+        GetCursorNode           : AFilterOutlineGetNodeProc;
+        Synchronize             : AFilterOutlineProc;
+        ForceToPosition         : AFilterOutlineForceProc;
+        InquirePosition         : AFilterOutlineInquireProc;
+        NotifyNodeDeleted       : AFilterOutlineSetNodeProc;
+        ListViewTag             : CARDINAL;
+
+        ResetMatching           : AFilterOutlineProc;
+        GetMatchCount           : AFilterOutlineGetCountProc;
+        FindChar                : AFilterOutlineFindCharProc;
+        OutlineViewTag          : CARDINAL;
+
+        FilterOutlineTag        : CARDINAL;
+
+                                  END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsFilterOutline --
+
+    Initialize the indicated object as a filter outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid filter outline view object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsFilterOutline(    FilterOutline : AFilterOutline;
+                                  SuperView     : AnActiveView;
+                                  Ulx           : ascreenx;
+                                  Uly           : ascreeny;
+                                  Lrx           : ascreenx;
+                                  Lry           : ascreeny;
+                                  Box           : ABoxType;
+                                  VideoMode     : avidmode;
+                              VAR Title         : ARRAY OF CHAR;
+                                  HelpKey       : CARDINAL;
+                                  TakeRug       : BOOLEAN       );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateFilterOutline --
+
+    Allocate storage for, and initialize the indicated object as a filter 
+    outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid filter outline view object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateFilterOutline(VAR FilterOutline : AFilterOutline;
+                                  SuperView     : AnActiveView;
+                                  Ulx           : ascreenx;
+                                  Uly           : ascreeny;
+                                  Lrx           : ascreenx;
+                                  Lry           : ascreeny;
+                                  Box           : ABoxType;
+                                  VideoMode     : avidmode;
+                              VAR Title         : ARRAY OF CHAR;
+                                  HelpKey       : CARDINAL;
+                                  TakeRug       : BOOLEAN      ) 
+                                                                : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsFilterOutline --
+
+    UnInitialize the indicated object as a filter outline view.
+
+    Preconditions:
+        The object will be a valid filter outline view object. 
+
+    Postconditions:
+        The outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsFilterOutline(    FilterOutline : AFilterOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneFilterOutlineMethods --
+
+    Make a copy of the filter outline view methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The taks outline view methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneFilterOutlineMethods(    MethodObject : AFilterOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateFilterOutline --
+
+    Determine that the indicated object is in fact a valid outline view 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid filter outline view object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateFilterOutline(    FilterOutline : AFilterOutline);
+
+
+
+END FilterOutlines.
+

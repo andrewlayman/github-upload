@@ -1,0 +1,45 @@
+DEFINITION MODULE ColorTLGS;
+
+    (*  MODIFICATION HISTORY
+        15-Jun-89 CMH  Changes for a new color form
+        24-Jun-89 CMH  Added critical path dependency line color
+     *)
+     
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+VAR    
+    CritDepLineColor,          (* critical path network dependency lines *) (* 24-Jun-89 CMH *)
+    DepLineColor,              (* network dependency line and
+                                  tree connecting lines *)
+                              
+    MTOpenLineColor,           (* open master task outlines *)
+
+    OpenSummaryDataColor,      (* text color *)
+    AllOtherDataColor,
+     
+    NormalCrateFrameColor,     (* crate frames *)
+    NormalCrateBGColor,        (* crate background *)
+    MilestoneCrateFrameColor,  (* milestone crate frames *)
+    
+(* for duration bar networks - not avaliable in TL version 4.0  
+ |  OpenSummaryBarColor,       (* network duration bar colors *)
+ |  AllOtherBarColor,
+ |  AchievementBarColor,
+ |  BaseLineBarColor,
+ *) 
+    
+    HL3ColorFG,                (* all chart filter colors *)
+    HL3ColorBG,
+    HL4ColorFG,
+    HL4ColorBG,
+    HL5ColorFG,
+    HL5ColorBG : CARDINAL;
+
+PROCEDURE GetFGColor(VAR FGFilter,BGFilter : CARDINAL; TaskTreeNode : ATreeNode);
+PROCEDURE InitNodeChartColors();
+PROCEDURE WriteColorSelections();
+PROCEDURE WriteFilterSelections();
+    
+END ColorTLGS.
+

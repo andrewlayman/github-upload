@@ -1,0 +1,27 @@
+DEFINITION MODULE DeviceColumns;
+(*
+        MODIFICATION History -
+
+        18-AUG-89 KKC First version
+*)
+
+(****************************************************************************
+    PickADevice -
+        Ask user to enter a device.
+    Preconditions:
+        PahtName contains the possible paths for device.
+        Extension contains the file extension of device.
+    Postconditions:
+        If user selected a device.
+            FileName contains the device file name. (No path and no extension)
+            return TRUE.
+        otherwise
+            return FALSE.
+****************************************************************************)
+PROCEDURE PickADevice( VAR PathName      : ARRAY OF CHAR;
+                       VAR FileName      : ARRAY OF CHAR;
+                       VAR Extension     : ARRAY OF CHAR;
+                       VAR TitleIn       : ARRAY OF CHAR ) : BOOLEAN;
+END DeviceColumns.
+
+

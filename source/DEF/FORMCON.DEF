@@ -1,0 +1,33 @@
+    (* FormCon --
+
+           This module exports basic data types and constants
+           needed by any user of forms.
+
+    *)
+
+    (* MODIFICATION HISTORY:
+
+        19-Mar-87   AJL  - Rearranged the order of types within
+                           AFieldType and added FormText, FormPickSet,
+                           FormDate and FormUser1 .. FormUser5.
+
+    *)
+
+DEFINITION MODULE FormCon;
+
+
+CONST
+    FormFields = 9999;      (* Max fields per form, numbered 0.. *)
+    MaxChoice = 7;          (* Max alternatives from among a set,
+                              first is number 0.  Range 0..this. *)
+TYPE
+    AFieldNo      = [ 0..FormFields ];
+    AChoiceNo     = [ 0..MaxChoice  ];
+    AFieldType = (FormString, FormCard, FormReal, FormChoice,
+                  FormPickSet, FormText, FormDate, FormSubForm,
+                  FormUser1, FormUser2, FormUser3, FormUser4,
+                  FormUser5, FormUser6, FormUser7, FormUser8 );
+
+
+END FormCon.
+

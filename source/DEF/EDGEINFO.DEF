@@ -1,0 +1,112 @@
+DEFINITION MODULE EdgeInfo;
+
+    (* General procedures giving information about edges.   *)
+
+    (* MODIFICATION HISTORY
+
+       Aug. 31, 89  AJL - Added an additional parameter to the EdgeIsCritical
+                          and EdgeIsControlling to support the PERT View.
+    *)
+
+
+FROM Edges                  IMPORT
+    (* TYPE *)                  AnEdgePtr;
+
+
+
+(*----------------------------------------------------------------------------
+    DescribeEdge --
+
+    Output a displayable string giving information about this dependency.
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record.
+
+    Postconditions:
+        If Long is TRUE, the string will be in the format
+            "Start plus 3 days ÄÄ Start".
+        If Long is FALSE, the string will be in the shorter format of
+            "S+3dS".
+----------------------------------------------------------------------------*)
+PROCEDURE DescribeEdge  (    Edge        : AnEdgePtr;
+                             Long        : BOOLEAN;
+                         VAR s           : ARRAY OF CHAR );
+
+
+
+
+(*----------------------------------------------------------------------------
+    EdgeIsNormal --
+
+    Indicate whether or not this edge is a normal end-to-start
+    dependency.
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record.
+
+    Postconditions:
+        Returns TRUE iff the edge is end-to-start, with no offset.
+----------------------------------------------------------------------------*)
+PROCEDURE EdgeIsNormal  ( Edge      : AnEdgePtr ) : BOOLEAN;
+
+
+
+
+(*----------------------------------------------------------------------------
+    EdgeIsCritical --
+
+    Indicate whether or not this dependency is critical (i.e., on the
+    critical path).
+
+    Input:  Edge :: the edge to check.
+            TreatSummaryAsMilestone :: If TRUE, all summary tasks are
+                treated as milestones, regardless of their actual
+                duration.  (This is for the PERT view.)    
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record.
+
+    Postconditions:
+        Returns TRUE iff the edge is on the critical path.
+----------------------------------------------------------------------------*)
+PROCEDURE EdgeIsCritical ( Edge      : AnEdgePtr;
+                           TreatSummaryAsMilestone : BOOLEAN
+                             ) : BOOLEAN;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    EdgeIsControlling --
+
+    Indicate whether or not this edge is controlling (has no slack).
+    The tolerance parameter allows dependencies that are within a
+    certain percentage of being controlling to also be identified.
+
+    Input:  Edge :: the edge to check.
+            Tolerance :: How close to controlling it must be before
+                         we call it controlling.
+            TreatSummaryAsMilestone :: If TRUE, all summary tasks are
+                treated as milestones, regardless of their actual
+                duration.  (This is for the PERT view.)    
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record.  The
+        tolerance must be a cardinal in the range 0-100.
+
+    Postconditions:
+        Iff the dependency is within the specified percentage of being
+        controlling (i.e., if the dependency's "slack" is less than or
+        equal to the percentage times the duration of the predecessor
+        task), TRUE will be returned.
+----------------------------------------------------------------------------*)
+PROCEDURE EdgeIsControlling ( Edge      : AnEdgePtr;
+                              Tolerance : CARDINAL;
+                              TreatSummaryAsMilestone : BOOLEAN
+                             ) : BOOLEAN;
+
+
+
+END EdgeInfo.
+

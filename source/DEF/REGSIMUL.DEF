@@ -1,0 +1,20 @@
+DEFINITION MODULE RegSimultaneous;
+    (* RegSimultaneous - Handles registration of network users using a
+                         simultaneous user counter scheme.
+
+
+       MODIFICATION HISTORY:
+       07-Sep-90 WKH    Initial version
+    *)
+
+    (* InitRegistryForm - Initialize the code that will do user counting.
+                          This routine is tied closely to the Registry and
+                          RegSupport modules.  This call will "steal" the
+                          GetRegistryInfo procedure variable exported from
+                          Registry
+    *)
+
+PROCEDURE InitRegistrySimultaneous();
+
+END RegSimultaneous.
+

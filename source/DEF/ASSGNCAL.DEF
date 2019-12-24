@@ -1,0 +1,146 @@
+DEFINITION MODULE AssgnCalc;
+(* MODIFICATION HISTORY
+     2-Apr-92 TGS   Add AssignmentDollars(). This returns "accurate" Spent,
+                    ToGo, or Total dollar amounts if possible, using the 
+                    Compute.. procedures in this module, or gets a plausible
+                    number from AssignmentCost() if not.
+*)
+
+
+FROM Assignments        IMPORT
+    (* TYPE *)              AnAssignmentRecord;
+
+FROM RateLists          IMPORT
+    (* TYPE *)              ARateList;
+
+FROM RsrcCalc           IMPORT
+    (* TYPE *)              AnAssignmentCostTypeSet;
+
+FROM Timei              IMPORT 
+    (* TYPE *)              ADate;
+
+FROM VaryAssgnment      IMPORT 
+    (* TYPE *)              AVaryingAssgnList;
+
+        (*   3-Jun-91 TGS
+
+            ComputeEffortsAndCostsInPeriod --
+
+            Purpose:
+                To calculate the amount of effort and its associated cost
+                for a particular period.
+
+                Within the period, there are one or more "intervals", each
+                with a different cost rate and/or assignment rate than those
+                adjacent to it. We compute the efforts and costs in each such
+                interval and sum them up over the whole period.
+
+            Preconditions:
+                A VaryingAssignment profile exists.
+
+            Postconditions:
+                Return the number of workhours and the costs, if any.
+                If there are none, return FALSE.
+
+            Inputs:
+                Three things from the assignment record:
+                    Handle for VaryingAssignmentList
+                    Handle for assigneed Resource's VaryingRateList
+                    EndOfSpending date
+
+                Period of interest
+                    (a half-open period beginning at PeriodStart and ending
+                     one tic before PeriodEnd)
+                WeWantSpent (as opposed to ToGo)
+
+            Outputs:
+                PeriodWorkHours
+                PeriodCosts
+                Did spending occur in period?
+        *)
+
+PROCEDURE ComputeEffortsAndCostsInPeriod
+            (   AsgnRatesList   : AVaryingAssgnList;
+                CostRatesList   : ARateList;
+                EndOfSpentDate,
+                PeriodStart,
+                PeriodEnd       : ADate;
+                WeWantSpent     : BOOLEAN;
+            VAR PeriodEffort,
+                PeriodCost      : REAL
+            ) : BOOLEAN;
+
+    (*   3-Jun-91 TGS
+
+        ComputePortionOfSpendingInPeriod --
+
+        Purpose:
+            Given a Period of interest, an interval of spending activity,
+            an amount of "something" (usually a quantity) return the 
+            portion of this quantity which occurs in this period,
+            assuming rate of spending is constant over the spending 
+            interval.
+            
+            Return FALSE if there was no spending in the period. Else,
+            return the quantity of spending quantity (e.g. "2 spent"),
+            as well as the interval within this period in which spending
+            occurred (so cost rates can be computed and applied to this
+            quantity, if it wasn't "dollars" already).
+
+        Preconditions:
+            Caller has figured out the correct spending interval, which
+            could have End < Start (meaning lump all costs at End).
+
+        PostConditions:
+            Return TRUE if there was spending in the period, else FALSE.
+            Else, the amount passed in is scaled back to the proportion 
+            spent in period, and we pass out the Start and End dates of
+            the spending interval.
+
+        Inputs:
+            Spending Information:
+                SpentAmount, SpendingStart, SpendingEnd
+            Period information:
+                PeriodStart, PeriodEnd
+            ThisIsSpent - needed to handle special case
+
+        Outputs:
+            ScaledAmount
+            IntervalStart, IntervalEnd
+            Whether spending occurred or not in this period
+    *)
+
+PROCEDURE ComputeLinearCostsInPeriod
+            (     Amount        : REAL;
+                  SpendingStart,
+                  SpendingEnd,
+                  PeriodStart,
+                  PeriodEnd     : ADate;
+                  ThisIsSpent   : BOOLEAN;
+              VAR ScaledAmount  : REAL;
+              VAR IntervalStart,
+                  IntervalEnd   : ADate
+            ) : BOOLEAN;
+
+    (* AssignmentDollars
+
+        Take an assignment, a period, and hints as to whether Spent or
+        ToGo or baseline amounts are desired, and return the best figure
+        possible, or at least some "plausible" estimate.  If it is a Resource
+        assignment, we'll try to call ComputeEffortAndCostsInPeriod if it has
+        a VaryingAssignment attached, else we call AssignmentCost().  For 
+        non-Resources, we call ComputeLinearCostsInPeriod.
+
+
+        Interface to this proc is the same as RsrcCalc.AssignmentCost().
+        That's to make it easy to replace calls to that with calls to this.
+    *)
+
+
+PROCEDURE AssignmentDollars( VAR Assignment         : AnAssignmentRecord;
+                                 StartOfPeriod,            
+                                 EndOfPeriod        : ADate;
+                                 AssignmentCostTypes: AnAssignmentCostTypeSet
+                           ) : REAL;
+
+END AssgnCalc.

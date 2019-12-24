@@ -1,0 +1,5 @@
+IMPLEMENTATION MODULE PlotCommon;
+
+BEGIN
+END PlotCommon.    
+

@@ -1,0 +1,9 @@
+DEFINITION MODULE SchedLocks;
+
+(* NameAndLockSchedule - Attempt to name and lock a schedule *)
+
+PROCEDURE NameAndLockSchedule(VAR PathName : ARRAY OF CHAR;
+                              VAR FileName : ARRAY OF CHAR) : BOOLEAN;
+END SchedLocks.
+
+

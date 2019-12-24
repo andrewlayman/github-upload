@@ -1,0 +1,14 @@
+DEFINITION MODULE BTDynMem;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+EXPORT QUALIFIED            CountOfFree;
+
+
+PROCEDURE CountOfFree(    HeapBlock         : ADDRESS;
+                          SizeToCount       : CARDINAL)
+                                                       : CARDINAL;
+
+END BTDynMem.
+

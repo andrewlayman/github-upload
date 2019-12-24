@@ -1,0 +1,161 @@
+DEFINITION MODULE XMSMem;
+
+(*  =========================================================================
+    Last Edit : March 21, 1991 5:02PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        This module handle hooked procedure vectors for XMS.
+
+    MODIFICATION HISTORY:
+
+        14-Jun-90 RSC  First version.
+        31-Jan-91 RSC  Added EMB Calls.
+        21-Mar-91 RSC  Added HMAPresent and VideoAvailable Call.
+
+    =========================================================================
+*)
+
+
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+
+
+VAR
+
+
+
+
+
+    (* Allocate UMB Memory -
+
+            Preconditions  - none
+            Postconditions - If enough memory is found, it is allocated.
+
+            Input
+                    Desired Paragraphs  - # of paras desired
+            Output
+                    FoundSegment        - Segment number of memory block
+                    RETURN              - TRUE  iff found
+                                          FALSE iff not found.
+    *)
+    AllocateUMBMemory  : PROCEDURE (     (* DesiredParas *) CARDINAL,
+                                     VAR (* FoundSegment *) CARDINAL
+                                    ) : BOOLEAN;
+
+
+
+    (* DeAllocate UMB Memory -
+
+            Preconditions  - Segment was obtained from AllocateUMBMemory.
+
+            Postconditions - Memory returned to UMB pool.
+
+            Input
+                    Segment             - Segment number of memory block
+            Output
+                    RETURN              - TRUE  iff ok
+                                          FALSE iff not ok.
+    *)
+    DeAllocateUMBMemory  : PROCEDURE ( (* UMBSegment *) CARDINAL
+                                    ) : BOOLEAN;
+
+
+
+    (* UMB Available
+
+        Largest single block of UMB available.  In Paragraphs.
+    *)
+    UMBAvailable         : PROCEDURE () : CARDINAL;
+
+
+
+
+
+
+
+    (* Allocate EMB Memory -
+
+            Preconditions  - none
+            Postconditions - If enough memory is found, it is allocated.
+
+            Input
+                    Desired bytes       - # of bytes desired
+            Output
+                    StartingByte        - Starting byte to use, if TRUE.
+                    RETURN              - TRUE  iff found
+                                          FALSE iff not found.
+    *)
+    AllocateEMBMemory  : PROCEDURE (     (* DesiredBytes *) CARDINAL,
+                                     VAR (* StartingByte *) LONGINT
+                                    ) : BOOLEAN;
+
+
+
+    (* DeAllocate EMB Memory -
+
+            Preconditions  - memory was obtained from AllocateUMBMemory.
+
+            Postconditions - Memory returned to EMB pool.
+
+            Input
+                    StartingByte        - returned from AllocateEMBMemory.
+                    Length              - "DesiredBytes" requested from
+                                          AllocateEMBMemory.
+            Output
+                    none.
+    *)
+    DeAllocateEMBMemory  : PROCEDURE ( (* StartingByte *) LONGINT,
+                                       (* Length       *) CARDINAL
+                                     );
+
+
+
+    (* EMB Available
+
+        Largest single block of EMB available.  In KB.
+        & Total EMB available.
+    *)
+    EMBAvailable         : PROCEDURE ( VAR (* TotalKB *) CARDINAL ) : CARDINAL;
+
+
+    (* Copy EMB Memory To DOS
+
+            Preconditions  - memory was obtained from AllocateUMBMemory.
+                             DOS address is valid and you "own" it.
+    *)
+    EMBCopyToDOS         : PROCEDURE ( (* StartingByte *) LONGINT,
+                                       (* Length       *) CARDINAL,
+                                       (* ToHere       *) ADDRESS
+                                     );
+
+    (* Copy EMB Memory From DOS
+
+            Preconditions  - memory was obtained from AllocateUMBMemory.
+                             DOS address is valid and you "own" it.
+    *)
+    EMBCopyFromDOS       : PROCEDURE ( (* StartingByte *) LONGINT,
+                                       (* Length       *) CARDINAL,
+                                       (* FromHere     *) ADDRESS
+                                     );
+
+
+        (* Is there video available?  How much?
+        *)
+    VideoAvailable       : PROCEDURE ( VAR (* FreeKB  *) CARDINAL,
+                                       VAR (* TotalKB *) CARDINAL
+                                     );
+
+
+        (* Is there HMA Available?? If so, there will be 64KB.
+        *)
+    HMAPresent  : BOOLEAN;
+
+
+END XMSMem.
+
+

@@ -1,0 +1,17 @@
+DEFINITION MODULE NetworkData;
+
+    (* MODIFICATION HISTORY
+        28-Jan-89 KKC   Define CurrentActiveView.
+    *)
+
+TYPE
+    AnAnnealingChoice   = (Draft, Average, Presentation); (* 5/8/89 WKH *)
+    ANetworkType        = (Outline, Conventional);        (* 5/8/89 WKH *)
+    AnActiveViewType    = (Pertview, NotPertview);        (* Jan 28, 89 KKC *)  
+
+VAR
+    AnnealingChoice     : AnAnnealingChoice;  (* 5/8/89 WKH *)
+    NetworkType         : ANetworkType;       (* 5/8/89 WKH *)
+    CurrentActiveView   : AnActiveViewType;   (* Jan 28, 89 KKC *)
+END NetworkData. 
+

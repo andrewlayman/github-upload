@@ -1,0 +1,126 @@
+DEFINITION MODULE LANFile;
+
+    (*  LANFile - provides access to LAN master files used by Time Line and
+                  Time Line related products.
+
+
+        MODIFICATION HISTORY :
+
+        22-Jun-89 WKH   Initial version adapted from code written by MWP at
+                        Synex Systems.
+    *)
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+CONST 
+    UserNameSize            = 30;
+    SerialNumSize           = 30;
+    SemaphoreFileNameSize   = 16;
+    PasswordSize            = 20;
+    ReservedBytesSize       = 4;
+
+TYPE                          (* NOTE! These are NOT LStrings!!! *)
+    ASemaphoreFileName      = ARRAY[0..SemaphoreFileNameSize-1] OF CHAR;
+    AUserName               = ARRAY[0..UserNameSize-1         ] OF CHAR;
+    ASerialNumber           = ARRAY[0..SerialNumSize-1        ] OF CHAR;
+    APassword               = ARRAY[0..PasswordSize-1         ] OF CHAR;
+    AReservedSection        = ARRAY[0..ReservedBytesSize-1    ] OF CHAR;
+
+    AUserRecord             = RECORD
+		                        UserName     : AUserName;
+		                        SerialNumber : ASerialNumber;
+		                        UniqueFName  : ASemaphoreFileName;
+		                        Password     : APassword;
+		                        Reserved     : AReservedSection;
+		                      END;
+
+
+    (*  =====================================================================
+        StartLANFileInput - Prepare a file to be read as a LAN master file.
+
+            Preconditions :
+                The variable f must be a valid open file handle opened by a
+                Logitech FileSystem call.
+
+            Postconditions :
+                The file f will be prepared for access as a LAN master file
+                and this routine will return TRUE.  If FALSE is returned,
+                this file can't be accessed as a LAN master file.
+
+            Parameters :
+                Input:
+                    f - file to be accessed as a LAN master file
+
+                Output:
+                    f        - updated file handle
+                    NumUsers - Number of users in the master file
+        =====================================================================
+    *)
+        
+PROCEDURE StartLANFileInput(VAR f          : File;
+                            VAR NumUsers   : CARDINAL) : BOOLEAN;
+
+
+    (*  =====================================================================
+    
+        SearchLANFile - Search a LAN master file for a username.
+
+            Preconditions :
+                The variable f must be a valid open file handle opened by a
+                Logitech FileSystem call.  Also, StartLANFileInput must be
+                called first.
+
+            Postconditions :
+                The UserRecord parameter will contain the relavent info
+                about the user and this routine will return TRUE.  If FALSE
+                is returned, either the UserName wasn't found or there was a
+                problem with the file.
+
+            Parameters :
+                Input:
+                    f        - file to be accessed as a LAN master file
+                    UserName - the username to retrieve info on
+
+                Output:
+                    f          - updated file handle
+                    UserRecord - info for UserName
+        =====================================================================
+    *)
+
+PROCEDURE SearchLANFile(VAR f              : File;
+                        VAR UserName       : ARRAY OF CHAR;
+                        VAR UserRecord     : AUserRecord) : BOOLEAN;
+
+    (*  =====================================================================
+        ReadLANFileRecord - read a record from a LAN master file
+
+            Preconditions :
+                The variable f must be a valid open file handle opened by a
+                Logitech FileSystem call.  Also, StartLANFileInput must be
+                called first.
+
+            Postconditions :
+                The UserRecord parameter will contain the relavent info
+                about the record number requested and this routine will 
+                return TRUE.  If FALSE is returned, either the record
+                indicated by RecNum wasn't found or there was a problem with
+                the file.
+
+            Parameters :
+                Input:
+                    f      - file to be accessed as a LAN master file
+                    RecNum - the record number desired
+
+                Output:
+                    f          - updated file handle
+                    UserRecord - info for record number RecNum
+        =====================================================================
+    *)
+
+PROCEDURE ReadLANFileRecord(VAR f          : File;
+                                RecNum     : CARDINAL;
+                            VAR UserRecord : AUserRecord) : BOOLEAN;
+END LANFile.
+

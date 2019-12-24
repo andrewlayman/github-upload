@@ -1,0 +1,23 @@
+DEFINITION MODULE ShowJoins;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    HighlightJoinedTasks --
+
+    Highlight all tasks joined to the specified task, as either predecessors 
+    or successors.  This temporarily replaces the highlight filtering, but 
+    does not effect the reveal filtering.
+----------------------------------------------------------------------------*)
+
+PROCEDURE HighlightJoinedTasks(    Task    : ATreeNode);
+
+END ShowJoins.
+
+
+

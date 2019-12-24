@@ -1,0 +1,399 @@
+DEFINITION MODULE ActiveViews;          (* A subclass of ObjectViews *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AnActiveViewStatus to 16 bits.
+    *)
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM ObjectViews            IMPORT
+    (* TYPE *)                  AnObjectView, AnObjectViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+
+
+TYPE
+        (*  AnActiveView is a subclass of AnObjectView  *)
+
+    AnActiveView            = POINTER TO AnActiveViewRecord;
+
+
+    AnActiveViewMethods     = POINTER TO AnActiveViewMethodsRecord;
+
+
+    AnActiveViewRecord      = RECORD
+                                Methods        : AnActiveViewMethods;
+                              END;
+
+
+
+
+
+
+TYPE
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for ActiveViews
+        *)
+
+    AnActiveViewStatus      = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn, 
+                               ActiveViewSpare5, ActiveViewSpare6, 
+                               ActiveViewSpare7, ActiveViewSpare8, 
+                               ActiveViewSpare9);
+
+    AnActiveViewStatusSet   = SET OF AnActiveViewStatus;
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AnActiveView to 
+        them.
+    *)
+
+TYPE
+    AnActiveViewCloneProc   = PROCEDURE(    AnActiveView,
+                                        VAR AnActiveView)
+                                                         : BOOLEAN;
+
+    AnActiveViewStoreOnProc = PROCEDURE(    AnActiveView,
+                                            AnObject    );
+
+    AnActiveViewDiscardProc = PROCEDURE(VAR AnActiveView);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AnActiveView to
+        them.
+    *)
+
+TYPE
+    AnActiveViewGetObjectProc  = PROCEDURE(    AnActiveView)
+                                                            : AnObject;
+
+    AnActiveViewSetObjectProc  = PROCEDURE(    AnActiveView,
+                                               AnObject    );
+
+    AnActiveViewXYProc      = PROCEDURE(    AnActiveView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+    AnActiveViewTitleProc   = PROCEDURE(    AnActiveView,
+                                        VAR ARRAY OF CHAR);
+
+    AnActiveViewDisplayProc = PROCEDURE(    AnActiveView);
+
+    AnActiveViewMoveProc    = PROCEDURE(    AnActiveView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+    AnActiveViewHelpProc    = PROCEDURE(    AnActiveView);
+
+    AnActiveViewHiddenProc  = PROCEDURE(    AnActiveView);
+
+    AnActiveViewRevealProc  = PROCEDURE(    AnActiveView);
+
+    AnActiveViewChangedProc = PROCEDURE(    AnActiveView);
+
+
+
+    (*  Here are the new methods for the ActiveViews class  *)
+
+
+TYPE
+    AnActiveViewRecordProc   = PROCEDURE(    AnActiveView,
+                                         VAR AnEvent     );
+
+    AnActiveViewGetEventProc = PROCEDURE(    AnActiveView,
+                                             CARDINAL,
+                                         VAR AnEvent     );
+
+    AnActiveViewActOnProc    = PROCEDURE(    AnActiveView,
+                                             AnEvent,
+                                         VAR AnEvent     );
+
+    AnActiveViewGetCursorProc = PROCEDURE(    AnActiveView)   (* View *)
+                                                           : BOOLEAN;
+
+    AnActiveViewSetCursorProc = PROCEDURE(    AnActiveView,   (* View *)
+                                              BOOLEAN     );  (* Displaying *)
+
+    AnActiveViewSetCursorModeProc = PROCEDURE(    AnActiveView,
+                                                  avidmode    );
+
+
+
+
+
+    (*  These are the methods for AnActiveView objects.  The inherit and
+        redefine methods from ObjectViews, and add new methods of their own.
+    *)
+
+TYPE
+    AnActiveViewMethodsRecord = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AnActiveViewCloneProc;
+                                StoreOn           : AnActiveViewStoreOnProc;
+                                Discard           : AnActiveViewDiscardProc;
+                                SuperclassMethods : AnObjectViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AnActiveViewXYProc;
+                                GetInternalXY     : AnActiveViewXYProc;
+                                GetTitle          : AnActiveViewTitleProc;
+                                SetObject         : AnActiveViewSetObjectProc;
+                                GetObject         : AnActiveViewGetObjectProc;
+                                Move              : AnActiveViewMoveProc;
+                                Display           : AnActiveViewDisplayProc;
+                                GetHelp           : AnActiveViewHelpProc;
+                                HideView          : AnActiveViewHiddenProc;
+                                RevealView        : AnActiveViewRevealProc;
+                                NotifyOfChange    : AnActiveViewChangedProc;
+                                ObjectViewTag     : CARDINAL;
+
+
+        RecordEvent         : AnActiveViewRecordProc;
+    (*------------------------------------------------------------------------
+        Record the given event without performing any action on it.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView, 
+            and it must be displayed and not hidden.  The event must be a 
+            valid object of type AnEvent.
+
+        Postconditions:
+            The event will be recorded in the event history for this view.
+    ------------------------------------------------------------------------*)
+
+
+        GetRecordedEvent    : AnActiveViewGetEventProc;
+    (*------------------------------------------------------------------------
+        Retrieve a previously recorded event from this view's event history.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView, 
+            and it must be displayed and not hidden.  The event must be a 
+            valid object of type AnEvent.  The event number must be in the
+            range 0-10.
+
+        Postconditions:
+            The i'th most recently recorded event for this view will be
+            returned.  The most recent event is numbered 0; the oldest
+            recorded event is numbered 10.  If the event history does not
+            contain enough events, a null event (0) will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        ActOnEvent          : AnActiveViewActOnProc;
+    (*------------------------------------------------------------------------
+        Act on the given event.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView, 
+            and it must be displayed and not hidden.  The event must be a 
+            valid object of type AnEvent.
+
+        Postconditions:
+            The event will be acted on in whatever manner is appropriate, and 
+            will be recorded in the event history for this view.
+    ------------------------------------------------------------------------*)
+
+
+        GetCursor           : AnActiveViewGetCursorProc;
+    (*------------------------------------------------------------------------
+        Determine whether the cursor is displaying or not.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor display status will be returned.  TRUE means that
+            the cursor is displaying.
+    ------------------------------------------------------------------------*)
+
+
+        SetCursor           : AnActiveViewSetCursorProc;
+    (*------------------------------------------------------------------------
+        Define whether the cursor is displaying or not.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor display status will be set as indicated.  TRUE means 
+            that the cursor is displaying.
+    ------------------------------------------------------------------------*)
+
+
+        SetCursorMode       : AnActiveViewSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+
+        ActiveViewTag       : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsActiveView --
+
+    Initialize the indicated object as an active view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid active view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsActiveView(    ObjectView   : AnActiveView;
+                               SuperView    : AnObjectView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                           VAR Title        : ARRAY OF CHAR;
+                               HelpKey      : CARDINAL;
+                               TakeRug      : BOOLEAN      );
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsActiveView --
+
+    Un-Initialize the indicated object as an active view.
+
+    Preconditions:
+        The object must be a valid Active View object.
+
+    Postconditions:
+        The object will no longer be a valid active view object, and all
+        effects of InitAsActiveView will be undone.  No storage deallocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsActiveView(    ObjectView   : AnActiveView);
+ 
+
+
+
+(*----------------------------------------------------------------------------
+    CreateActiveView --
+
+    Allocate storage for, and initialize the indicated object as an active 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid active view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateActiveView(VAR ObjectView   : AnActiveView;
+                               SuperView    : AnObjectView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                           VAR Title        : ARRAY OF CHAR;
+                               HelpKey      : CARDINAL;
+                               TakeRug      : BOOLEAN      ) 
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneActiveViewMethods --
+
+    Make a copy of the active view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The active view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneActiveViewMethods(    MethodObject : AnActiveViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateActiveView --
+
+    Determine that the indicated object is in fact a valid active view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid active view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateActiveView(    ActiveView : AnActiveView);
+
+
+
+END ActiveViews.
+

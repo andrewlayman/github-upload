@@ -1,0 +1,40 @@
+DEFINITION MODULE PageRepeat;
+(*
+        MODIFICATION History -
+
+        06-APR-89 KKC First version
+        15-May-89 KKC Redefine PageRepeatSettings
+        11-Aug-89 KKC - Pass Pointer instead of address.
+        20-Mar-91 AJL - Use a VAR parameter instead of a damn pointer.
+                        Get with the 20th century, Ken!
+*)
+
+FROM SYSTEM                IMPORT
+    (* TYPE  *)                 ADDRESS;
+
+TYPE
+    TitleChoices            =   ( FirstPage, EveryPage );
+
+    APageRepeatSettings     =       RECORD
+        OneTaskRsrcPerPage  :       BOOLEAN;
+        PageBreaks          :       BOOLEAN;
+        IgnoreLMargin       :       BOOLEAN;
+        ColumnHeadings      :       TitleChoices;
+        PageHeadings        :       TitleChoices;
+        PageFootings        :       TitleChoices;
+        UnlimitedWidth      :       BOOLEAN;
+    END;
+    APageRepeatSettingsPtr  =       POINTER TO APageRepeatSettings;     
+
+PROCEDURE InitPageRepeatSettings(VAR PageRepeatSettings : APageRepeatSettings);
+PROCEDURE PageBreaksEnable(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+PROCEDURE IsOneTaskOrResourcePerPage(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+PROCEDURE RepeatColumnHeadings(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+PROCEDURE RepeatPageHeadings(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+PROCEDURE RepeatPageFootings(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+PROCEDURE UnlimitedPageWidth(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+PROCEDURE IgnoreLeftMargin(VAR PageRepeatSettings : APageRepeatSettings) : BOOLEAN;
+
+END PageRepeat.
+
+

@@ -1,0 +1,60 @@
+DEFINITION MODULE NetStatic;
+
+    (*  MODIFICATION HISTORY
+        13-Jul-89 CMH   Added AccessMatrix variables for optimization.
+        19-Sep-89 EGK   Moved MatrixHeight stuff back to AccessMatrix,
+                        since it defines the exact size of the array.
+    *)
+
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle; (* 02-MAY-89 CMH !!! *)
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+CONST
+ 
+    taskdim         = 800;         (* this is the maximum number of tasks *)
+    DimHeight       = taskdim;  
+    DimWidth        = taskdim;
+    DimLoopNode     = taskdim; 
+
+TYPE 
+    DiagramView = (NetworkView,
+                   TreeView);
+    DiagramTask = (normal,
+                   master);
+    
+    AHeightArray        = ARRAY [0..DimHeight] OF INTEGER;
+    AWidthArray         = ARRAY [0..DimWidth]  OF INTEGER;
+    ATreeNodeArray      = ARRAY [0..DimHeight]  OF ATreeNode; 
+
+VAR
+    Xpos,
+    Ypos,
+    Xmaxpos,
+    Ymaxpos,
+    Utility         : ARRAY [0..taskdim] OF INTEGER;
+
+    SnetWidth       : POINTER TO AWidthArray;
+    SnetHeight      : POINTER TO AHeightArray;
+    loopnode        : POINTER TO ATreeNodeArray;
+
+    SnetRowOne, 
+    SnetColOne,
+    SnetRows, 
+    SnetCols,
+    maxtask         : INTEGER;
+
+    ViewType        : DiagramView;
+
+    NetworkDone,
+    EnoughMemory,
+    DeallocForRecalc,
+    MatrixOverflow,
+    HaveInfLoop,
+    FatalNetError   : BOOLEAN;
+
+END NetStatic. 
+

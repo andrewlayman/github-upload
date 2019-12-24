@@ -1,0 +1,44 @@
+DEFINITION MODULE MacLights;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+    MODIFICATION HISTORY:
+
+        30-Nov-89 MWP Added DisplayMacLight
+---------------------------------------------------------------------------*)
+
+FROM Kbio           IMPORT                                        (*30-NOV-89 MWP *)
+                            avidmode;
+
+FROM Lights         IMPORT
+                            ALight;
+
+EXPORT QUALIFIED     DoOurLight, PlaybackLight, DisplayMacLight,
+                     RecordLight, PauseLight, StepModeLight, InputLight;
+
+
+
+
+VAR
+    RecordLight,
+    PauseLight,
+    InputLight,
+    PlaybackLight,
+    StepModeLight           : ALight;
+
+
+PROCEDURE DoOurLight (VAR Light  : ALight;
+                          phrase : ARRAY OF CHAR);
+
+PROCEDURE DisplayMacLight (VAR Light  : ALight;
+                               phrase : ARRAY OF CHAR;
+                           Attribute  : avidmode );
+
+
+END MacLights.
+

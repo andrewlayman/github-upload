@@ -1,0 +1,99 @@
+DEFINITION MODULE TLSRRec;
+
+
+    (* TLSRRec -- Record formats for controlling the status report.
+
+       MODIFICATAION HISTORY:
+
+       20-Mar-91 AJL -Consolidated the duplicated defintions from
+                      TLSROPTN and TLSR to her.
+
+    *)
+
+FROM PageRepeat             IMPORT
+    (* TYPE  *)                 APageRepeatSettings;
+
+FROM Timei                  IMPORT
+    (* TYPE  *)                 ADate, ADurationUnit;
+
+
+
+CONST
+    LASTTASKINFO        =   5;    (* (LASTTASKFLD - LASTTASKFLD + 1) /2 - 1 = 3 *)
+    LASTASSIGNINFO      =   5;    (* (LASTASSIGNFLD - LASTASSIGNFLD + 1) /2 - 1 = 5 *)
+
+
+TYPE
+
+    AReportChoices  =     (TasksStatus, EachResourceStatus);
+    AGroupMethod    =     (NotGroupByStartEndCont, GroupByStartEndCont);
+    AShowMethod     =     (ShowResources, ShowResourcesAndCosts);
+
+    AColumnStringValue  =   ARRAY[0..80] OF CHAR;
+
+
+    ADateInfo       =     RECORD
+        DateString          :   AColumnStringValue;
+        DateValue           :   ADate;
+        DateDuration        :   CARDINAL;
+        DateUnit            :   ADurationUnit;
+    END;
+
+    AColumnInfo     =     RECORD
+        ColumnName          :   AColumnStringValue;
+        ColumnWidth         :   CARDINAL;
+        ColumnID            :   CARDINAL;
+        IsBlankColumn       :   BOOLEAN;
+    END;
+
+    AStatusFormInputValues  =   RECORD
+        HowToReport         :   AReportChoices;
+        OpenSummary         :   BOOLEAN;
+        IncludePastDue      :   BOOLEAN;
+        HowToGroup          :   AGroupMethod;
+        WhatToShow          :   AShowMethod;
+        DailyRange          :   ADateInfo;
+        WeeklyRange         :   ADateInfo;
+        MonthlyRange        :   ADateInfo;
+        TaskColumn          :   ARRAY[0..LASTTASKINFO] OF AColumnInfo;
+        AssignColumn        :   ARRAY[0..LASTASSIGNINFO] OF AColumnInfo;
+        StatusPageCtrl      :   APageRepeatSettings;
+        ReturnOK            :   BOOLEAN;
+    END;
+    AStatusFormInputValuesPtr   =   POINTER TO AStatusFormInputValues;
+
+
+
+    AColumnPrintStatus  =   (NotPrintYet, PrintActive, PrintFinish);
+    AStatusReportPrintControls  =   RECORD
+        PrintPageWidth      :   CARDINAL;
+        PrintPageNumber     :   CARDINAL;
+        StripNumber         :   CARDINAL;
+        PrintHeadPos        :   CARDINAL;
+        AtTopOfPage         :   BOOLEAN;
+        OnlyOneStrip        :   BOOLEAN;
+        OneTaskPerPage      :   BOOLEAN;
+        IndentOn            :   BOOLEAN;
+        PageHeaderOn        :   BOOLEAN;
+        BlankHeaderOn       :   BOOLEAN;
+        PageFooterOn        :   BOOLEAN;
+        PrintPastDue        :   BOOLEAN;
+        RsrcTitleOn         :   BOOLEAN;
+        RsrcTitle           :   BOOLEAN;
+        TaskStart           :   CARDINAL;
+        NextTaskStart       :   CARDINAL;
+        TaskPrintStatus     :   AColumnPrintStatus;
+        AssignStart         :   CARDINAL;
+        NextAssignStart     :   CARDINAL;
+        AssignPrintStatus   :   AColumnPrintStatus;
+        PrintTitle          :   BOOLEAN;
+        PrintAttribute      :   CARDINAL;
+        EndPageHeaderPos    :   CARDINAL;
+        ShowBaselineAsgnment:   BOOLEAN;
+        ShowCurrentAsgnment :   BOOLEAN;
+    END;
+    AStatusReportPrintControlsPtr   =   POINTER TO AStatusReportPrintControls;
+
+
+END TLSRRec.
+

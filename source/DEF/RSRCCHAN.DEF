@@ -1,0 +1,342 @@
+DEFINITION MODULE RsrcChange;
+
+
+    (*
+        Rsrc Change - Edit a resource record
+
+            This module provides the ability to make changes to a resource
+            record by changing "columns" of data.  It deals with the same
+            columns as are output by the "Captions" module.  For this reason,
+            this module and its cousins are sometimes refered to as
+            "AntiCaptions".
+
+
+        Terminology:
+
+            For this module, we view the Rsrc Tree as if it were a giant TABLE
+            of records, where each resource is a ROW in the table.  Each FIELD
+            in a resource record is a COLUMN in the table.
+
+            A Column HEADING is the formal name a column goes by.  This is the
+            name found in a Lotus, DBase, or CSV file.  This heading is
+            translated into a ColumnID, a "magic number" used to identify the
+            column.  Note that some exporters, notably DBase, may translate
+            the official formal name into a new name that is more compatible
+            with the external program.  It is the importer's job to translate
+            those names BACK into the "official" formal name.
+
+
+        Procedure Overview:
+
+            GetRsrcColumnID()   Given a column's formal name, return the
+                                internal Column ID.
+
+            BeginRsrcEdit()     Start the editing of a resource.
+
+            DigestRsrcString()  Change a text string into an internal format.
+
+            ChangeRsrcColumn()  Change the value of a column.
+
+            EndRsrcEdit()       End the editing of a resource, and commit the
+                                changes if there were no serious errors.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module does not use Undo.  It is the job of clients to
+            back out records deemed not valid.
+
+
+        Related Modules:
+
+            RsrcAcquire  is used to find the resource record to be edited.
+            TaskEdit     edits task records.
+            AssEdit      edits assignment records.
+            EdgeEdit     edits edge records.
+
+
+        Modification History:
+
+
+         9-Feb-89  RSC  First version.
+        12-Sep-89  MWP  Added better tracking of Limits and Percents for
+                        resource records.
+         3-Oct-89  MWP  Created vars to hold resource name during import
+                        for journal messages.
+       20-Oct-89  MWP   Allow for message support for changing baseline
+                        data.
+       07-Jun-90   AJL  Removed lots of unused imports from RsrcMod.
+        10-Jul-91 TGS   Add RateListFlagSeen & AvailListFlagSeen to 
+                        WhatsBeenSeenItem's.
+    *)
+
+
+
+
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM ImPorTable     IMPORT
+    (* TYPE *)              AImportTable, AnAskAlterBaselineProc;
+
+FROM IntFileIO      IMPORT
+                        AnIntDataRecord;
+
+FROM RsrcMod                IMPORT  ResourceNameLength, AResourcePointer;
+
+FROM RealFormat     IMPORT
+    (* TYPE *)          AnAmountFormat;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+TYPE
+    AWhatsBeenSeenItem = (TypeSeen,
+                          RateSeen,
+                          UnitsSeen,
+                          UnitOfMeasureSeen,
+                          DefaultLimitSeen,                       (* 12-Sep-89 MWP *)
+                          LevelingLimitSeen,
+                          DefaultPercentSeen,
+                          LevelingPercentSeen,
+                          RateListFlagSeen,             (* 10-Jul-91 TGS *)
+                          AvailListFlagSeen
+                         );
+
+    AWhatsBeenSeenSet = SET OF AWhatsBeenSeenItem;
+
+    ARsrcEditContext = RECORD
+        ErrorHandler      : AnErrorHandlerProc;
+        HandlersContext   : ADDRESS;
+        WhatsBeenSeen     : AWhatsBeenSeenSet;
+        DefPercent        : REAL;                                 (* 12-Sep-89 MWP *)
+        LevPercent        : REAL;
+        DefLimit          : CARDINAL;
+        LevLimit          : CARDINAL;
+    END;
+
+VAR
+    CurrentRsrcName         : ARRAY [0..ResourceNameLength] OF CHAR;
+
+
+
+
+
+(*
+    Get Rsrc Column ID
+
+        Preconditions
+                        > "ColumnName" is an LString containing the FORMAL
+                          NAME of the edge column.
+                          The caller must resolve any differences between
+                          the name read in from a file and the "official"
+                          formal name.  For example, DBase translates some
+                          charactors.
+
+        Postconditions
+                        > Returns TRUE if the ColumnName is a known resource
+                          column name, or FALSE if it is unknown.
+
+                        > ColumnID is the internal number to use for
+                          changing the data, if TRUE is returned.
+*)
+PROCEDURE GetRsrcColumnID( VAR ColumnName       : ARRAY OF CHAR;
+                           VAR ColumnID         : CARDINAL ) : BOOLEAN;
+
+
+
+
+
+
+
+(*
+    Begin Rsrc Edit
+
+        Preconditions
+                        > No resource is currently being edited (close off an edit
+                          with EndRsrcEdit)
+
+                        > RowNode is the TreeNode for the existing resource
+                          to be edited.  It must not be NIL.
+
+                        > ErrorHandler is the procedure to be called when an
+                          edit error occurs.
+
+        Postconditions
+                        > Resource is ready to be edited.
+*)
+PROCEDURE BeginRsrcEdit(     RowNode         : ATreeNode;
+                             ErrorHandler    : AnErrorHandlerProc;
+                             LAlterBaselineProc : AnAskAlterBaselineProc;
+                             LImportTable       : ADDRESS;
+                             HandlersContext : ADDRESS          );
+
+
+
+
+
+
+
+
+
+(*
+    Digest Rsrc String
+
+        Convert a text string into the internal data record needed by
+        "ChangeRsrcColumn".
+
+        Preconditions
+                        > "ColumnID" is a valid column id.
+
+                        > "TextString" is the string to be digested into
+                          "ColumnData".  It is not modified (VAR only for
+                          efficiency).
+
+                        > "Amount Format" is the real number format to use
+                          in analizing REAL numbers.  It is not altered.
+                          VAR is just for efficiency.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty text string.
+                          This is not allowed for all columns.
+
+        Postconditions
+                        > "ColumnData" is the data to be applied to the
+                          resource.
+
+                        > The text is checked within the context of the
+                          column in question, and the "ColumnData" record
+                          is filled in appropriately.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.  Errors would all be simple formatting
+                          errors.
+
+                        > Returns TRUE if there were no formatting errors,
+                          FALSE if there were.
+*)
+PROCEDURE   DigestRsrcString(     ColumnID     : CARDINAL;
+                              VAR TextString   : ARRAY OF CHAR;
+                              VAR AmountFormat : AnAmountFormat;
+                              VAR ColumnData   : AColumnDataRecord;
+                                  LErrorHandler    : AnErrorHandlerProc;
+                                  LHandlersContext : ADDRESS          ) : BOOLEAN;
+
+
+PROCEDURE DigestIntRsrcString(     ColumnID         : CARDINAL;
+                                   Type             : CARDINAL;
+                               VAR Data             : AnIntDataRecord;
+                               VAR AmountFormat     : AnAmountFormat;
+                               VAR ColumnData       : AColumnDataRecord ;
+                                   LErrorHandler    : AnErrorHandlerProc;
+                                   LHandlersContext : ADDRESS          ) : BOOLEAN;
+
+
+
+(*
+    Change Rsrc Column
+
+        Preconditions
+                        > A Rsrc is being edited (BeginRsrcEdit has been
+                          called).
+
+                        > "ColumnID" is a valid column id.
+
+                        > "ColumnData" is the data to be applied to the resource.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty "DataFields" inside
+                          "ColumnData".  This is not allowed for all columns.
+
+        Postconditions
+                        > The data is checked within the context of the
+                          column in question, and the changes are applied,
+                          except as noted below.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.
+
+                        > If TRUE is returned, it is implied that no errors
+                          have yet been detected.  A call to EndRsrcEdit MIGHT
+                          succeed, unless other errors are encountered.
+
+                        > If FALSE is returned, no further edits will
+                          be accepted (further calls to "ChangeRsrcColumn"
+                          will return FALSE).  The changes should be ABORTED
+                          by the caller.
+*)
+PROCEDURE ChangeRsrcColumn(     ColumnID    : CARDINAL;
+                            VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+PROCEDURE ChangeRsrcRecord(     ColumnID    : CARDINAL;
+                                TaskPtr     : AResourcePointer;
+                            VAR ColumnData  : AColumnDataRecord;
+                            VAR Context     : ARsrcEditContext
+                           ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+    End Rsrc Edit
+
+        Preconditions
+                        > A Rsrc is being edited (BeginRsrcEdit has been
+                          called).
+
+        Postconditions
+                        > Any changes made to the resource after BeginRsrcEdit
+                          have been applied to the resource node, or else the
+                          ErrorHandler is called for each exception found.
+
+                        > If any errors were found that were not fixable, or
+                          where the error handler decided not to request
+                          fixing, FALSE is returned.  Otherwise, TRUE is
+                          returned.
+*)
+PROCEDURE EndRsrcEdit() : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+END RsrcChange.
+
+
+

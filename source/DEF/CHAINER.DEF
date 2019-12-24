@@ -1,0 +1,46 @@
+DEFINITION MODULE Chainer;
+
+
+
+
+    (*-----------------------------------------------------------------
+
+    AddModuleName --
+
+        Preconditions
+            None.
+
+        PostConditions
+            The string "Name" will be copied to a list of names kept
+            by this module.
+
+    ------------------------------------------------------------------*)
+
+
+PROCEDURE AddModuleName( VAR Name     : ARRAY OF CHAR );    (* LString *)
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+    Chain --
+
+        Preconditions
+            None.
+
+        PostConditions
+            The most recently added name, if any, on the list is removed.
+            The name is passed to the Overlays.CallOverlay module as
+            a TString.
+
+
+    ------------------------------------------------------------------*)
+
+PROCEDURE Chain;
+
+
+
+END Chainer.
+

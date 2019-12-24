@@ -1,0 +1,151 @@
+DEFINITION MODULE Sorter;
+
+(*----------------------------------------------------------------------------
+    MODIFICATION HISTORY
+
+   24-Jan-89 RSC    Made procedures Break Sensitive and return BOOLEANs.
+
+----------------------------------------------------------------------------*)
+
+
+FROM LinkedListObjects IMPORT
+    (* TYPE *)           ALinkedList, ALinkedListNode;
+
+FROM TreeObjects  IMPORT
+    (* TYPE *)          ATree, ATreeNode;
+
+FROM Objects      IMPORT
+    (* TYPE *)          AnObject;
+
+
+
+
+TYPE
+        (* ---------------------------------------------------------
+
+           ALinkedListNodeCompareProc--
+
+           Preconditions:
+
+           Postconditions:
+               IFF the first node is > the second node, TRUE is returned.
+         ------------------------------------------------------------*)
+
+    AnObjectCompareProc        = PROCEDURE( AnObject,
+                                            AnObject ) : BOOLEAN;
+
+    AnArrayOfObjects           = POINTER TO ARRAY [0..16000] OF AnObject;
+
+    (* --------------------------------------------------------------
+
+       SortArrayOfObjects --
+
+       Preconditions:
+           This must be the only procedure modifying the array.  This
+           procedure is not reentrant, and does not allow for any
+           changes to the array during its tenure, except those controlled
+           internally.
+
+           Array is an array of pointers to objects.
+
+           N is the number of object pointers in the array.
+
+           Compare is a procedure that can compare two different objects
+           and tell whether one is greater that the other.
+
+       Postconditions:
+           If TRUE,
+               The nodes in the array will be reordered so that, for no
+               nodes, Compare( Node, Node^.Methods^.GetNext(Node)) = FALSE.
+           ELSE
+               Sorting was interruped by the customer via a Break!  The Array
+               of objects should be assumed to be INVALID.  RSC 24-Jan-89.
+
+           This procedure is not "stable".  That is, there is no guarantee
+           that nodes which compare as equal to each other will be kept
+           in the same order after sorting as they appeared prior to
+           sorting.
+
+     ----------------------------------------------------------------*)
+
+PROCEDURE SortArrayOfObjects( Array   : AnArrayOfObjects;
+                              N       : CARDINAL;
+                              Compare : AnObjectCompareProc ) : BOOLEAN;
+
+
+
+
+
+
+    (* --------------------------------------------------------------
+
+       SortLinkedList --
+
+       Preconditions:
+                        A List of objects of the type expected by Compare.
+       Postconditions:
+
+            A TRUE return means the sort went fine.
+            
+            A FALSE means one of:
+
+                1) We ran out of room.
+                2) User hit BREAK.
+                3) Too many items in list (more than 4096)
+
+            The good news is, either the whole sort made it or none of
+            the sort applied.
+     ----------------------------------------------------------------*)
+
+PROCEDURE SortLinkedList(     List    : ALinkedList;
+                              Compare : AnObjectCompareProc ) : BOOLEAN;
+
+
+
+
+
+
+
+
+    (* --------------------------------------------------------------
+
+       SortTree --
+
+       Preconditions:
+           This must be the only procedure modifying the tree.  This
+           procedure is not reentrant, and does not allow for any
+           changes to the tree during its tenure, except those controlled
+           internally.
+
+       Postconditions:
+           The nodes in the tree will be reordered so that, for no
+           nodes, Compare( Node, Node^.Methods^.GetNext(Node)) = FALSE.
+
+           See the SortLinkedList procedure for warnings about stability.
+
+
+            A TRUE return means the sort went fine.
+            
+            A FALSE means one of:
+
+                1) We ran out of room.
+                2) User hit BREAK.
+                3) Too many items in list (more than 4096)
+
+            The good news is, either the whole sort made it or none of
+            the sort applied for any subtree in the tree.  In otherwords,
+            Each subtree is either sorted or not sorted.
+     ----------------------------------------------------------------*)
+
+PROCEDURE SortTree      (     Tree    : ATree;
+                              Compare : AnObjectCompareProc ) : BOOLEAN;
+
+
+
+
+
+
+
+
+END Sorter.
+

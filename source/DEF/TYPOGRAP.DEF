@@ -1,0 +1,45 @@
+DEFINITION MODULE TypoGraph;
+
+(*
+    Modification History:
+
+        WKH  10-May-89  Added a leading field to TypoSpec so we can have all
+                        the info for a font in one place.
+*)
+
+TYPE
+
+    ATypoAttribute      = (TOutline, TItalics, TUnderline, TShadow);
+
+    ASetOfTypoAttributes= SET OF ATypoAttribute;
+
+    ATypoPlacement      = (TLeftJust, TCenter, TRightJust);
+
+    ATypoLineSpec       = RECORD
+                            Placement      : ATypoPlacement;
+                            Leading        : CARDINAL;  (* point size * 16 *)
+                          END;
+
+    ATypoBorderSpec     = RECORD
+                            LineWidth      : CARDINAL;  (* point size * 16 *)
+                            CornerRadius   : CARDINAL;  (* point size * 16 *)
+                          END;
+
+    ATypoSpec           = RECORD
+                            PointSize      : CARDINAL;  (* point size * 16 *)
+                            Leading        : CARDINAL;
+                            FontFamily     : CARDINAL; 
+                            FontMember     : CARDINAL; 
+                            Aspect         : REAL;
+                                  (* Compression * 16 + Weight *)
+                            MinPointSize   : [0..255];
+                            CompAndWeight  : [0..255];
+                            ForeColor      : [0..255];
+                            BackColor      : [0..255];
+                            AttrColor      : [0..255];
+                            Attributes     : ASetOfTypoAttributes;
+                          END;
+
+    ATypoSpecPtr        = POINTER TO ATypoSpec;
+END TypoGraph.
+

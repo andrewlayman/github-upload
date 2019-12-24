@@ -1,0 +1,50 @@
+DEFINITION MODULE MStates;
+
+   (* The Mouse state machine. 
+      Gets the next mouse event and determines the new state.
+
+        MODIFICATION HISTORY:
+
+        Dec 15, 89 - JES - created
+
+    *)
+
+FROM Kbio     IMPORT
+    (* TYPE *)          ascreenx, ascreeny;
+        
+FROM Mouse    IMPORT
+    (* TYPE *)          AMouseTime;
+
+TYPE
+
+    AMouseState =  (
+                     Neutral,       (* nothing *)
+                     DownOnce,      (* pressed down once *)
+                     ClickedOnce,   (* down and up once *)
+                     ClickedAndDown,(* fast enough to be start of double click *)
+                     DoubleClicked  (* fast enough to count as double click *)    
+                   );
+
+
+(* GetNewMouseState - if there is a mouse event in the queue, get it and 
+                      determine the new state. Returns TRUE if there
+                      is an event in the queue, else returns FALSE. 
+                      The event, if any, gets flushed from the buffer.
+
+*)
+
+
+PROCEDURE GetNewMouseState (VAR NewMouseState : AMouseState;
+                            VAR X             : ascreenx;
+                            VAR Y             : ascreeny;
+                            VAR TimeStamp     : AMouseTime) : BOOLEAN;
+
+
+(* GetCurrentMouseState - return the
+   current mouse state.     
+*)
+
+PROCEDURE GetCurrentMouseState (VAR MouseState: AMouseState);
+
+END MStates.def.
+

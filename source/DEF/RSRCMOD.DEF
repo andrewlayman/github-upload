@@ -1,0 +1,232 @@
+DEFINITION MODULE RsrcMod;
+
+  (* MODIFICATION HISTORY:
+
+      RSC 7/23/87   - Rearranged the resource:
+                       - Removed Rate
+                       - Added BaseLineRates calendar
+                       - Renamed RateCalendar to "ActualRates"
+                       - Added OvertimeMultiplier
+                       - Renamed Per to Percent (a different field)
+                       - Added UpperLimit.
+                    - Added new procedures to
+                       - Get average assignment rate.
+                       - Set assignment rate
+      RSC 10/8/87   - Added 'Keyword' to resource.
+      KKC 28/7/89   - Added 'Extras' to resource.
+      RSC 21-Sep-89 - Added BaseLine param to the SetResourceRate proc.
+      JES 13-Oct-89 - Changed resource record to support multiple resource
+                      calendars (added the fields "Shift", "InitialAvail
+                      Profile", and "ResidueAvailProfile").                      
+      AJL 29-May-90 - Import ARateList.
+                    - Remove the SetResourceRate procedure.  Now, please
+                      use the RateLists module.
+                    - Replaced Resource.CostPlace by Filler, since we don't
+                      and shouldn't store cost accrual information in the 
+                      resource record (it should be in the task or assignment). 
+      RSC 12-Jun-90 - Changed import of ResCal to ResCalUI.
+      RSC  2-Jul-90 - Changed "RateList" to "DateList" for availabilities,
+                      added baseline calendar and availability fields.
+      RSC 14-Sep-90 - Even-Aligned the records.
+      AJL  9-Oct-90 - Added SequenceNumber.
+                    - Added LateResidueAvailableProfile.
+      TGS 30-Jan-91   Add CONSTs for default costs and availabilities.
+      26-Mar-91 AJL - Added QueryNumberOfResources.
+  *)
+
+  
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM DateLists              IMPORT
+    (* TYPE *)                  ADateList;
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM RateLists              IMPORT
+    (* TYPE *)                  ARateList;
+
+FROM ResCalUI               IMPORT
+    (* TYPE *)                  AResourceCalendarPointer;
+    
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADurationUnit, ADuration;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+CONST
+    ResourceNameLength  = 10;
+
+    (* 30-Jan-91 TGS *)
+    DefaultCostRate     = 1.00;
+    DefaultAvailabilityAmount   = 1;
+    DefaultAvailabilityPercent  = 100;
+
+(*$A+*)
+
+TYPE
+    ACostStyle   =  (CAmount, CAmountRate, CAmountRateTime);
+    AResourceType=  (Employable, AccountingOnly, Exhaustable);
+
+    AResourcePointer = POINTER TO AResource;
+    AResource    =  RECORD
+                        Tag                : CARDINAL; (* Rsrc tag *)
+                        ID                 : INTEGER;  (* Internal use for recalc. *)
+                        Name               : ARRAY [0..ResourceNameLength] OF CHAR;
+                        LongName           : ARRAY [0..32] OF CHAR;
+                        CostStyle          : ACostStyle;
+                        Type               : AResourceType;
+
+                   (* The following three fields describe how many resources
+                      are available:
+                      - The percentage of time each resource can devote.
+                      - The total FTE's available (Percent * # of resources).
+                      - The extra percentage of time each resource can devote.
+                      - The extra FTE's available if pushed into overtime
+
+                      On the form, the customer enters:
+
+                         5 resources at 75% each.
+
+                      Percent = 75, Limit = (5 * 75)
+                   *)
+                                                         (* "Default assignment:" *)
+                        Percent            : CARDINAL;   (* % avail for each resource. *)
+                        Limit              : REAL;       (* How many FTE's are there?  *)
+                                                         (* "Maximum for leveling:" *)
+                        UpperPercent       : CARDINAL;   (* overtime % avail for each resource. *)
+                        UpperLimit         : REAL;       (* Limit + Overtime available *)
+
+                        UnitOfMeasure      : ARRAY [0..10] OF CHAR;
+                        Units              : ADurationUnit;
+                        Notes              : AText;
+                        FilteredIn         : BOOLEAN;
+                        Filler             : CHAR; (* : ACostPlace; Spike:Not used *)
+                        WorkSpace          : ADDRESS;
+
+                   (* Rate Lists are set up so that resources can change
+                      their rate over time.  This way, someone can get a
+                      raise, and we will store both the old and the new
+                      rates and the first date the rate is effective.
+                      Overtime multiplier scales the rate if the person 
+                      goes into overtime, eg. Time and a half = 1.5
+                   *)
+                        OvertimeMultiplier : REAL;
+                        ActualRates        : ARateList;
+                        BaseLineRates      : ARateList;
+
+                        Keyword            : ARRAY [0..10] OF CHAR;
+                        LevelThisResource  : BOOLEAN;
+                        Extras             : AText;
+
+                        (* The following three fields are in support of
+                        varying resource availability and individual
+                        resource calendars. *)
+
+                        BaselineCalendar,
+                        Calendar           : AResourceCalendarPointer;
+
+                        BaselineAvailability,
+                        Availability       : ADateList;
+
+                             (* handle to AnAvailabilityCellPointer.  
+                                used during recalc.  Built by the proc
+                                "MakeAvailabilityIntoResidue" from ResCalUI.
+                              *)
+                        ResidueAvailProfile : AnExtHandle;
+                        LateResidueAvailProfile : AnExtHandle;
+
+                        SequenceNumber      : CARDINAL;
+                    END;
+
+
+VAR
+    ResourceTree    : ATree;
+
+(*$A=*)
+
+
+
+  (* Initialize Resource - Init one resource record.
+
+      Preconditions  - an allocated resource pointer
+      Postconditions - resource record filled in with initial values.
+  *)
+
+PROCEDURE InitializeResource( Resource : AResourcePointer );
+
+
+PROCEDURE CreateResource (VAR Node  : ATreeNode): BOOLEAN;
+
+PROCEDURE AddResource ( NewResource     : ATreeNode;
+                        Parent          : ATreeNode;
+                        Prior           : ATreeNode     );
+
+
+PROCEDURE RemoveResource (VAR Node  : ATreeNode);
+
+PROCEDURE DeleteResource (VAR Node  : ATreeNode);
+
+
+PROCEDURE ChangedResource (Node: ATreeNode);
+
+PROCEDURE FindResourceByName (S: ARRAY OF CHAR): ATreeNode;
+
+PROCEDURE FindResourceByNumber (ID : INTEGER ) : ATreeNode;
+
+PROCEDURE CheckResourceValid(X:AResourcePointer);
+
+
+
+    (* Copy one resource pointer to another.  Discards any old Dest. *)
+
+PROCEDURE CopyResourcePointers( Source               : AResourcePointer;
+                            VAR Dest                 : AResourcePointer;
+                                SaveNotesAndBaseLine : BOOLEAN  );
+
+
+
+
+
+    (* Copy one resource node to another. *)
+
+PROCEDURE CopyResourceNode( SourceNode, DestNode : ATreeNode;
+                            SaveNotesAndBaseLine : BOOLEAN  );
+
+
+
+
+  (* AverageResourceRate - Return the rate to be used over a time period.
+
+        Preconditions  - Resource is the one you want the answer for.
+                         Start and End Date is the range you want.
+                         BaseLine is TRUE iff you want the baseline amount.
+
+        Postconditions - RETURN is the averaged rate.
+  *)
+PROCEDURE AverageResourceRate( Resource         : AResourcePointer;
+                               StartDate,
+                               EndDate          : ADate;
+                               BaseLine         : BOOLEAN
+                             ) : REAL;
+
+
+
+
+    (* Returns the number of resources that exist. *)
+
+PROCEDURE QueryNumberOfResources(): CARDINAL;
+
+
+
+END RsrcMod.
+
+

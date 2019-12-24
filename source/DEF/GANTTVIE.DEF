@@ -1,0 +1,368 @@
+DEFINITION MODULE GanttViews;          (* A subclass of ActiveViews *)
+
+    (*  MODIFICATION HISTORY
+
+        19-Feb-88 LAA   Added DisplayedCursorDate variable.
+        28-Jul-89 EGK   Added "GetRecordedEvent" method.
+        14-Dec-89 KKC   Patched AGanttViewStatus to 16 bits.
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveViewMethods;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM ChartForms             IMPORT
+    (* TYPE *)                  AChartFormatPtr;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM ObjectViews            IMPORT
+    (* TYPE *)                  AnObjectView;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+VAR
+    DisplayedCursorDate     : ADate;                              (* 19-Feb-88 LAA *)
+
+TYPE
+    AGanttView              = POINTER TO AGanttViewRecord;
+
+
+    AGanttViewMethods       = POINTER TO AGanttViewMethodsRecord;
+
+
+    AGanttViewRecord        = RECORD
+                                Methods     : AGanttViewMethods;
+                              END;
+
+
+
+
+
+TYPE
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for GanttViews
+        *)
+
+    AGanttViewStatus        = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn, NeedsBugsDisplay, 
+                               NeedsTaskNameDisplay, NeedsGanttBarDisplay,
+                               NeedsGanttCursorDisplay,
+                               GanttViewSpare9);
+                            
+    AGanttViewStatusSet     = SET OF AGanttViewStatus;
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AGanttView to 
+        them.
+    *)
+
+TYPE
+    AGanttViewCloneProc     = PROCEDURE(    AGanttView,
+                                        VAR AGanttView)
+                                                       : BOOLEAN;
+
+    AGanttViewStoreOnProc   = PROCEDURE(    AGanttView,
+                                            AnObject  );
+
+    AGanttViewDiscardProc   = PROCEDURE(VAR AGanttView);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AGanttView to
+        them.
+    *)
+
+TYPE
+    AGanttViewGetObjectProc = PROCEDURE(    AGanttView)
+                                                       : AnObject;
+
+    AGanttViewSetObjectProc = PROCEDURE(    AGanttView,
+                                            AnObject  );
+
+    AGanttViewXYProc        = PROCEDURE(    AGanttView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+    AGanttViewTitleProc     = PROCEDURE(    AGanttView,
+                                        VAR ARRAY OF CHAR);
+
+    AGanttViewProc          = PROCEDURE(    AGanttView);
+
+    AGanttViewMoveProc      = PROCEDURE(    AGanttView,    
+                                            ascreenx,        
+                                            ascreeny  );
+
+
+
+
+    (*  Here are the the redefinition of methods for the ActiveViews class  *)
+
+
+    AGanttViewRecordProc    = PROCEDURE(    AGanttView,
+                                        VAR AnEvent      );
+
+    AGanttViewGetEventProc  = PROCEDURE(    AGanttView,
+                                            CARDINAL,
+                                        VAR AnEvent      );
+
+    AGanttViewActOnProc     = PROCEDURE(    AGanttView,
+                                            AnEvent,
+                                        VAR AnEvent      );
+
+    AGanttViewGetCursorProc = PROCEDURE(    AGanttView)   (* View *)
+                                                       : BOOLEAN;
+
+    AGanttViewSetCursorProc = PROCEDURE(    AGanttView,   (* View *)
+                                            BOOLEAN   );  (* Displaying *)
+
+    AGanttViewSetCursorModeProc = PROCEDURE(    AGanttView,
+                                                avidmode  );
+
+
+
+
+
+    AGanttViewSpecificChange = (BugsChange, TaskNameChange, GanttBarChange,
+                                GanttCursorChange);
+
+    AGanttViewNoteProc      = PROCEDURE(    AGanttView,
+                                            AGanttViewSpecificChange);
+
+
+
+    (*  These are the methods for AGanttView objects.  The inherit and
+        redefine methods from ObjectViews, and add new methods of their own.
+    *)
+
+TYPE
+    AGanttViewMethodsRecord = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AGanttViewCloneProc;
+                                StoreOn           : AGanttViewStoreOnProc;
+                                Discard           : AGanttViewDiscardProc;
+                                SuperclassMethods : AnActiveViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AGanttViewXYProc;
+                                GetInternalXY     : AGanttViewXYProc;
+                                GetTitle          : AGanttViewTitleProc;
+                                SetObject         : AGanttViewSetObjectProc;
+                                GetObject         : AGanttViewGetObjectProc;
+                                Move              : AGanttViewMoveProc;
+                                Display           : AGanttViewProc;
+                                GetHelp           : AGanttViewProc;
+                                HideView          : AGanttViewProc;
+                                RevealView        : AGanttViewProc;
+                                NotifyOfChange    : AGanttViewProc;
+                                ObjectViewTag     : CARDINAL;
+                                RecordEvent       : AGanttViewRecordProc;
+                                GetRecordedEvent  : AGanttViewGetEventProc;
+                                ActOnEvent        : AGanttViewActOnProc;
+                                GetCursor         : AGanttViewGetCursorProc;
+                                SetCursor         : AGanttViewSetCursorProc;
+
+
+        SetCursorMode       : AGanttViewSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AGanttView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag       : CARDINAL;
+
+
+        NoteSpecificChange  : AGanttViewNoteProc;
+    (*------------------------------------------------------------------------
+        Indicate to the Gantt View that a specific kind of change has
+        occured to what it should be displaying.  This does not mean that
+        that is the only change possible, but if it is, this method may
+        allow the Gantt View to be more efficient in its display.
+
+            BugsChange - the association of this view's object with a
+                         bug has changed.
+            TaskNameChange - indentation of this view's task name may have
+                             changed.
+            GanttBarChange - the position or length of this view's gantt bar
+                             may have changed.
+            GanttCursorChange - the position of the Gantt cursor has changed.
+
+        Preconditions:
+            The Gantt View object must be a valid object, created by 
+            CreateGanttView.
+
+        Postconditions:
+            The Gantt View will keep track of the kind of changed
+            indicated, to aid it in displaying its view.
+    ------------------------------------------------------------------------*)
+
+        GanttViewTag        : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsGanttView --
+
+    Initialize the indicated object as a Gantt view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid Gantt view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsGanttView(    GanttView     : AGanttView;
+                              SuperView     : AnObjectView;
+                              ChartFormat   : AChartFormatPtr;
+                              Ulx           : ascreenx;
+                              Uly           : ascreeny;
+                              Lrx           : ascreenx;
+                              Lry           : ascreeny;
+                              Box           : ABoxType;
+                              VideoMode     : avidmode;
+                              HelpKey       : CARDINAL      );
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsGanttView --
+
+    Un-Initialize the indicated object as a Gantt view.
+
+    Preconditions:
+        The object must be a valid Gantt View object.
+
+    Postconditions:
+        The object will no longer be a valid Gantt view object, and all
+        effects of InitAsGanttView will be undone.  No storage deallocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsGanttView(    GanttView   : AGanttView);
+ 
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateGanttView --
+
+    Allocate storage for, and initialize the indicated object as a Gantt
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid Gantt view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateGanttView(VAR GanttView     : AGanttView;
+                              SuperView     : AnObjectView;
+                              ChartFormat   : AChartFormatPtr;
+                              Ulx           : ascreenx;
+                              Uly           : ascreeny;
+                              Lrx           : ascreenx;
+                              Lry           : ascreeny;
+                              Box           : ABoxType;
+                              VideoMode     : avidmode;
+                              HelpKey       : CARDINAL     )
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneGanttViewMethods --
+
+    Make a copy of the Gantt view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The Gantt view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneGanttViewMethods(    MethodObject : AGanttViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateGanttView --
+
+    Determine that the indicated object is in fact a valid Gantt view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid Gantt view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateGanttView(    GanttView   : AGanttView);
+
+
+
+END GanttViews.
+

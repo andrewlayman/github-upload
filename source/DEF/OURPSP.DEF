@@ -1,0 +1,25 @@
+DEFINITION MODULE OurPSP;
+
+(*  =========================================================================
+    Last Edit : September 11, 1989 5:10PM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Provide the address variable OurPSPAddress to replace the PSPAddress
+        in RTSMain.  The method used there is incorrect in DOS 3.0 and above.
+
+    MODIFICATION HISTORY:
+        11-Sep-89 WKH   Initial Version
+
+    =========================================================================
+*)
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+VAR
+    OurPSPAddress           : ADDRESS;
+
+END OurPSP.
+
+

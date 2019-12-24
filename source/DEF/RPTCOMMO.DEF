@@ -1,0 +1,307 @@
+DEFINITION MODULE RptCommon;
+
+
+        (* RSC 1/15/88 - Added records and procedures for handling Holder.
+           RSC 2/26/88 - Added new column data point "TotalByRsrc"
+           EGK 6/23/88 - Added new field "Normalize" (by time).
+           EGK 6/28/88 - Added Prefix parameter to GenerateFileHeaders.
+          21-Mar-89 RSC   Upgraded for Ken's reports.  This entailed a variety of
+                          structural changes and general reqorking of the module.
+          19-Jul-89 KKC   Add new variable ClientUse in AnOverlayInterface.
+          25-Jul-89 EGK   Added "ASummChoice" and changed "TotalBy" fields
+                          to be of this type.
+          27-Aug-89 KKC   Add new variable WhichForm in AnOverlayInterface.
+                          Remove ShortForm from AnOverlayInterface.
+                          Add CostTracking from changer.def to
+                          AnOverlayInterface.
+                          Move AReportHolderRecord and ReportHolderRecord
+                          from the definition module to the implementation
+                          module.
+                          Add two parameters to BuildReportHolderRecord and
+                          DigestReportHolderRecord.
+          22-Sep-89  MWP  Added parameter to RsrcHeader call.
+          30-Mar-90  RSC  Made Timeu to Timei/TimeForm conversions.
+        24-Jan-92 TGS   Changed TimeHeaders so that it can generate equal-
+                        spaced (tic-wise) time columns. It now takes a
+                        parameter to enable this behavior, made necessary
+                        because Histogram reports generate their date line
+                        by using DateLines from Gantt.Mod, which assumes
+                        columns all have the same number of tics in them,
+                        while the data for the columns was being generated
+                        with the assumption that they started and ended
+                        on period boundaries. Bug 5324.
+        *)
+
+
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord, AColumnInfoChoice;
+
+FROM FlexStor       IMPORT
+        (* TYPE *)      AnExtHandle;
+
+FROM IntFileIO      IMPORT
+        (* TYPE *)      AFormat;
+
+FROM Timei          IMPORT
+        (* TYPE *)      ADurationUnit, ADate;
+
+FROM BigTimeU       IMPORT
+        (* TYPE *)      ABigTime;
+
+
+
+TYPE
+        AColumn =  RECORD
+            ColumnNumber : CARDINAL;
+            Width        : CARDINAL;
+            Decimals     : CARDINAL;
+        END;
+
+(* AClientUse is only used by histogram and cross tab report at this moment *)
+
+        AClientUse  =   (Histogram, CrossTab);
+
+
+   (* Which report is this, Task vs Rsrc, Task vs Time, or Rsrc vs Time? *)
+
+        AReportType = (TvsR, TvsT, RvsT);
+
+        ASummChoice = (None, AtEnd, Running);
+
+        AnOverlayInterface = RECORD
+
+                PModuleNumber,
+                PBaseLineOffset,
+                PLastColumn,
+                PMaxReportColumns       : CARDINAL;
+                Columns                 : POINTER TO ARRAY [1..99] OF AColumn;
+                TheStartDate,
+                TheEndDate              : ADate;
+                Period                  : ADurationUnit;
+                Normalize,
+                DatesEntered,
+                CostTracking,
+                ResourcesOnly,
+                PNeedActualAssignment,
+                PNeedBaseAssignment,
+                OverlayOK               : BOOLEAN;
+                PReportType             : AReportType;
+                ClientUse               : AClientUse;
+                WhichForm               : CARDINAL;
+                FillValuesOnScreen      : BOOLEAN;
+        END;
+
+        AnOverlayInterfacePtr = POINTER TO AnOverlayInterface;
+
+
+    (* A Get Info Proc is used within "ColumnHeadings" and other procs.
+       Typicaly, these come from "XXXXFormat" modules.
+    *)
+    AGetInfoProc = PROCEDURE (     CARDINAL,           (* ColumnID       *)
+                                   AColumnInfoChoice,  (* InfoChoice     *)
+                                   CARDINAL,           (* Length         *)
+                               VAR AColumnDataRecord   (* InfoRecord     *)
+                              ) :  BOOLEAN;            (* Does it exist? *)
+
+VAR
+
+        TotalByX,
+        TotalByY        : ASummChoice;
+
+
+
+
+
+  (* Get Message Word - Get the nth word (0...m) from a phrase.
+
+        Preconditions  - Phrase  is the phrase to get from the phrases file.
+                         WordNumber is the Nth substring to return, N starting
+                                        with 0 (for ORD(Enumeration)).  Substrings
+                                        are delimited by commas.
+        Postconditions - LString is the phrase.
+
+   Note: This procedure uses a one-phrase cache, so if the requested phrase
+         is the same as the last requested phrase, we do not re-ask the
+         message processor for it.
+  *)
+PROCEDURE GetMessageWord( Phrase,
+                          WordNumber : CARDINAL;
+                      VAR LString    : ARRAY OF CHAR );
+
+
+
+
+
+PROCEDURE SetResourcesOnly( ResourcesOnly : BOOLEAN );
+
+
+
+
+
+  (* Column Headings - Describe the column.
+
+        Preconditions  - GetInfo  is the info proc to get info from.
+                         Column   is the desired column.
+
+        Postconditions - Name      is the formal name for predicate headers
+                         FullTitle is the name for the form.
+                         Heading1  is the first heading line.
+                         Heading2  is the second heading line.
+                         UniqueID  is TRUE iff this column is the unique ID
+                                      (for resources, its the Name column)
+                         Format    is the output format on the report side.
+                         DfltWidth is the suggested default width.
+   *)
+PROCEDURE ColumnHeadings( GetInfo     : AGetInfoProc;
+                          Column      : CARDINAL;
+                      VAR Name,
+                          FullTitle,
+                          Heading1,
+                          Heading2    : ARRAY OF CHAR;
+                      VAR UniqueID,
+                          TotalByRsrc : BOOLEAN;
+                      VAR DataType    : CARDINAL;
+                      VAR Format      : AFormat;
+                      VAR DfltWidth   : CARDINAL );
+
+
+
+
+
+
+  (* Generate various headers for the reports.... *)
+
+
+ (* Generate task headers for a task dimension *)
+
+PROCEDURE TaskHeaders( CModuleNumber,
+                       HeaderNumber : CARDINAL;
+                       AddSummTitle : BOOLEAN ) : CARDINAL;
+
+
+    (* Generate the headers for the RESOURCE dimension. *)
+
+PROCEDURE RsrcHeaders( CModuleNumber,
+                       HeaderNumber : CARDINAL;
+                       AddSummTitle : BOOLEAN;
+                       BaseLineOnly : BOOLEAN ) : CARDINAL;         (* 22-Sep-89 MWP *)
+
+
+    (* 24-Jan-92 TGS:
+        EqualPeriods = TRUE : make the column headers an equal number of
+                              tics apart, i.e., for histograms.
+                       FALSE: columns represent period boundaries, i.e.,
+                              whole months, weeks, etc., as for normal
+                              cross-tabs.
+    *)
+
+
+PROCEDURE TimeHeaders( CModuleNumber,
+                       HeaderNumber  : CARDINAL;
+                       AddSummTitle,
+                       EqualPeriods  : BOOLEAN;             (* 24-Jan-92 TGS *)
+                       Period        : ADurationUnit;
+                       TheStartDate,
+                       TheEndDate    : ADate ) : CARDINAL;
+
+
+
+ (* Generate File Headers.  Generate the start-of-file records.
+
+        Overall Record - Put in the Overall subfile.
+        Predicate Heading - Put in the Predicate Subfile
+
+        Prefix is a string to be attached to the predicate names.
+            (e.g. "hourly rate of ")
+
+        RETURN is TRUE iff the file writes went OK.
+  *)
+PROCEDURE GenerateFileHeaders( GetInfo               : AGetInfoProc;
+                               OverallPhrase,
+                               PredicateHeadingDepth,
+                               DomainBase            : CARDINAL;
+                           VAR Columns               : ARRAY OF AColumn;
+                           VAR Prefix                : ARRAY OF CHAR
+                              ) : BOOLEAN;
+
+
+
+
+(* Generate File Trailers.  Finish up the file I/O.  Don't close the file.
+*)
+
+PROCEDURE GenerateFileTrailers() : BOOLEAN;
+
+
+
+
+  (* Do Dialog - Do a dialog with the customer.
+
+        Preconditions  - MessageBase   is the message's base number.
+                         ErrorBox      is TRUE if you want an error box.
+                                          FALSE if you want a dialog box.
+  *)
+
+PROCEDURE DoDialog( MessageBase : CARDINAL;
+                    ErrorBox    : BOOLEAN  );
+
+PROCEDURE ReleaseDialog();
+
+
+
+
+
+ (* Create The File - Create the interpass file to send to
+                      our Dr. Moriarity.
+
+         Preconditions  - FileNameLString is the LString with the file name
+                          to create.  The name is not yet expanded.
+         Postconditions - RETURNs TRUE iff the file is opened.  Any existing
+                          file of the same name is deleted.
+  *)
+PROCEDURE CreateTheFile( VAR FileNameLString : ARRAY OF CHAR ) : BOOLEAN;
+
+
+
+
+ (* Common report cleanup code. *)
+
+PROCEDURE CommonCleanup();
+
+
+
+  (* Routines to help build and decode the report holder record.  *)
+
+PROCEDURE BuildReportHolderRecord( VAR ProgramName        : ARRAY OF CHAR;
+                                   VAR LColumns           : ARRAY OF AColumn;
+                                       StartDate,
+                                       EndDate            : ADate;
+                                       Period             : ADurationUnit;
+                                       NormalizeIt        : BOOLEAN;
+                                       TotalByX,
+                                       TotalByY           : ASummChoice;
+                                       DatesEntered,
+                                       OnlyResources      : BOOLEAN;
+                                    VAR CostTracting,
+                                        OnScrnRsrcHistorgrams
+                                                           : BOOLEAN
+                                 );
+
+PROCEDURE DigestReportHolderRecord( VAR ProgramName        : ARRAY OF CHAR;
+                                    VAR LColumns           : ARRAY OF AColumn;
+                                    VAR StartDate,
+                                        EndDate            : ADate;
+                                    VAR Period             : ADurationUnit;
+                                    VAR NormalizeIt        : BOOLEAN;
+                                    VAR TotalByX,
+                                        TotalByY           : ASummChoice;
+                                    VAR DatesEntered,
+                                        OnlyResources      : BOOLEAN ;
+                                    VAR CostTracting,
+                                        OnScrnRsrcHistorgrams
+                                                           : BOOLEAN
+                                  );
+
+END RptCommon.
+

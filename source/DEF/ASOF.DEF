@@ -1,0 +1,42 @@
+DEFINITION MODULE AsOf;
+
+(*-------------------------------------------------------------------------
+
+MODIFICATION HISTORY:
+
+    3/18/87  EGK - Added AsOfSettingOption type and variable, as well as
+                   SetAsOfDate procedure to control the As-of date based on
+                   this option setting.
+    30-Mar-90 RSC  Made Timeu to Timei conversions.
+
+-------------------------------------------------------------------------*)
+
+FROM Timei      IMPORT
+    (* TYPE *)      ADate;
+
+
+
+TYPE
+    AnAsOfSettingOption = (AsOfNow, AsOfToday, AsOfStartOfWeek, AsOfWhenISay);
+
+
+(*  The AsOfDate variable should not be modified directly.  Use the SetAsOfDate
+    procedure to do this.    *)
+
+VAR
+    AsOfDate                : ADate;
+    AsOfSettingOption       : AnAsOfSettingOption;
+
+
+(*--------------------------------------------------------------------------
+SetAsOfDate:
+
+    Changes the AsOfDate global value according to the AsOfSettingOption
+    value, which is set on the schedule form (see above for the four options).
+
+--------------------------------------------------------------------------*)
+
+PROCEDURE SetAsOfDate();
+
+END AsOf.
+

@@ -1,0 +1,46 @@
+DEFINITION MODULE Rollups;
+
+
+    (* MODIFICATION HISTORY 
+
+        5-Mar-88  LAA (presumed) changed the RollupDates procedure to 
+                        return a BOOLEAN. 
+       15-Mar-88  AJL  -Removed the Planned parameter from RollupCosts.
+                       -RollupCosts now rolls up both Plan and Baseline.
+                       -Removed the explicit EXPORT QUALIFIED statement.
+       18-Sep-89  AJL  -Removed the RollupDates procedure.
+        9-Nov-89  AJL  -Removed the RollupCosts procedure.
+                       -Removed the unused Planned parameter from Rollup().
+       28-Nov-89  AJL  -Restore the Planned parameter to Rollup().  It is
+                        needed for baseline setting.
+       24-Sep-90  DSL  -Broke RollupCosts into RollPlan and RollBaseline.
+                        Rearranged the code extensively for clarity. 
+       14-Oct-90 AJL   -Remove RollupBaseline.
+
+    *) 
+
+
+(* RollupPlan
+ *
+ * Rolls up the dates and costs of the current plan
+ * in the task tree. The Baseline remains UNaffected
+ * 
+ * PRECONDITIONS: Expects there to be a valid task tree who's baseline
+ * (if any exists) has already been rolled up.
+ *
+ * POSTCONDITIONS: The same tasktree who's dates and costs have
+ * been rolled up.
+ *
+ * PARAMETERS: none.
+ *)
+ 
+PROCEDURE RollupPlan();
+
+
+
+
+
+
+END Rollups.
+
+

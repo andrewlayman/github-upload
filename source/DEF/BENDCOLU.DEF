@@ -1,0 +1,120 @@
+DEFINITION MODULE BEndColumns;
+
+    (*  MODIFICATION HISTORY
+
+        23-Mar-89 RSC   Created from the old ColumnNames module, to support
+                        the new Assignments Report.
+    *)
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+
+
+
+    (*  BEndColumnsTreeExists --
+
+        Query whether or not the resource columns tree already exists.
+
+        Preconditons:
+            None.
+
+        Postconditions:
+            TRUE will be returned iff the resource columns tree exists.
+    *)
+
+PROCEDURE BEndColumnsTreeExists(): BOOLEAN;
+
+
+
+
+    (*  CreateBEndColumnsTree --  
+
+            Create the tree of tasl column names for use by 
+            PickBEndColumns and SearchForBEndColumns.
+
+        Preconditions:
+            None.
+
+        Postconditions:
+            If the use count is zero, and if heap space is available, the 
+            column name tree will be created, and TRUE returned.  If the use
+            count is > 0, it will just be incremented.  Otherwise,  FALSE will 
+            be returned, and the tree won't have been created.  
+    *)
+
+PROCEDURE CreateBEndColumnsTree() : BOOLEAN;
+
+
+
+
+
+    (*  DisposeBEndColumnsTree --
+
+            Get rid of the column name tree made by CreateBEndColumnsTree.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateBEndColumnsTree.
+
+        Postconditions:
+            If the use count is 1, the column name tree and all it's node 
+            will be discarded.  Otherwise, the use count will be decremented.
+    *)
+
+PROCEDURE DisposeBEndColumnsTree();
+
+
+
+
+    (*  PickBEndColumn --
+
+            Display the scrolling list of column names at the indicated
+            coordinates, and allow the user to select one from it.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateBEndColumnsTree, and not discarded by DisposeBEndColumnsTree.
+
+        Postconditions:
+            If the user selects a new column name, the ColumnId and 
+            ColumnName will be changed to that for the new column, and TRUE 
+            will be returned.  If no column name is selected, FALSE will be 
+            returned.
+    *)
+
+PROCEDURE PickBEndColumn(    Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                         VAR ColumnId       : CARDINAL;
+                         VAR ColumnName     : ARRAY OF CHAR) 
+                                                            : BOOLEAN;
+
+
+
+
+    (*  SearchForBEndColumn --
+
+            Find the ColumnId in the resource column tree for the provided 
+            column name (an LString).
+
+        Preconditions:
+            The resource column tree must have been created by a call to
+            CreateBEndColumnsTree, and not discarded by DisposeBEndColumnsTree.
+
+        Postconditions:
+            If the column name can be found in the tree, it's name and id
+            will be returned.  If the column name can't be found, NIL will 
+            be returned.  The search ignores case.
+    *)
+
+PROCEDURE SearchForBEndColumn(VAR ColumnName : ARRAY OF CHAR;
+                              VAR ColumnId   : CARDINAL     )
+                                                             : BOOLEAN;
+
+END BEndColumns.
+
+
+
+

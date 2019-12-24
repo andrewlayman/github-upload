@@ -1,0 +1,45 @@
+DEFINITION MODULE Renumber;
+
+(*  =========================================================================
+    Last Edit : 02-Aug-1989 05:04PM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Handles renumbering of sequence numbers in tasks, filters,
+        resources, etc...
+
+
+    MODIFICATION HISTORY :
+
+        01-Aug-89 WKH   Initial version extracted from TLITL4.
+    =========================================================================
+*)
+
+    (*  =====================================================================
+        RenumberEverything - Renumber all sequence numbers for:
+                               - Tasks
+                               - Resources
+                               - Filters
+                               - Layouts
+                               - Network Layouts
+                               - Memos
+                               - Palettes
+
+            Preconditions :
+                None.
+
+            Postconditions :
+                The listed "objects" will be renumbered.  Also, the Undo
+                buffer will be flushed as this operation will cause any
+                information tracked by Undo to become invalid.
+
+            Parameters :
+                None.
+        =====================================================================
+    *)
+        
+PROCEDURE RenumberEverything();
+
+END Renumber.
+
+

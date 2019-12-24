@@ -1,0 +1,27 @@
+DEFINITION  MODULE IncDraw;
+    (* MODIFICATION HISTORY: 
+        29-Aug-89 CMH   Deleted a parm no longer needed 
+    *)
+    
+(* This module controls the incremental redraw module *)
+
+(* Add a task at xpos,ypos in the matrix *)  
+      
+PROCEDURE IRAddTask(TaskId :INTEGER;
+                    xpos   :INTEGER;
+                    ypos   :INTEGER);
+                    
+(* Delete a task *)
+
+PROCEDURE IRDeleteTask(TaskId :INTEGER);
+
+(* Add a dependency line to the matrix *)
+
+PROCEDURE IRAddDep(ptask,stask :INTEGER) : BOOLEAN;
+
+(* Delete a dependency line in the matrix *)
+
+PROCEDURE IRDeleteDep(ptask,stask :INTEGER):BOOLEAN;
+
+END IncDraw.
+

@@ -1,0 +1,464 @@
+DEFINITION MODULE OutlineViews;        (*  a subclass of ListViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AnOutlineViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM ListViews              IMPORT
+    (* TYPE *)                  AListViewMethods;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+
+TYPE
+        (*  AnOutlineView is a subclass of AListView  *)
+
+    AnOutlineView           = POINTER TO AnOutlineViewRecord;
+
+    AnOutlineViewMethods    = POINTER TO AnOutlineViewMethodsRecord;
+
+    AnOutlineViewRecord     = RECORD
+                                Methods     : AnOutlineViewMethods;
+                              END;
+
+
+
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for OutlineViews
+        *)
+
+TYPE
+    AnOutlineViewStatus     = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               OutlineViewSpare5, OutlineViewSpare6, 
+                               OutlineViewSpare7, OutlineViewSpare8, 
+                               OutlineViewSpare9);
+
+    AnOutlineViewStatusSet  = SET OF AnOutlineViewStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AnOutlineView to 
+        them.
+    *)
+
+TYPE
+    AnOutlineViewCloneProc  = PROCEDURE(    AnOutlineView,
+                                        VAR AnOutlineView)
+                                                          : BOOLEAN;
+
+    AnOutlineViewStoreOnProc = PROCEDURE(    AnOutlineView,
+                                             AnObject     );
+
+    AnOutlineViewDiscardProc = PROCEDURE(VAR AnOutlineView);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AnOutlineView to
+        them.
+    *)
+
+TYPE
+    AnOutlineViewGetObjectProc = PROCEDURE(    AnOutlineView)
+                                                             : ATree;
+
+    AnOutlineViewSetObjectProc = PROCEDURE(    AnOutlineView,
+                                               ATree        );
+
+    AnOutlineViewXYProc     = PROCEDURE(    AnOutlineView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny     );
+
+    AnOutlineViewTitleProc  = PROCEDURE(    AnOutlineView,
+                                        VAR ARRAY OF CHAR);
+
+    AnOutlineViewDisplayProc = PROCEDURE(    AnOutlineView);
+
+    AnOutlineViewMoveProc   = PROCEDURE(    AnOutlineView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+    AnOutlineViewHelpProc   = PROCEDURE(    AnOutlineView);
+
+    AnOutlineViewHiddenProc = PROCEDURE(    AnOutlineView);
+
+    AnOutlineViewRevealProc = PROCEDURE(    AnOutlineView);
+
+    AnOutlineViewChangedProc = PROCEDURE(    AnOutlineView);
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AnOutlineView 
+        to them.
+    *)
+
+
+TYPE
+    AnOutlineViewRecordProc = PROCEDURE(    AnOutlineView,
+                                            AnEvent      );
+
+    AnOutlineViewGetEventProc = PROCEDURE(     AnOutlineView,
+                                               CARDINAL,
+                                           VAR AnEvent       );
+
+    AnOutlineViewActOnProc  = PROCEDURE(    AnOutlineView,
+                                            AnEvent,
+                                        VAR AnEvent      );
+
+    AnOutlineViewGetCursorProc = PROCEDURE(    AnOutlineView)       (* View *)
+                                                             : BOOLEAN;
+
+    AnOutlineViewSetCursorProc = PROCEDURE(    AnOutlineView,  (* View *)
+                                               BOOLEAN      ); (* Displaying *)
+
+    AnOutlineViewSetCursorModeProc = PROCEDURE(    AnOutlineView,
+                                                   avidmode     );
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AnOutlineView to
+        them.
+    *)
+
+
+TYPE
+    AnOutlineViewSetFirstProc = PROCEDURE(    AnOutlineView,
+                                              ATreeNode    );
+
+    AnOutlineViewGetFirstProc = PROCEDURE(    AnOutlineView)
+                                                            : ATreeNode;
+
+    AnOutlineViewGetLastProc = PROCEDURE(    AnOutlineView)
+                                                           : ATreeNode;
+
+    AnOutlineViewSetCursorNodeProc = PROCEDURE(    AnOutlineView,
+                                                   ATreeNode    );
+
+    AnOutlineViewGetCursorNodeProc = PROCEDURE(    AnOutlineView)
+                                                                 : ATreeNode;
+
+    AnOutlineViewSyncProc   = PROCEDURE(    AnOutlineView);
+
+    AnOutlineViewForceProc  = PROCEDURE(    AnOutlineView,
+                                            ATreeNode,
+                                            CARDINAL     );
+
+    AnOutlineViewInquireProc = PROCEDURE(    AnOutlineView,
+                                             ATreeNode    )
+                                                           : CARDINAL;
+
+
+
+
+
+
+
+    (*  Here are the methods that are specific to OutlineViews  *)
+
+
+    AnOutlineViewGetCountProc   = PROCEDURE (   AnOutlineView )
+                                                               : CARDINAL;
+
+    AnOutlineViewResetCountProc = PROCEDURE (   AnOutlineView );
+
+    AnOutlineViewFindCharProc   = PROCEDURE (   AnOutlineView,
+                                                CHAR          )
+                                                               : BOOLEAN;
+
+
+    (*  These are the methods for AnOutlineView objects.  They inherit and
+        redefine methods from ObjectViews, and add new methods of their own.
+    *)
+
+TYPE
+    AnOutlineViewMethodsRecord  = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AnOutlineViewCloneProc;
+                                StoreOn           : AnOutlineViewStoreOnProc;
+                                Discard           : AnOutlineViewDiscardProc;
+                                SuperclassMethods : AListViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AnOutlineViewXYProc;
+                                GetInternalXY     : AnOutlineViewXYProc;
+                                GetTitle          : AnOutlineViewTitleProc;
+                                SetObject         : AnOutlineViewSetObjectProc;
+                                GetObject         : AnOutlineViewGetObjectProc;
+                                Move              : AnOutlineViewMoveProc;
+                                Display           : AnOutlineViewDisplayProc;
+                                GetHelp           : AnOutlineViewHelpProc;
+                                HideView          : AnOutlineViewHiddenProc;
+                                RevealView        : AnOutlineViewRevealProc;
+                                NotifyOfChange    : AnOutlineViewChangedProc;
+                                ObjectViewTag     : CARDINAL;
+                                RecordEvent       : AnOutlineViewRecordProc;
+                                GetRecordedEvent  : AnOutlineViewGetEventProc;
+                                ActOnEvent        : AnOutlineViewActOnProc;
+                                GetCursor         : AnOutlineViewGetCursorProc;
+                                SetCursor         : AnOutlineViewSetCursorProc;
+
+
+        SetCursorMode       : AnOutlineViewSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnOutlineView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag       : CARDINAL;
+
+                                SetFirst          : AnOutlineViewSetFirstProc;
+                                GetFirst          : AnOutlineViewGetFirstProc;
+                                GetLast           : AnOutlineViewGetLastProc;
+                                SetCursorNode     : AnOutlineViewSetCursorNodeProc;
+                                GetCursorNode     : AnOutlineViewGetCursorNodeProc;
+                                Synchronize       : AnOutlineViewSyncProc;
+                                ForceToPosition   : AnOutlineViewForceProc;
+                                InquirePosition   : AnOutlineViewInquireProc;
+                                NotifyNodeDeleted : AnOutlineViewSetFirstProc;
+                                ListViewTag       : CARDINAL;
+
+
+
+
+        ResetMatching     : AnOutlineViewResetCountProc;
+    (*------------------------------------------------------------------------
+        Cancel any effects of type-through on this outline, returning it to
+        its original visible state.  This should also be called whenever a
+        type-through-able outline is first created or modified.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnOutlineView.
+
+        Postconditions:
+            The original (before typing through) state of the outline is
+            restored and the list is checked to determine valid characters for
+            a new type-through sequence.
+    ------------------------------------------------------------------------*)
+
+
+        GetMatchCount     : AnOutlineViewGetCountProc;
+    (*------------------------------------------------------------------------
+        Return the number of characters typed-through so far.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnOutlineView.
+
+        Postconditions:
+            If this outline allows type-through, the number of successfully
+            matched characters typed in is returned.  Otherwise, 0 is
+            returned.
+    ------------------------------------------------------------------------*)
+
+
+        FindChar          : AnOutlineViewFindCharProc;
+    (*------------------------------------------------------------------------
+        If possible, use this character to further shrink the viewed list
+        using "SpeedSearch".
+
+        Preconditions:
+            The indicated view must be a valid object of type AnOutlineView.
+
+        Postconditions:
+            If this outline allows type-through, and adding this character to
+            the pattern so far (or subtracting one from it, if ASCII 8 is
+            passed) gives a string which matches at least one name in the
+            list, then the list is shrunk (or expanded) appropriately and
+            TRUE is returned.  Otherwise FALSE is returned.
+    ------------------------------------------------------------------------*)
+
+
+                                OutlineViewTag    : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsOutlineView --
+
+    Initialize the indicated object as an outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid outline view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsOutlineView(    OutlineView : AnOutlineView;
+                                SuperView   : AnActiveView;
+                                Ulx         : ascreenx;
+                                Uly         : ascreeny;
+                                Lrx         : ascreenx;
+                                Lry         : ascreeny;
+                                Box         : ABoxType;
+                                VideoMode   : avidmode;
+                            VAR Title       : ARRAY OF CHAR;
+                                HelpKey     : CARDINAL;
+                                TakeRug     : BOOLEAN      );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateOutlineView --
+
+    Allocate storage for, and initialize the indicated object as an outline
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid outline view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateOutlineView(VAR OutlineView : AnOutlineView;
+                                SuperView   : AnActiveView;
+                                Ulx         : ascreenx;
+                                Uly         : ascreeny;
+                                Lrx         : ascreenx;
+                                Lry         : ascreeny;
+                                Box         : ABoxType;
+                                VideoMode   : avidmode;
+                            VAR Title       : ARRAY OF CHAR;
+                                HelpKey     : CARDINAL;
+                                TakeRug     : BOOLEAN      ) 
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsOutlineView --
+
+    UnInitialize the indicated object as an outline view.
+
+    Preconditions:
+        The object will be a valid outline view object. 
+
+    Postconditions:
+        The outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsOutlineView(    OutlineView : AnOutlineView);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneOutlineViewMethods --
+
+    Make a copy of the outline view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The outline view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneOutlineViewMethods(    MethodObject : AnOutlineViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateOutlineView --
+
+    Determine that the indicated object is in fact a valid outline view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid outline view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateOutlineView(    OutlineView : AnOutlineView);
+
+
+
+END OutlineViews.
+

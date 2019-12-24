@@ -1,0 +1,10 @@
+DEFINITION MODULE Tran2;
+
+
+    (*  EraseAll  --  Erase the project from memory.  *)
+
+
+PROCEDURE EraseAll;
+
+END Tran2.
+

@@ -1,0 +1,129 @@
+DEFINITION MODULE ResCalMG;
+
+    (* Resource Calendar Merge routines
+
+       10-Jul-90  RSC  - Cloned from ResCalUI, which got into circular
+                         imports.  Changed format of
+                         "MakeAvailabilityIntoResidue".
+       11-Jul-90  AJL  - Documentation editting.
+       24-Jul-90  RSC  - Parameter change.
+       26-Oct-90  CL   - Make AddInterval an exportable procedure.
+       10-Jan-91  AJL  - Add ResidueProfile as an explicit parameter
+                         to MakeAvailabilityIntoResidue.
+       22-Feb-91  AJL  - Add HonorDaysOff as a parameter to 
+                         MakeAvailabilityIntoResidue.
+    *)
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM RsrcMod                IMPORT
+    (* TYPE *)                  AResourcePointer;
+
+FROM Timei                  IMPORT
+    (* TYPE  *)                 ADate;
+
+
+
+    (* AddInterval - 
+
+	If the residual availability list doesn't exist, then create one 
+    with an empty head cell followed by the new interval; otherwise, 
+    insert the new interval following the head cells.
+
+    However, (1) If the length of the new interval is not positive, 
+                 quit without doing anything.
+    
+             (2) If the interval has the same properties as the cell
+                 following the head cell, the new interval is merged 
+                 into that cell.
+                   
+             (3) The availability list used to be built in reverve 
+                 chronological order when it was a singly linked list.  
+                 It remains built in such order.
+
+                 In the future, if we want to change the order of
+                 building the list, we have to carefully examine
+                 all the procedures which builds the list.
+
+    Input:
+
+        Star/Thru     the start/thru dates of the cell to be added.
+        Amount        the total amount of available resource.
+        Vacation      TRUE iff this is vacation time.
+        ResList       NIL if the residual list does not exist.
+                      Otherwise, point to the head cell of residual 
+                      availability list.
+        StillGoing    TRUE iff we should process this entry.
+
+    Output:
+	
+        ResList       point to the head cell of updated residual list
+        StillGoing    TRUE iff the operation succeeded.
+*)
+
+
+PROCEDURE AddInterval(    Start, Thru       : ADate;
+                          Amount            : LONGINT;
+                          Vacation          : BOOLEAN;
+                      VAR ResList           : AnExtHandle;
+                      VAR StillGoing        : BOOLEAN );
+
+
+
+(* Make Availability Into Residue
+
+    Turn the resource's initial availability and cost rate lists into
+    the initial residual availability list for RECALC.
+
+    Preconditions -
+    
+            ResourcePointer must be valid (Non-NIL).
+            FlexStor must be running.
+
+    Postconditions -
+
+            ResourcePointer^.AvailabilityList and ResourcePointer^.Calendar
+            are unchanged.
+
+            Any previously allocated ResidueProfile is
+            disposed.
+
+            The two lists, availabilities and the calendar, are merged
+            into the residual availability list, ResidueProfile 
+            (unless an error is returned.)
+
+
+
+    Input
+
+        ResourcePointer     the resource structure
+
+        HonorDaysOff        If FALSE, the vacation calendars are ignored.
+        
+
+    Output
+
+        ResidueProfile      Merged profile.
+
+        RETURN              TRUE iff the residue list could be created.
+                            FALSE otherwise.  If FALSE, the residue avail
+                                 is NIL.
+
+    Exceptions :            In case of error, the procedure will return
+                            FALSE, the old availability list will have been
+                            disposed, no new one created, and
+                            ResidueAvailProfile is NIL.
+
+*)
+
+
+PROCEDURE MakeAvailabilityIntoResidue(     ResourcePointer   : AResourcePointer;
+                                           HonorDaysOff      : BOOLEAN;
+                                       VAR ResidueProfile    : AnExtHandle
+                                     ) : BOOLEAN;
+
+
+
+END ResCalMG.
+

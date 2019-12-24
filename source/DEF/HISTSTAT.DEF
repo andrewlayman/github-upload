@@ -1,0 +1,22 @@
+DEFINITION MODULE HistStat;
+
+(* MODIFICATION HISTORY
+     9-Sep-91 TGS   Added "HistogramsAreUp".
+*)
+
+FROM RsrcMod IMPORT ResourceNameLength;
+
+
+  (* Keep MaxResources in synch with the HISTFORM and the TLRHIST module. *)
+
+CONST MaxResources = 5;
+
+VAR
+    HistResource     : ARRAY [1..MaxResources] OF
+                       ARRAY [0..ResourceNameLength] OF CHAR;
+
+    HistInterlock    : BOOLEAN; (* This is to prevent histograms from PERT *)
+    HistogramsAreUp  : BOOLEAN; (* 9-Sep-91 TGS *)
+
+END HistStat.
+

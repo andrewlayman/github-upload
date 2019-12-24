@@ -1,0 +1,8 @@
+DEFINITION MODULE ObjectID;
+
+PROCEDURE NewID () : INTEGER;
+
+PROCEDURE InitializeIDs ( Num : INTEGER );
+
+END ObjectID.
+

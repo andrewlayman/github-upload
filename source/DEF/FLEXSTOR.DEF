@@ -1,0 +1,573 @@
+DEFINITION MODULE FlexStor;
+
+  (*  MODIFICATION HISTORY    (Original by AJL)
+
+         5/6/87  RSC  Added VAR to DiscardExtObject.  Made Tag field
+                      a full CARDINAL.
+         5/7/87  AJL  Added AnExtTagSet, GetExtTag, SetExtTag,
+                      GetExtStoragePreference, SetExtStoragePreference,
+                      CopyExtObject.;
+         5/7/87  RSC  Added MakeHeapCopy, SaveHeapCopy.  Deleted
+                      ChangeExtSize.
+         5/8/87  RSC  Added LockObject and ReleaseObject.
+        5/13/87  RSC  Added new parameters to get and put calls.  Added
+                      "ArraySize" and "NumberOfElements" functions.
+       10/9 /87  AJL -Removed the parameters that give array element sizes
+                      from LockObject, SetExtData, GetExtData, MakeHeapCopy,
+                      and SaveHeapCopy.
+                     -Removed the SetManyExtObject procedure.
+       12/09/87  AJL -Added a LockObjectArray procedure which matches the
+                      former LockObject procedure.
+                     -Added a NewStorage parameter to the CopyExtObject procedure.
+       12/22/87  AJL -Added the ExtStatus types and procedures. 
+
+       14-Nov-89 RSC - Make Create, Lock, UnLock, and Dispose be stealable.
+                      In the past, this could have helped us in debugging
+                      nasty problems, and so I assume that it will help
+                      us in the future.  Heh, heh, heh....
+
+      *** NOTE *** 
+
+         The Modula-2 compiler, even with the /-A option, will pad odd-length
+         records in arrays to make them even lengthed.  So, SIZE and TSIZE
+         of the record will be ODD, but SIZE(Array) will be EVEN.  Because of
+         this, all the get and save calls use RecordSize and RecordCount to
+         compute the "real" size.  These numbers are NOT saved with the
+         data, so the caller should be consistant with calling these routines
+         with proper sizes.  TSIZE(ARecord) and SIZE(Record) and SIZE(Array[0])
+         all work equally well.
+  *)
+
+FROM SYSTEM IMPORT
+    (* TYPE *)     ADDRESS, BYTE;
+
+
+
+TYPE
+    AnExtHandle;
+
+    AnExtStoragePreference = ( ExtFast, ExtMedium, ExtSlow );
+
+    AnExtStatus = (ExtGood,          (* Copacetic *)
+                   ExtQueasy,        (* Problems, but they may recover. *)
+                   ExtDamaged);      (* Probably not recoverable. *)
+
+
+    (* InitExtStorage -- Initialize the ExtStorage module.
+
+       Preconditions  -- The Storage module must be installed and
+                         active.
+                         MaxDataSizeWanted must be > 0.
+
+       Postconditions -- The ExtStorage module will be ready to store
+                         and retrieve objects, or else FALSE will be
+                         returned.
+
+                         When TRUE is returned, the system will be
+                         ready to store objects up to MaxDataSizeWanted
+                         bytes long.
+    *)
+
+PROCEDURE InitExtStorage(      MaxDataSizeWanted    : CARDINAL
+                        ) : BOOLEAN;
+
+
+
+
+    (* MaximumRecordSize  --
+
+       Preconditions  -- The Storage module must be installed and
+                         active.
+
+       Postconditions -- We return the size, in bytes, of the largest
+                         record that we can handle.
+    *)
+
+PROCEDURE MaximumRecordSize(): CARDINAL;
+
+
+    (* CreateExtObject --
+
+       Preconditions  --
+                      -- InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- A valid handle will be created.
+                         The indicated tag will be associated with the
+                         Handle.
+                         Or else, FALSE will be returned.
+
+    *)
+
+PROCEDURE CreateExtObject( VAR Handle : AnExtHandle;
+                               Storage: AnExtStoragePreference
+                          ):BOOLEAN;
+
+
+
+
+    (* CreateExtObjectWithSize --
+
+       Preconditions  -- InitExtStorage must have been called.
+
+       Postconditions -- A valid handle will be created.  It will refer
+                         to a block of storage Size bytes long.
+                         The indicated tag will be associated with the
+                         Handle.
+                         Or else, FALSE will be returned.
+
+    *)
+
+
+    (* 14-Nov-89 RSC *)
+
+(* ***************
+PROCEDURE CreateExtObjectWithSize
+                         ( VAR Handle : AnExtHandle;
+                               Storage: AnExtStoragePreference;
+                               Size   : CARDINAL
+                          ):BOOLEAN;
+********************* *)
+TYPE ACreateExtObjectProc = PROCEDURE ( VAR AnExtHandle,
+                                            AnExtStoragePreference,
+                                            CARDINAL ) : BOOLEAN;
+VAR
+    CreateExtObjectWithSize : ACreateExtObjectProc;
+
+
+
+    (* SetExtData     --
+
+       Preconditions  -- The handle must have been created by a 
+                         sucessfull call to CreateExtObject, and not
+                         discarded.
+                      -- InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions --
+                         Bytes of data will be copied from Data to
+                         extended storage.
+                         or else FALSE will be returned.
+     *)
+
+PROCEDURE SetExtData     (     Handle     : AnExtHandle;
+                               Data       : ADDRESS;
+                               Size       : CARDINAL  ) : BOOLEAN;
+
+
+
+    (* GetExtSize     --
+
+       Preconditions  -- The handle must have been created by a
+                         sucessfull call to CreateExtObject, and
+                         not discarded.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- Size (from the previous SetExtData call)
+                         will be returned.
+    *)
+
+
+PROCEDURE GetExtSize     (     Handle : AnExtHandle ) : CARDINAL;
+
+
+
+
+    (* ArraySize -- Returns the true size taken up by an array of records.
+                    This accounts for odd length records.
+
+       Preconditions  --
+
+
+       Postconditions -- Returns # of bytes in the full array.  
+    *)
+
+
+PROCEDURE ArraySize  ( Records, RecordSize : CARDINAL ) : CARDINAL;
+
+
+
+
+    (* NumberOfElements - # of elements in an array.  Takes into account  
+                          odd sized records.
+
+       Preconditions  --
+
+
+       Postconditions -- Returns # of records in the full array.  
+    *)
+
+
+PROCEDURE NumberOfElements( ArraySize, RecordSize : CARDINAL ) : CARDINAL;
+
+
+
+
+
+    (* GetExtData     --
+
+       Preconditions  -- The handle must have been created by a
+                         sucessfull call to CreateExtObject, and
+                         not discarded.
+                         Data is a valid address where you want the data put.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- Data will be filled in for the size that was last
+                         Put into storage.  
+                         The RETURN value of the function is the number of
+                         of bytes that were returned.
+    *)
+
+
+PROCEDURE GetExtData     (     Handle     : AnExtHandle;
+                               Data       : ADDRESS  ) : CARDINAL;
+
+
+
+    (* CopyExtObject --
+
+       Preconditions  --
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- A valid handle will be created.  It will refer
+                         to a new extended storage block that is a
+                         bitwise copy of the original's data block.
+                         Storage is set to NewStorage.
+                         Or else, FALSE will be returned.
+
+    *)
+
+PROCEDURE CopyExtObject  (     OriginalHandle : AnExtHandle;
+                               NewStorage     : AnExtStoragePreference;
+                           VAR NewHandle      : AnExtHandle
+                          ):BOOLEAN;
+
+
+    (* DiscardExtObject --
+
+       Preconditions  --  The handle must have been
+                          created by a sucessfull call to
+                          CreateExtObject, and not discarded.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions --  The handle is discarded, and no longer
+                          valid.
+
+    *)
+
+(* 14-Nov-89 RSC *)
+(* ****************************
+PROCEDURE DiscardExtObject( VAR   Handle : AnExtHandle   );
+******************************* *)
+
+TYPE
+    ADiscardExtObjectProc   = PROCEDURE( VAR AnExtHandle );
+
+VAR
+    DiscardExtObject    : ADiscardExtObjectProc;
+
+
+
+
+
+
+
+    (* SetExtSize -       Ajust the size of the extended object if
+                          need be.
+
+       Preconditions  -- Handle is valid.
+
+       Postconditions -- Record is of the exact size.
+                         Else FALSE.
+                         Note that this procedure may move the
+                         record from one page to another, or
+                         change the record number.
+     *)
+
+PROCEDURE SetExtSize(     Handle   : AnExtHandle;
+                          NewSize  : CARDINAL
+                    ) : BOOLEAN;
+
+
+
+
+
+    (* GetExtStoragePreference --
+
+       Preconditions  -- The handle must have been created by a 
+                         sucessfull call to CreateExtObject, and not
+                         discarded.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions --
+                         The current storage preference is returned.
+     *)
+
+PROCEDURE GetExtStoragePreference  (     Handle : AnExtHandle )
+                                     : AnExtStoragePreference;
+
+
+    (* SetExtStoragePreference --
+
+       Preconditions  -- The handle must have been created by a 
+                         sucessfull call to CreateExtObject, and not
+                         discarded.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions --
+                         The object will be moved, as best as possible,
+                         to the new storage class.
+     *)
+
+PROCEDURE SetExtStoragePreference  (     Handle  : AnExtHandle;
+                                         Storage : AnExtStoragePreference );
+
+
+
+
+
+
+
+
+
+
+
+    (* HandleIsValid  -- Check whether this handle is a valid
+                         handle or not.
+
+       Preconditions  --
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- If the handle was created by a successful
+                         call to CreateExtObject and has not been
+                         discarded, then TRUE is returned; else
+                         FALSE.
+    *)
+
+
+PROCEDURE HandleIsValid  (     Handle : AnExtHandle ) : BOOLEAN;
+
+
+
+
+    (* MakeHeapCopy -
+
+       Preconditions  -- Valid Handle, Data should not point to any current
+                         storage, for it will be changed.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- Space will be allocated on the heap and the
+                         data copied there.  The address and # of bytes
+                         are returned (in Size); or else FALSE.
+    *)
+
+PROCEDURE MakeHeapCopy(     Handle      : AnExtHandle;
+                        VAR Data        : ADDRESS;
+                        VAR Size        : CARDINAL ) : BOOLEAN;
+
+
+
+    (* SaveHeapCopy -
+
+       Preconditions  -- An address of a heap object (Data) pointing to
+                         Size bytes.
+                         InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+
+       Postconditions -- Space will be deallocated off the heap after
+                         data is copied from there.  The address is set
+                         to NIL.  If the size changed, the routine may
+                         return FALSE if it cannot find enough room now.
+    *)
+
+PROCEDURE SaveHeapCopy(     Handle      : AnExtHandle;
+                        VAR Data        : ADDRESS;
+                            Size        : CARDINAL ) : BOOLEAN;
+
+
+
+
+    (* LockObject - Lock an object into memory and return a pointer to it.
+
+       Preconditions  -- InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+                         Also, no more than a small number (around 1)
+                         other objects can be locked.
+                         Handle must be valid.
+
+       Postconditions -- The object is brought into DOS memory and is
+                         LOCKED down.  Its address is returned.
+                         If too many objects become locked, FatalError is
+                         called.
+                         Data is returned, so should not point to anything.
+                         RETURNed value is the Size.
+
+         Locked objects MUST be released via ReleaseObject.  No other
+         data-movement calls may be made to Locked objects, and their
+         size cannot be changed.  You can, however, make changes in place
+         to the locked object, and access other objects that are not locked.
+    *)
+
+(* 14-Nov-89 RSC  *)
+(* *******************************
+PROCEDURE LockObject(       Handle      : AnExtHandle;
+                        VAR Data        : ADDRESS  ) : CARDINAL;
+******************************** *)
+
+TYPE
+    ALockObjectProc     = PROCEDURE ( AnExtHandle, VAR ADDRESS ) : CARDINAL;
+
+VAR
+    LockObject      : ALockObjectProc;
+
+
+
+
+    (* LockObjectArray - Lock an object into memory and return a pointer to it.
+                         This is similar to a call to LockObject followed
+                         by a call to NumberOfElements.
+
+       Preconditions  -- InitExtStorage must have returned TRUE.
+                         TerminateExtStorage has not been called.
+                         Also, no more than a small number (around 1)
+                         other objects can be locked.
+                         Handle must be valid.
+                         Data is returned, so should not point to anything.
+
+       Postconditions -- The object is brought into DOS memory and is
+                         LOCKED down.  Its address is returned.
+                         If too many objects become locked, FatalError is
+                         called.
+                         RETURNed value is the number of elements of
+                         ElementSize each that are in the array.
+
+         Locked objects MUST be released via ReleaseObject.  No other
+         data-movement calls may be made to Locked objects, and their
+         size cannot be changed.  You can, however, make changes in place
+         to the locked object, and access other objects that are not locked.
+    *)
+
+PROCEDURE LockObjectArray(       Handle      : AnExtHandle;
+                             VAR Data        : ADDRESS;
+                                 ElementSize : CARDINAL ) : CARDINAL;
+
+
+    (* ReleaseObject - Release previously locked object.
+
+       Preconditions  -- The object must have been locked.
+                         (If not, FatalError is called).
+           InitExtStorage must have returned TRUE.
+           TerminateExtStorage has not been called.
+
+       Postconditions -- The object is unlocked.
+
+    *)
+(* 14-Nov-89 RSC *)
+(* **************************
+PROCEDURE ReleaseObject(    Handle : AnExtHandle );
+***************************** *)
+
+TYPE
+    AReleaseObjectProc      = PROCEDURE ( AnExtHandle );
+
+VAR
+    ReleaseObject           : AReleaseObjectProc;
+
+
+
+
+    (* ReleaseUnchangedObject - Release previously locked object.
+
+       Preconditions  -- The object must have been locked.
+                         (If not, FatalError is called).
+           InitExtStorage must have returned TRUE.
+           TerminateExtStorage has not been called.
+
+       Postconditions -- The object is unlocked, and not marked as dirty.
+
+    *)
+
+    (* 14-Nov-89 RSC *)
+(* *************************
+PROCEDURE ReleaseUnchangedObject(    Handle : AnExtHandle );
+************************** *)
+
+VAR
+    ReleaseUnchangedObject           : AReleaseObjectProc;
+
+
+
+
+    (* ObjectsAreSame --
+
+       Preconditions:
+           InitExtStorage must have returned TRUE.
+           TerminateExtStorage has not been called.
+           HandleA and HandleB are valid handles, or else NIL.
+
+       Postconditions:
+           TRUE will be returned iff both HandleA and HandleB are
+           NIL, or iff HandleA and HandleB are valid handles to
+           the same object.
+
+    *)
+
+
+PROCEDURE ObjectsAreSame( HandleA, HandleB : AnExtHandle ) : BOOLEAN;
+
+
+
+    (* Refresh --
+
+       Preconditions  --
+           InitExtStorage must have returned TRUE.
+           TerminateExtStorage has not been called.
+
+       Postconditions -- Any storage on secondary media will match
+                         any buffered copies of the data.
+
+    *)
+
+PROCEDURE Refresh();
+
+
+
+
+
+    (* TerminateExtStorage --
+
+       Preconditions:
+           InitExtStorage returned TRUE.
+           TerminateExtStorage has not been called.
+
+       Postconditions:
+           Storage held by this module is released.
+
+    *)
+
+PROCEDURE TerminateExtStorage();
+
+
+    (* GetExtStatus
+       Preconditions -- none.
+       Postconditions -- returns the current status.
+    *)
+
+PROCEDURE GetExtStatus():AnExtStatus;
+
+  
+
+    (* Debugging only.  Returns the number of records stored. *)
+
+PROCEDURE DiagnosticHook( WithMenu : CARDINAL ):CARDINAL;
+
+END FlexStor.
+

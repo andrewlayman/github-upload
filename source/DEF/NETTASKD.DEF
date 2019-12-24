@@ -1,0 +1,63 @@
+DEFINITION MODULE NetTaskDraw;
+   
+    (*  MODIFICATION HISTORY
+         6-Sep-89 CMH   Moved BoxString, MasterTaskExpand, BoxExpand, 
+                        GetMasterTaskLabelWidth, and DrawMasterTaskExpansion
+                        from NetUtility to new module NetTaskDraw, isolating
+                        report printing data and code from TLNBUILD and 
+                        graphics. 
+         7-Sep-89 CMH   Moved PrintBuffer, FillPrinterBuffer to NetTaskDraw.
+     *)
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  avidmode;
+    
+FROM NetLayouts             IMPORT
+    (* TYPE *)                  ANetworkLayout;
+    
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+CONST
+    MaxBufferLines = 10;
+    
+VAR
+    PrintBuffer            : ARRAY [0..MaxBufferLines],[0..255] OF CHAR;
+                                 (* 255 max. paper width *)
+
+(*----------------------------------------------------------------------------
+          BoxExpand --
+----------------------------------------------------------------------------*)
+
+PROCEDURE BoxExpand(BoxX,BoxY : CARDINAL;
+                         cell : INTEGER;
+                  CursorVideo : BOOLEAN;
+                NormalVidMode,
+                CursorVidMode : avidmode;
+              OutputDirection : CARDINAL;
+              OutlineType     : CARDINAL);
+
+
+(*----------------------------------------------------------------------------
+          DrawMasterTaskExtension
+----------------------------------------------------------------------------*)
+PROCEDURE DrawMasterTaskExtension ( row, col        : CARDINAL;
+                                    MasterCol       : CARDINAL;
+                                VAR TaskLabel       : ARRAY OF CHAR;
+                                    X, Y            : CARDINAL;
+		                            OutputDirection : CARDINAL;
+			                        VidMode         : avidmode  );
+
+
+(*----------------------------------------------------------------------------
+          FillPrinterBuffer --
+          Loads buffer for printer routine.
+----------------------------------------------------------------------------*)
+PROCEDURE FillPrinterBuffer(s    : ARRAY OF CHAR;
+                            row,
+                            col  : CARDINAL);
+
+
+
+END NetTaskDraw.
+

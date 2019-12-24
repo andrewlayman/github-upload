@@ -1,0 +1,38 @@
+DEFINITION MODULE Transfer;
+
+  (* MODIFICATION HISTORY:
+
+        RSC  9/22/87 - Moved AHeaderRecord here from LoadCommon.Def.
+        RSC  9/30/87 - Removed most of the procedures and put them in overlays.
+
+   *)
+
+FROM Codes        IMPORT  ACode;
+
+TYPE
+
+    AHeaderRecord  = RECORD
+                        Level       : CARDINAL;
+                        Attributes  : CARDINAL;
+                        ParentID    : CARDINAL;
+                     END;
+
+    ARetrieveType  = (RetrieveAll, RetrievePart);
+
+VAR
+    RetrieveType   : ARetrieveType;
+    RetrieveDammit : BOOLEAN;     (* If set, signals request to retrieve
+                                     the project without asking for
+                                     permission from the user. *)
+    BackupsToKeep  : CARDINAL;    (* How many backup copies to keep.
+                                     Must be in range 0..8           *)
+
+
+    (*  RollupAnySummaries -- Search all tasks.  Attempt to read in the rollup
+                              dates for any that are marked as "RollupNotLoaded". *)
+
+PROCEDURE RollupAnySummaries;
+
+
+END Transfer.
+

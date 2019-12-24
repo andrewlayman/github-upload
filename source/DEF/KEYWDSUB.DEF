@@ -1,0 +1,110 @@
+DEFINITION MODULE KeywdSub;
+
+    (* Substitutes the text in a string according to keywords within it.
+
+       Keywords are in the format 
+          Keyword       = "*" <Key>{ <Justification> {" "}  } "*"
+          Justification = "(" { ("R" | "L" | "W") [<Number>] ")"
+
+       such as "*DATE*" or "*TODAY (L)     *" or "*PAGE(RW4)*" .  
+
+       Keywords are enclosed between asterisks.  Within each, there is
+       a control word (which may optionally be in parenthesis) and,
+       optionally a justification control, which is either "(L)" or "(R)"
+       or "W" and which may be followed by a number, 1 to 4 digits.
+
+       When numbers follow the letters, they have the following meanings:
+
+       R : Tab stop from right.
+       L : Tab stop from left.
+       W : Field width.
+
+       If the control word is in parenthesis, as in "(CODE(\12))" it may 
+       be followed by parameters themselves within parenthesis.   
+
+       See the REPORTS header section of the Time Line 4.0 manual for 
+       full details.   See also SchedKey for a sample procedure.
+    *) 
+
+
+    (* MODIFICATION HISTORY
+
+       Aug-22-89  AJL -Original version of the DEF.  Most of the coding is
+                       taken from earlier work by Ken Chiu.
+       Aug 24 89  AJL -Removed Upshift.
+                      -Added ParseBal.
+        9-Feb-91  AJL -Added more documentation.
+
+    *)
+       
+
+FROM SYSTEM IMPORT 
+    (* TYPE *)      ADDRESS;
+
+
+
+
+    (* -------------------------------------------------------------------
+
+       AGetKeyWordValueProc
+
+       Purpose:  Given the text of a keyword, return a substitution value.
+
+       Preconditions:  KeyWord is an LString.
+                     
+       PostConditions: KeyValue is an LString containing the corresponding
+                       value indicated by KeyWord.
+
+       Exceptions:     Failures to match any known keyword generally return
+                       a null string in KeyValue.
+
+
+    ---------------------------------------------------------------------- *)
+
+
+
+TYPE
+     AGetKeyWordValueProc = PROCEDURE (
+                               VAR (* KeyWord:*)   ARRAY OF CHAR,
+                               VAR (* KeyValue:*)  ARRAY OF CHAR,
+                                   (* Context:*)   ADDRESS 
+                             );
+
+
+
+    (* -------------------------------------------------------------------
+
+       MakeSubstitutions
+
+       Purpose:  Takes a string containing keywords, and returns a string
+                 with the keywords replaced by their values.  Keywords
+                 are either enclosed in parenthesis, or terminated by the
+                 "*" or justification control.
+
+       Preconditions: S is an LString.
+                     
+       PostConditions: LengthOf(S) <= MaxLength
+                       LengthOF(S) <= HIGH(S)
+                       The keywords formerly within S have been replaced
+                       by new text.  This may have pushed some existing 
+                       text past the right-hand edge of S, in which case
+                       it is lost.
+
+                       The translation of keyword to new text is accomplished
+                       by calling GetKeyWordValue(KeyWord, KeyValue, Context); 
+                       (KeyWord is not translated to upper-case.)   
+
+
+    ---------------------------------------------------------------------- *)
+
+
+PROCEDURE MakeSubstitutions( VAR S : ARRAY OF CHAR;
+                                 MaxLength : CARDINAL;
+                                 GetKeyWordValue : AGetKeyWordValueProc;
+                                 Context  : ADDRESS );
+
+END KeywdSub.
+
+
+
+

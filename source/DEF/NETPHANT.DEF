@@ -1,0 +1,141 @@
+DEFINITION MODULE NetPhantoms;
+
+    (* This module creates phantom tasks in order to fully thread
+       the task network.   Call Scan1 then CreateSummaryPhantoms.
+       When you are finished, call DiscardSummaryPhantoms.
+       Scan1 is designed to be repeatable.  That is, it does nothing
+       that will cause harm if Scan1 is called several times in
+       a row.  The other procedures are not.
+
+       MODIFICATION HISTORY:
+
+       Apr. 27, 89  AJL - Copied basic code from Phantoms.
+       May  11, 89  AJL - Updated the documentation.
+       Aug   6, 90  RSC - Changed ATaskFlag to ATempTaskFlag.
+
+     *)
+
+
+FROM Allocs        IMPORT
+    (* TYPE *)         ATempTaskFlag, ATaskPtr;
+
+FROM TreeObjects   IMPORT
+    (* TYPE *)         ATreeNode;
+
+
+CONST
+    InvisibleFlag       = TempTaskFlag1;
+    VisibleChildrenFlag = TempTaskFlag2;
+    SummaryFlag         = TempTaskFlag3;
+    PhantomFlag         = TempTaskFlag4;
+    
+
+
+(*--------------------------------------------------------------------
+
+    Scan1
+
+      - Sets PTaskList.PrivateTaskList to empty.
+
+    For each task . . .
+      - Clears the SummaryFlag and PhantomFlag bits in the task record
+        (exact bit usage is defined above).
+      - Sets the Workspace to be the address of the tree node.
+      - Call ExtraWork (one or more times.  It must be repeatable without
+        damage.)
+      - If the task is a child of a closed summary, sets InvisibleFlag. 
+        ELSE, adds the task to PTaskList.PrivateTaskList.
+      - Open, filtered-in, summary tasks will have the VisibleChildrenFlag
+        set.  All others will have it cleared.
+
+
+
+---------------------------------------------------------------------*)
+
+TYPE
+    AT2Proc = PROCEDURE (ATreeNode,ATaskPtr);
+
+PROCEDURE Scan1( ExtraWork : AT2Proc );
+
+
+
+
+
+(*--------------------------------------------------------------------
+
+    CreateSummaryPhantoms.
+
+    Preconditions:  Scan1 has been called, and the flags and values
+                    set by it have not been altered.   There are no
+                    dependencies from child tasks to ancestors.
+
+    FOR OPEN SUMMARY TASKS which are FILTERED IN:
+
+    Adds extra milestone tasks into the schedule so that dependencies
+    from summary tasks to visible children are through the intermediary 
+    of an ending milestone task.  Links child tasks from their parents 
+    and to their ending milestones.  Transfers all the successor End-to-X 
+    joins from summary tasks to their ending milestones.
+
+    Summary tasks will all have the flag SummaryFlag set.  The phantom
+    ending milestones will have the PhantomFlag set, too.  These
+    phantom tasks will be linked into PTaskList.PrivateTaskList, will
+    have their WorkSpace values set to point to their tree nodes, and
+    will be added into the task tree immediately following their
+    real summary tasks.
+
+    All child tasks without descendants within  the family will be linked 
+    to the phantom ending milestones, and all child tasks without sibling 
+    antecedants will be linked to follow the parent task.
+
+    FOR CLOSED and FILTERED-OUT SUMMARY TASKS:
+
+    Dependencies that connect tasks within the family to tasks outside
+    the family will be duplicated as additional dependencies to (or from)
+    the closed summary.  These will be flagged by having their Temporary and
+    Rollup bits set.
+
+    No more than one edge will be created between any two specific tasks,
+    so a task outside the family with multiple dependencies into the 
+    family will be represented by only one edge.  For this reason, no 
+    interpretation should be made of the details of the edge other than to
+    know that there is some sort of undetailed dependency between the tasks.
+
+    We do not guarantee to create a minimum number of such edges; anything 
+    about the order in which they are created; or that the tasks connected
+    by these edges are themselves part of the visible outline (the joined
+    tasks may be filtered out, hidden children, phantoms or hoisted away).
+
+    Edge records which are not visible will have their InvisibleEdge flag
+    set, all other edges will not.
+
+---------------------------------------------------------------------*)
+
+
+
+
+
+PROCEDURE CreateSummaryPhantoms():BOOLEAN;
+
+(*--------------------------------------------------------------------
+
+    DiscardSummaryPhantoms.
+
+    Preconditions:  CreateSummaryPhantoms has been called, and
+                    the following not been altered:
+
+                    PhantomFlag
+                    SummaryFlag
+                    Location of nodes within the task tree.
+
+    Reverses the effect of CreateSummaryPhantoms.
+    Removes the phantom tasks from the tree, and returns the
+    dependencies to the way they were before.  The flags declared
+    in this module are not preserved.
+
+---------------------------------------------------------------------*)
+
+PROCEDURE DiscardSummaryPhantoms();
+
+END NetPhantoms.
+

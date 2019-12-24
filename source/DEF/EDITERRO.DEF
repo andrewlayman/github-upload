@@ -1,0 +1,188 @@
+DEFINITION MODULE EditError;
+
+
+    (*
+        Edit Error - Handle Edit Errors.
+
+
+        Related Modules:
+
+            TaskEdit    - Change a task record.
+            RsrcEdit    - Change a resource record.
+            AssEdit     - Change an assignment record.
+            EdgeEdit    - Change an edge record.
+
+
+        Modification History:
+
+        13-Feb-89  RSC  First version.
+
+
+    *)
+
+
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+
+
+
+
+
+
+
+TYPE
+
+    (* An error severity is a way of communicating how bad the situation is.
+       is it worth going on with this task?  With importing?
+    *)
+    AnErrorSeverity = (FormatError,     (* Format errors, can be adjusted *)
+                       ConnectionError, (* Record connection errors *)
+                       CrossFieldError, (* Cross field edit errors *)
+                       SeriousError,    (* Errors that will cause an abort *)
+                       SystemError);    (* Catastrophic failure, changes
+                                           will be ignored.  Schedule may
+                                           be damaged/destroyed. *)
+
+
+    (* What, specificly, is the CLASS of error we are dealing with?  This lets
+       the error handler decide which errors to ignore and which to fix.
+       If the error handler opts to go on, the data will be ajusted or ignored,
+       as shown below.  All but SystemErrors can be overlooked by ignoring
+       the field, except for a Sanitize().  Some other errors can prevent
+       an EndXXXXEdit() from committing changes.
+    *)
+    AKindOfError    = (
+
+        (* FORMAT ERRORS      - These are data FORMAT errors.
+                                they can be fixed if desired.
+        *)
+
+                        TextTruncation,   (* Fix: Text WILL be truncated. *)
+                        TextBadChars,     (* Fix: Remove/Replace bad chars. *)
+                        DateOutOfRange,   (* Fix: Brought into range. *)
+                        NumberOutOfRange, (* Fix: Brought into range. *)
+                        BadTimeUnit,      (* Fix: field ignored. *)
+                        DateFormat,       (* Fix: field ignored. *)
+                        NotANumber,       (* Fix: field ignored. *)
+                        EnumerationWrong, (* Fix: field ignored. *)
+                        BooleanWrong,     (* Fix: field ignored. *)
+                        DurationWrong,    (* Fix: field ignored. *)
+                        UnknownDataType,  (* Fix: field ignored. *)
+                        MiscFormatError,  (* Fix: field ignored. *)
+
+
+        (* CONNECTION ERRORS  - These are errors where record hookups cannot
+                                be made.  Most cannot be ignored.
+        *)
+
+                        MissingTaskID,    (* No WBS column.  For Edges/Ass. *)
+                        MissingRsrcID,    (* No Rsrc Name.   For Ass. *)
+                        ParentNotFound,   (* Fix: Hook in at root of tree.  *)
+                        TaskNotFound,     (* Fix: none (used for Edges and
+                                                  Assignments only). *)
+                        ResourceNotFound, (* Fix: Create a default resource. *)
+                        NoResources,      (* Fix: none.  Effort given, but no
+                                                  rsrc assignments. *)
+                        RecCannotBeCreated, (* Fix: none. The desired record
+                                               cannot be created. *)
+                        NoName,           (* Taskname missing.
+                                             Fix: a name is created *)
+                        MiscFixableConnectError,  (* Fix: error dependent *)
+                        MiscConnectError, (* no fix *)
+
+
+
+        (* CROSS-FIELD ERRORS - These are errors between fields.  In cases
+                                where default fields are in use, the editor
+                                tries to ignore them if they would cause an
+                                error.  These are generally not fixable.
+        *)
+
+                        DatesInconsistant,     (* Start before End, or Start
+                                                  and End and Duration all
+                                                  given and they conflict.  *)
+                        ColumnWrongForType,    (* eg, Hours col for unit cost
+                                                  assignment *)
+                        MiscFixableCrossError, (* Fixable *)
+                        MiscCrossError,        (* Not Fixable *)
+
+
+
+        (* SERIOUS ERRORS     - These are data MEANING errors.
+                                Further changes to this record are pointless.
+        *)
+
+                        DataFieldsWrong,    (* Code bug, probably in phrases
+                                               file. *)
+                        MiscSeriousError,   (* not fixable. *)
+
+
+
+        (* SYSTEM ERRORS      - These are errors in the system.
+                                Further importing is pointless.
+        *)
+
+                        NoMemoryForEdit,    (* Out of memory *)
+                        MiscSystemError     (* as needed *)
+
+                      );
+
+
+
+
+
+(*
+    An Error Handler Proc
+
+            This describes the client-supplied error handler.
+
+        Preconditions
+                        > An error has occured.
+
+                        > The perceived error severity is passed in.
+
+                        > The KIND of error is passed in, to help make a
+                          decision to lower the severity.
+
+                        > The ColumnID is passed in if relevant (otherwise
+                          it is 0).
+
+                        > A string with the error message is passed, if the
+                          Kind of error (AKindOfError) is a miscellanious
+                          error (ie, MiscSeriousError).  Otherwise, the
+                          string is empty (LengthOf(s) = 0).  In all cases,
+                          the string will be short and should be surrounded
+                          by contextual information (column, kind of import,
+                          phase, whatever).  Sample: "Record not found"
+
+                        > The context pointer given to "BeginTaskEdit" is
+                          passed in.
+
+        Postconditions
+                        > Error has been reported to the customer if that is
+                          deemed appropriate.
+
+                        > A some errors can be downgraded on return to
+                          NoError by returning TRUE.  Any of the errors
+                          listed above where there is a "Fix" to the error
+                          can be downgraded.  Other errors cannot be
+                          downgraded.
+
+                        > If you return FALSE, errors will not be fixed.
+
+                        > If the error cannot be fixed, it does not
+                          matter what the error handler returns.
+*)
+    AnErrorHandlerProc =
+         PROCEDURE(     AnErrorSeverity, (* PerceivedSeverity *)
+                        AKindOfError,    (* ErrorKind         *)
+                        CARDINAL,        (* ColumnID          *)
+                    VAR ARRAY OF CHAR,   (* ErrorText         *)
+                        ADDRESS          (* Context           *)
+                    ) : BOOLEAN;         (* Continue?         *)
+
+
+END EditError.
+

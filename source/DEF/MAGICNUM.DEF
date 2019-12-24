@@ -1,0 +1,225 @@
+DEFINITION MODULE MagicNum;
+
+    (*
+
+       RSC 21-Dec-88   Initial version from Captions.Mod.
+       RSC 20-Feb-89   Added Resource, Edge, and Assignment columns.
+       RSC  7-Mar-89   Added new Gantt columns for LAZLO.  We now have
+                       a total of 95 columns.  Also added a new format
+                       type of a "truncated string", that is, one with
+                       a "+" sign at the end if truncated.
+       RSC 13-Mar-89   Added 7 more gantt columns, bringing us to 102.
+       RSC  3-Apr-89   Updated the cross tab "XTabLastColumn" constant,
+                       which was causing an extra column of blanks
+                       to show up.
+       RSC 12-May-89   1) Changed "TaskIsLocked" to "TimeElapsedPct"
+                       2) Added 10 coding fields.
+       RSC 20-May-89   Changed "Man" columns to "Work" columns.
+       RSC 30-May-89   Added 10 MORE coding fields.
+       EGK 12-Jun-89   Changed XTabBaseLineOffset to 19, and adjusted
+                       XTabLastColumn appropriately.
+       LAA 06-Jul-89   Changed the magic number of Aux 18 column from 110 to
+                       120, which is what it always should have been.
+       MWP 27-Jun-89   ( App. ) Added baseline columns to assignments.
+       MWP 11-Jul-89   Removed Task ID field from assignemnts and dependencies.
+        1-Aug-89 RSC   Remove SequenceNumber column.  It is now an available
+                       slot for a future number.
+       MWP 23-Aug-89   Added WBS Errors field.
+       MWP 22-Sep-89   Created the 'Sagan constant', which is equal to
+                       1 billion billion and the Hawking constant, which
+                       is equal to the minus of the Sagan constant.
+       RSC 29-Nov-89   Added the EffortVariance column.
+       AJL 20-Jul-90   Added "NumberOfCodingFields," now 50.
+       TGS 22-Aug-90   Added new XTab columns.
+       14-Sep-90 PFG   Added SplittingRuleColumn.  Changed CodingField1 from
+                       103 to 104.  Removed old commented out CodingFields.
+       17-Sep-90 PFG   Changed FixedStartColumn to UserEnteredStartColumn.  
+                       Added SupposedToStartColumn, UserEnteredEndColumn, 
+                       LateIndEndColumn, LateIndStartColumn.  Moved 
+                       CodingFields down a few more to make room.
+       02-Oct-90 TGS   Added some more XTab columns.
+        9-Oct-90 AJL   Added IndSlackColumn, SeqNumColumn, AllowSlackColumn,
+                       RequiredStartColumn
+                       Moved the Coding fields down quite a bit to make room.
+                       Added RsrcSeqNumColumn.
+                       Added LastNonCodingTaskColumn.
+       29-Oct-90 AJL   Moved the cross tab column numbers to XTabColNUmbers
+                       module, XTabColN.def.
+        3-Apr-91 TGS   Added 20 new columns.
+        5-Apr-91 TGS   Well, there were too many identifiers here again.
+                       Since the biggest culprit is task columns, let's move
+                       them to their own brand new module, TaskColNumbers,
+                       TaskColN.def.
+        7-May-91 TGS   Add new Resource columns.
+       20-May-91 TGS   Remove the "overtime" resource column.
+     *)
+
+
+
+
+CONST
+
+    (* This is the list of the column numbers in use by the root at the time
+       that this list was put together.
+
+       IT IS NOT, AND IS NOT INTENDED TO BE, A COMPLETE LIST OF ALL COLUMNS.
+
+       COLUMNS CAN BE ADDED AT ANY TIME BY OVERLAYS.
+
+    *)
+
+    (* 5-Apr-91 TGS:  Moved Task Columns to TaskColN.Def *)
+
+    (* RESOURCE COLUMNS *)
+
+    RsrcModuleNumber        = 13809;  (* OVERLAPS TLRTABLE !! *)
+
+    RsrcName                =  1;
+    RsrcFullName            =  2;
+    RsrcKeyword             =  3;
+    RsrcNotes               =  4;
+    RsrcType                =  5;
+    RsrcDefaultLimit        =  6;
+    RsrcDefaultPercent      =  7;
+    RsrcLevelingLimit       =  8;
+    RsrcLevelingPercent     =  9;
+    RsrcRate                = 10;
+    RsrcUnitCost            = 11;
+    RsrcUnitOfMeasure       = 12;
+    RsrcBaselineRate        = 13;
+    RsrcLevelingPermitted   = 14;
+    RsrcSeqNumColumn        = 15;
+    RsrcVacationCalExists       = 16;  (* 7-May-91 TGS new columns *)
+    RsrcBslnVacationCalExists   = 17;
+    RsrcVaryingRatesExist       = 18;
+    RsrcBslnVaryingRatesExist   = 19;
+    RsrcVaryingAvailsExist      = 20;
+    RsrcBslnVaryingAvailsExist  = 21;
+    (*
+    RsrcOvertimeMultiplier      = 22;
+    *)
+    RsrcLastColumn          = 21;
+
+
+
+    (* ASSIGNMENT COLUMNS *)
+
+    AssModuleNumber         = 24009;  (* OVERLAPS TLRTABLE !! *)
+
+    AssTaskName             =  1;
+(**
+    AssTaskID               =  2;                                  (* 11-Jul-89 MWP *)
+**)
+    AssTaskWBS              =  2;
+    AssResourceName         =  3;
+    AssBillable             =  4;
+    AssNumberAt             =  5;
+    AssPercentEach          =  6;
+    AssTotalHours           =  7;
+    AssCompletedHours       =  8;
+    AssYTGHours             =  9;
+    AssTotalTime            = 10;
+    AssCompletedTime        = 11;
+    AssYTGTime              = 12;
+    AssTimeUnits            = 13;
+    AssTotalUnits           = 14;
+    AssCompletedUnits       = 15;
+    AssYTGUnits             = 16;
+    AssTotalCost            = 17;
+    AssCompletedCost        = 18;
+    AssYTGoCost             = 19;
+
+    BsLnBillable             = 20;
+    BsLnNumberAt             = 21;
+    BsLnPercentEach          = 22;
+    BsLnTotalHours           = 23;
+    BsLnCompletedHours       = 24;
+    BsLnYTGHours             = 25;
+    BsLnTotalTime            = 26;
+    BsLnCompletedTime        = 27;
+    BsLnYTGTime              = 28;
+    BsLnTimeUnits            = 29;
+    BsLnTotalUnits           = 30;
+    BsLnCompletedUnits       = 31;
+    BsLnYTGUnits             = 32;
+    BsLnTotalCost            = 33;
+    BsLnCompletedCost        = 34;
+    BsLnYTGoCost             = 35;
+
+    AssLastColumn           = AssYTGoCost;
+
+    AssPlanStartColumn      = AssTaskName;
+    AssBsLnStartColumn      = BsLnBillable;
+    AssPlanLastColumn       = AssYTGoCost;
+    AssBsLnLastColumn       = BsLnYTGoCost;
+
+
+
+    (*  EDGES  *)
+
+    EdgeModuleNumber        = 24109;  (* OVERLAPS TLXEDGE !! *)
+
+    EdgeFromTaskName        =  1;
+(*
+    EdgeFromTaskID          =  2;
+*)                                                                  (* 11-Jul-89 MWP *)
+    EdgeFromTaskWBS         =  2;
+    EdgeToTaskName          =  3;
+(*
+    EdgeToTaskID            =  5;                                   (* 11-Jul-89 MWP *)
+*)
+    EdgeToTaskWBS           =  4;
+    EdgeFromStart           =  5;
+    EdgeFromPlus            =  6;
+    EdgeFromDuration        =  7;
+    EdgeFromTime            =  8;
+    EdgeFromScale           =  9;
+    EdgeToStart             = 10;
+    EdgeToPlus              = 11;
+    EdgeToDuration          = 12;
+    EdgeToTime              = 13;
+    EdgeToScale             = 14;
+
+    EdgeLastColumn          = EdgeToScale;
+
+
+
+
+
+
+    (* Back End reports *)
+
+    BEndModuleNumber        = 24209;    (* Overlaps TLXForm! *)
+    BEndLastColumn          = 0;        (* See matching kluge in BEndFormat *)
+
+
+
+    (* What kind of a field is it?
+
+            This is the list of fields known by the root, and may not be
+            an exhaustive list!!
+    *)
+
+    IsStringValue           = 1;
+    IsRealValue             = 2;
+    IsIntValue              = 3;
+    IsCardValue             = 4;
+    IsBoolValue             = 5;
+    IsEnumValue             = 6;
+    IsBigStart              = 7;
+    IsBigEnd                = 8;
+    IsStartDate             = 9;
+    IsEndDate               = 10;
+    IsDuration              = 11;
+    IsSlack                 = 12;
+    IsCurrency              = 13;
+    IsEffort                = 14;
+    IsMilestoneEnd          = 15;
+    IsDurationUnits         = 16;
+    IsEffortUnits           = 17;
+    IsTruncatedString       = 18;
+
+    SaganConstant           = 1.00E+20;    (* Local infinity. *)
+    HawkingConstant         = 1.00E-20;    (* Local infinity. *)
+
+END MagicNum.

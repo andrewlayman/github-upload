@@ -1,0 +1,35 @@
+DEFINITION MODULE MsgFileAux;
+
+(*  =========================================================================
+    Last Edit : January 19, 1990 10:41AM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Auxiliary functions for dealing with phrases.
+
+    MODIFICATION HISTORY:
+        19-Jan-90 WKH   Initial version.
+
+    =========================================================================
+*)
+
+
+  (* Get Message Word - Get the nth word (0...m) from a phrase.
+
+        Preconditions  - Phrase  is the phrase to get from the phrases file.
+                         WordNumber is the Nth substring to return, N starting
+                                        with 0 (for ORD(Enumeration)).  Substrings
+                                        are delimited by commas.
+        Postconditions - LString is the phrase.
+
+   Note: This procedure uses a one-phrase cache, so if the requested phrase
+         is the same as the last requested phrase, we do not re-ask the
+         message processor for it.
+  *)
+PROCEDURE GetMessageWord(    Phrase,
+                             WordNumber : CARDINAL;
+                         VAR LString    : ARRAY OF CHAR );
+
+END MsgFileAux.
+
+

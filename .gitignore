@@ -1,0 +1,10 @@
+# Compiler-generated binaries (safe to delete)
+*.exe
+*.dll
+*.obj
+
+# VSCode creates this binary when running tests in the debugger
+**/debug.test
+
+# By default, we don't check in yarn.lock files
+**/yarn.lock

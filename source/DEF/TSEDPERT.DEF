@@ -1,0 +1,7 @@
+DEFINITION MODULE TSEDPert;
+
+PROCEDURE TLGSNodeCharts();
+PROCEDURE WriteNodeGraphicsFile();
+
+END TSEDPert.
+

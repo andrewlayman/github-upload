@@ -1,0 +1,40 @@
+DEFINITION MODULE InitTL;
+
+(*
+    Init TL     Initialize Time Line Modules.
+
+    Initialize misc. Time Line modules that do not need data from the config
+    file.  These procedures' init code is here so that the code that does the
+    initialization can be in TLStart for Time Line, and can be bound into
+    stand-alone programs.
+
+
+    Modification History:
+
+    16-May-89  RSC  From TLSTart, for use by stand-alone programs and
+                    Time Line.  Put init code in here for items not from
+                    the config file.
+     4-Mar-90  RSC  Removed "InitPlotting".
+*)
+
+
+PROCEDURE InitAssForms();
+PROCEDURE InitRealAndTimeFormat();
+PROCEDURE SetupFonts();
+PROCEDURE SetTranslationCodes();
+
+
+
+
+
+
+(* Init Time Line Modules
+
+    Call all the other init procedures.  A shortcut.
+*)
+PROCEDURE InitTimeLineModules();
+
+
+
+END InitTL.
+

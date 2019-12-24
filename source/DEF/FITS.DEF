@@ -1,0 +1,33 @@
+DEFINITION MODULE Fits;
+
+
+
+    (* Within -- Adjust Low,High so that
+                     (a) High-Low is unchanged, but
+                     (b) High <= Max and
+                     (c) Low >= Min.       *)
+
+
+PROCEDURE Within( VAR   Low, High   : CARDINAL;
+                        Min, Max    : CARDINAL  );
+
+
+    (* Without -- Return Low, High so that
+                      (a) MinSize <= High-Low+1 <= MaxSize,
+                      (b) High <= Max,
+                      (c) Low >= Min,
+                      (d) If possible, Low > IHigh, or
+                      (e) if possible, High < ILow.   *)
+
+
+
+PROCEDURE Without(       MinSize,
+                         MaxSize     : CARDINAL;
+                         ILow, IHigh : CARDINAL;
+                         Min, Max    : CARDINAL;
+                   VAR   Low, High   : CARDINAL );
+
+
+
+END Fits.
+

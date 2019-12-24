@@ -1,0 +1,155 @@
+DEFINITION MODULE EdgeFormat;
+
+  (*
+    Edge Format - Format Edge Information
+
+        This module is intended to do for Edges what Captions does for
+        tasks.  That is, given a column ID, return information about an
+        edge.
+
+
+        MODIFICATION History - 
+
+        17-Feb-89 RSC First version - information only.
+        17-Mar-89 RSC Added support for better reports.
+        21-Mar-89 RSC Added MORE support for better reports.
+         1-Sep-89 EGK Added FormatType parameter to FormatEdgeValue.
+  *)
+
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  ATaskPtr;
+
+FROM Edges                  IMPORT
+    (* TYPE *)                  AnEdgePtr;
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnInfoChoice, AColumnDataRecord;
+
+
+
+
+
+
+
+
+
+TYPE
+
+(*
+    Get Edge Value
+
+        Preconditions
+                        > Edge is the actual edge record.
+
+                        > Predecessor and Successor are the two sides of
+                          the edge.
+
+                        > ColumnID  is the column to return information about.
+
+        Postconditions
+                        > If TRUE, Value contains the desired information.
+
+                        > If FALSE, The column data is not applicable.
+*)
+    AGetEdgeValueProc     = PROCEDURE(    AnEdgePtr,          (* Edge *)
+                                          ATaskPtr,           (* Predecessor *)
+                                          ATaskPtr,           (* Successor *)
+                                          CARDINAL,           (* ColumnID *)
+                                      VAR AColumnDataRecord)  (* Value *)
+                                                              : BOOLEAN;
+
+(*
+    Format Edge Value
+
+        Preconditions
+                        > ColumnID     is the column to return information about.
+
+                        > Width        is how wide the data is.
+
+                        > MinDecimals  is the min decimals to use for REALs.
+
+                        > MaxDecimals  is the max decimals to use for REALs.
+
+                        > RightJust    is wether to right justify the string.
+
+        Postconditions
+                        > Value contains the desired string.
+
+*)
+    AFormatEdgeValueProc  = PROCEDURE(    CARDINAL,           (* ColumnID *)
+                                          CARDINAL,           (* Width *)
+                                          CARDINAL,           (* MinDecimals *)
+                                          CARDINAL,           (* MaxDecimals *)
+                                          BOOLEAN,            (* Right Just *)
+                                          CARDINAL,           (* FormatType *)
+                                      VAR AColumnDataRecord); (* Value *)
+
+(*
+    Get Edge String
+
+        Preconditions
+                        > Edge is the actual edge record.
+
+                        > Predecessor and Successor are the two sides of
+                          the edge.
+
+                        > ColumnID  is the column to return information about.
+
+                        > Width     is how wide the data is.
+
+        Postconditions
+                        > If TRUE, Value contains the desired string.
+
+                        > If FALSE, The column data is not applicable.
+*)
+    AGetEdgeStringProc    = PROCEDURE(    AnEdgePtr,          (* Edge *)
+                                          ATaskPtr,           (* Predecessor *)
+                                          ATaskPtr,           (* Successor *)
+                                          CARDINAL,           (* Column *)
+                                          CARDINAL,           (* Width *)
+                                      VAR ARRAY OF CHAR)      (* Value *)
+                                                              : BOOLEAN;
+
+
+
+(*
+    Get Edge Info
+
+        Preconditions
+                        > ColumnID  is the column to return information about.
+
+                        > InfoChoice is the kind of information you are
+                          interested in.  See Captions.Def for the choices.
+
+                        > Length is the length of the string to return,
+                          important mostly for Right Justified strings.
+
+        Postconditions
+                        > If TRUE, InfoValue contains the desired information.
+                          If a string value is being returned, it may be right
+                          justified, and is always exactly "Length" bytes long.
+
+                        > If FALSE, The column does not exist.  This allows
+                          looking for information on ALL columns.
+*)
+    AGetEdgeInfoProc      = PROCEDURE(     CARDINAL,           (* ColumnID   *)
+                                           AColumnInfoChoice,  (* InfoChoice *)
+                                           CARDINAL,           (* Width *)
+                                       VAR AColumnDataRecord)  (* InfoValue *)
+                                       : BOOLEAN;
+
+
+
+VAR
+    GetEdgeInfo     : AGetEdgeInfoProc;
+    GetEdgeValue    : AGetEdgeValueProc;
+    FormatEdgeValue : AFormatEdgeValueProc;
+    GetEdgeString   : AGetEdgeStringProc;
+
+
+
+
+
+END EdgeFormat.
+

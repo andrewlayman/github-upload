@@ -1,0 +1,43 @@
+DEFINITION MODULE GrepOptions;
+
+
+(* MODIFICATION HISTORY:
+
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+
+*)
+
+
+
+FROM TimeFormat             IMPORT
+    (* TYPE *)                  ADateString;
+
+
+TYPE
+    ATagType         = (NoTags,NameTag,NumberTag,StartDateTag);
+
+    AReportSetting          = RECORD
+                                TagType         : ATagType;
+                                MakeGrid        : BOOLEAN;
+                                BreakPages      : BOOLEAN;
+                                TagColumn       : CARDINAL;
+                                StartDate       : ADateString;
+                                EndDate         : ADateString;
+                                Spacing         : CARDINAL;
+                                PrintCaptions   : BOOLEAN;
+                                DetailsOnly     : BOOLEAN;
+                                PageBreakLevel  : CARDINAL;
+                              END;
+
+    AReportSettingPointer   = POINTER TO AReportSetting;
+
+VAR
+    ReportSettings          : AReportSettingPointer;
+
+
+PROCEDURE DoPrintDialog() : BOOLEAN;
+
+
+END GrepOptions.
+

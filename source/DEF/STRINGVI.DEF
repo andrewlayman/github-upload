@@ -1,0 +1,364 @@
+DEFINITION MODULE StringViews;              (* Subclass of ActiveViews *)
+
+    (*  StringViews provides an object which is a view of an edit node.
+        This allows an individual edit node to be viewed and edited.  All
+        the commands which apply to editing a line of text as an individual
+        entity are implemented here.  The view provided is used as a
+        subview of EditViews, which handles editing an entire workspace of
+        text.
+    *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        19-Dec-89 KKC       Patched AnActiveViewStatus to 16 bits.
+    *)
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ASetOfCodes;
+
+FROM EditObjects            IMPORT
+    (* TYPE *)                  AnEditNode;
+
+FROM EditViews              IMPORT
+    (* TYPE *)                  AnEditView;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+
+
+TYPE
+        (*  AStringView is a subclass of AnObjectView  *)
+
+    AStringView             = POINTER TO AStringViewRecord;
+
+    AStringViewMethods      = POINTER TO AStringViewMethodsRecord;
+
+    AStringViewRecord      = RECORD
+                                Methods        : AStringViewMethods;
+                              END;
+
+
+
+
+
+
+
+TYPE
+
+        (*  These types are re-definitions of types exported from ActiveViews,
+            with new values added for StringViews
+        *)
+
+    AStringViewStatus       = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn, InsertMode,
+                               ActiveViewSpare6, 
+                               ActiveViewSpare7, ActiveViewSpare8, 
+                               ActiveViewSpare9);
+
+    AStringViewStatusSet    = SET OF AStringViewStatus;
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AStringView to 
+        them.
+    *)
+
+TYPE
+    AStringViewCloneProc    = PROCEDURE(    AStringView,
+                                        VAR AStringView)
+                                                         : BOOLEAN;
+
+    AStringViewStoreOnProc  = PROCEDURE(    AStringView,
+                                            AnObject   );
+
+    AStringViewDiscardProc  = PROCEDURE(VAR AStringView);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AStringView to
+        them.
+    *)
+
+TYPE
+    AStringViewSetObjectProc = PROCEDURE(    AStringView,
+                                             AnEditNode );
+
+    AStringViewGetObjectProc = PROCEDURE(    AStringView)
+                                                         : AnEditNode;
+
+    AStringViewXYProc       = PROCEDURE(    AStringView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+    AStringViewTitleProc    = PROCEDURE(    AStringView,
+                                        VAR ARRAY OF CHAR);
+
+    AStringViewDisplayProc  = PROCEDURE(    AStringView);
+
+    AStringViewMoveProc     = PROCEDURE(    AStringView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+    AStringViewHelpProc     = PROCEDURE(    AStringView);
+
+    AStringViewHiddenProc   = PROCEDURE(    AStringView);
+
+    AStringViewRevealProc   = PROCEDURE(    AStringView);
+
+    AStringViewChangedProc  = PROCEDURE(    AStringView);
+
+
+
+
+
+
+
+
+    (*  These are the methods for AStringView objects.  They inherit and
+        redefine methods from ActiveViews, and add new methods of their own.
+    *)
+
+TYPE
+    AStringViewMethodsRecord = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AStringViewCloneProc;
+                                StoreOn           : AStringViewStoreOnProc;
+                                Discard           : AStringViewDiscardProc;
+                                SuperclassMethods : AnObjectMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AStringViewXYProc;
+                                GetInternalXY     : AStringViewXYProc;
+                                GetTitle          : AStringViewTitleProc;
+                                SetObject         : AStringViewSetObjectProc;
+                                GetObject         : AStringViewGetObjectProc;
+                                Move              : AStringViewMoveProc;
+                                Display           : AStringViewDisplayProc;
+                                GetHelp           : AStringViewHelpProc;
+                                HideView          : AStringViewHiddenProc;
+                                RevealView        : AStringViewRevealProc;
+                                NotifyOfChange    : AStringViewChangedProc;
+                                ObjectViewTag     : CARDINAL;
+
+        RecordEvent         : PROCEDURE(    AStringView,
+                                        VAR AnEvent    );
+    (*------------------------------------------------------------------------
+        Record the given event without performing any action on it.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView, 
+            and it must be displayed and not hidden.  The event must be a 
+            valid object of type AnEvent.
+
+        Postconditions:
+            The event will be recorded in the event history for this view.
+    ------------------------------------------------------------------------*)
+
+
+        GetRecordedEvent    : PROCEDURE(    AStringView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+        ActOnEvent          : PROCEDURE(    AStringView,
+                                            AnEvent,
+                                        VAR AnEvent    );
+    (*------------------------------------------------------------------------
+        Act on the given event.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView, 
+            and it must be displayed and not hidden.  The event must be a 
+            valid object of type AnEvent.
+
+        Postconditions:
+            The event will be acted on in whatever manner is appropriate, and 
+            will be recorded in the event history for this view.
+    ------------------------------------------------------------------------*)
+
+
+        GetCursor           : PROCEDURE(    AStringView): BOOLEAN;
+    (*------------------------------------------------------------------------
+        Determine whether the cursor is displaying or not.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor display status will be returned.  TRUE means that
+            the cursor is displaying.
+    ------------------------------------------------------------------------*)
+
+
+        SetCursor           : PROCEDURE(    AStringView,
+                                            BOOLEAN    );
+    (*------------------------------------------------------------------------
+        Define whether the cursor is displaying or not.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor display status will be set as indicated.  TRUE means 
+            that the cursor is displaying.
+    ------------------------------------------------------------------------*)
+
+
+        SetCursorMode       : PROCEDURE(    AStringView,
+                                            avidmode   );
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+
+        ActiveViewTag       : CARDINAL;
+        StringViewTag       : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsStringView --
+
+    Initialize the indicated object as a string view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid string view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsStringView(    StringView   : AStringView;
+                               SuperView    : AnEditView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateStringView --
+
+    Allocate storage for, and initialize the indicated object as a string 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid string view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateStringView(VAR StringView   : AStringView;
+                               SuperView    : AnEditView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL)
+                                                       : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsStringView --
+
+    UnInitialize the indicated object as a string view.
+
+    Preconditions:
+        The object will be a valid string view object.
+
+    Postconditions:
+        Discard the edit node which this is a view of, and invalidate the
+        string view.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsStringView(    StringView : AStringView);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateStringView --
+
+    Determine that the indicated object is in fact a valid string view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid string view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateStringView(    StringView : AStringView);
+
+
+
+END StringViews.
+

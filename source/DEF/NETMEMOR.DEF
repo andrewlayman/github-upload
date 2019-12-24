@@ -1,0 +1,12 @@
+DEFINITION MODULE NetMemory;
+
+    (*  MODIFICATION HISTORY
+        19-Sep-89 EGK   Removed constant definitions of array sizes.
+    *)
+
+  
+PROCEDURE AllocNetMemory();
+PROCEDURE DeAllocNetMemory();
+
+END NetMemory. 
+

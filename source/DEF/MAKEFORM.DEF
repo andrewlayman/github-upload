@@ -1,0 +1,155 @@
+DEFINITION MODULE MakeForm;
+
+    (* MakeForm -- Construct a basic dialog form independent of its
+                   internal representation based on (primarily) coded
+                   ascii text.
+
+
+    RULES OF USE:
+
+           IF YOU CREATE THE FORM HERE:
+
+              - You cannot create a second form before filling the
+                first one in.  The first form must have at least one field
+                filled in before creating the second form!!
+
+           IF THE FORM IS FROM THE FORMS FILE:
+
+              - It must ALREADY have at least one field!!
+
+              - Before adding any fields, you must FIRST either:
+
+                    1) Call "StartNewGroup", or
+                    
+                    2) Set Fields[MaxField+1].Group := Fields[MaxField].Group;
+     *)
+
+     (* MODIFICATION HISTORY
+
+        15-Feb-89  AJL -Initial version.
+
+     *) 
+
+
+
+FROM Boxes      IMPORT ABoxType;
+
+FROM FormHand   IMPORT AFormHandle;
+
+
+    (* ------------------------------------------------------------------
+
+       CreateForm
+
+       Preconditions: None
+
+       PostConditions: FormHandle will refer to a form with no fields but
+                       with the given BoxType, Title and of the set Width.
+                       The highest Group associated with the form is 0. 
+    
+    -------------------------------------------------------------------*)
+
+
+PROCEDURE CreateForm( VAR FormHandle : AFormHandle;
+                          BoxType    : ABoxType;
+                          Title      : ARRAY OF CHAR; 
+                          Width      : CARDINAL     ): BOOLEAN;
+
+    (* ------------------------------------------------------------------
+
+       DiscardForm
+
+       Preconditions: FormHandle refers to a form.
+
+       PostConditions: FormHandle will no longer refer to a form.
+                       Its previous storage is deallocated.
+    
+    -------------------------------------------------------------------*)
+
+
+
+PROCEDURE DiscardForm( VAR FormHandle : AFormHandle );
+
+    (* ------------------------------------------------------------------
+
+       SetHelpKey
+
+       Preconditions: FormHandle refers to a form.
+                      HelpKey is an LString.
+
+       PostConditions: The help key of the form is set to the first 
+                       seven characters of the passed HelpKey.
+    
+    -------------------------------------------------------------------*)
+
+
+PROCEDURE SetHelpKey(     FormHandle : AFormHandle;
+                      VAR HelpKey    : ARRAY OF CHAR );  
+
+    (* ------------------------------------------------------------------
+
+       AddField
+
+       Preconditions: FormHandle refers to a form.
+                      Spec is a field spec as defined in the document
+                      "TLGS Parameter File Format."
+
+       PostConditions: Either FALSE is returned or 
+                       the form contains one more field which matches
+                       the Spec.  This field is assigned to the highest
+                       Group associated with the form.
+                       The FieldNumber of the field is the number of times
+                       this procedure has been called previously (that
+                       is, fields are numbered sequentially from zero.)  
+    
+    -------------------------------------------------------------------*)
+
+PROCEDURE AddField(     FormHandle : AFormHandle;
+                    VAR Spec       : ARRAY OF CHAR ): BOOLEAN;
+
+    (* ------------------------------------------------------------------
+
+       StartNewGroup
+
+       Preconditions: FormHandle refers to a form.  At least 2 fields are
+                      defined.
+
+       PostConditions: The last field of the form (probably the one just
+                       added) is given a group number one higher than the
+                       group number of the preceeding field.
+    -------------------------------------------------------------------*)
+
+PROCEDURE StartNewGroup(     FormHandle : AFormHandle );
+
+    (* ------------------------------------------------------------------
+
+       AddSeparator
+
+       Preconditions: FormHandle refers to a form.
+
+       PostConditions: An additional line is at the end of the form,
+                       extending the full width, consisting of the 
+                       SeparatorChar repeated. 
+    
+    -------------------------------------------------------------------*)
+
+PROCEDURE AddSeparator(     FormHandle    : AFormHandle;
+                            SeparatorChar : CHAR         ): BOOLEAN;
+
+    (* ------------------------------------------------------------------
+
+       AddText
+
+       Preconditions: FormHandle refers to a form.
+
+       PostConditions: Additional lines are added at the end of the form.
+                       These contain the text, which may have been word
+                       wrapped to fit.
+    
+    -------------------------------------------------------------------*)
+
+PROCEDURE AddText(      FormHandle : AFormHandle;
+                    VAR Text       : ARRAY OF CHAR ): BOOLEAN;
+
+END MakeForm.
+

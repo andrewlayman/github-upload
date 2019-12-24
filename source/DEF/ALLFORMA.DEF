@@ -1,0 +1,43 @@
+DEFINITION MODULE AllFormalName;
+
+  (* All Formal Name - Routines to manage caches of column information.
+
+        Modification History:
+
+        30-Aug-89 MWP Creation.
+         8-Apr-91 TGS Import from TaskColN.def instead of MagicNum.
+  *)
+
+FROM Foreign        IMPORT
+    (* TYPE *)          ACharacterConversionTable;
+
+FROM TaskColNumbers IMPORT
+    (* CONST *)             HighestRootColumn;
+
+CONST
+    TaskFile                = 1;
+    ResourceFile            = 2;
+    AssFile                 = 3;
+    EdgesFile               = 4;
+    MaxCardinal             = 65535;
+
+
+TYPE
+    AFormalName  =  RECORD
+       ColumnID  : CARDINAL;
+       DataType  : CARDINAL;
+       Name      : ARRAY [ 0..21 ] OF CHAR;
+    END;
+
+VAR
+    Cache                   : ARRAY [1..HighestRootColumn + 1] OF AFormalName;
+    CacheContents           : CARDINAL;
+    CharTable               : ACharacterConversionTable;
+
+
+PROCEDURE PurgeCache ();
+
+PROCEDURE InitCache ();
+
+END AllFormalName.
+

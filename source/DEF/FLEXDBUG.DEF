@@ -1,0 +1,8 @@
+DEFINITION MODULE FlexDbug;
+
+
+    PROCEDURE DiagnosticHook( WithMenu : CARDINAL ) : CARDINAL;
+
+
+END FlexDbug.
+

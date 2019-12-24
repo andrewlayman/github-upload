@@ -1,0 +1,127 @@
+DEFINITION MODULE MacVars;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+
+    MODIFICATION HISTORY:
+
+     8-Mar-90 RSC   Added "MenuOn" as a global boolean to eliminate
+                    bugs and confusion.  Removed it from the records
+                    "AnEditRecordPointer" and "ARecordingRecordPointer".
+                    Other "cosmetic" improvements (removed EXPORT list,
+                    Removed commented out fields in records, rearranged
+                    lists so BYTE alignment problems go away (faster in
+                    3.03 of the compiler).
+    14-May-91 TGS   Changed file extension to ".5M0" for consistency.   
+        
+---------------------------------------------------------------------------*)
+
+IMPORT Keyboard;
+
+FROM Codes       IMPORT ASetOfCodes;
+
+FROM FlexStor    IMPORT AnExtHandle, AnExtStoragePreference;
+
+FROM Keyboard    IMPORT AGetCodeProcedure, AServiceProcedure;
+
+FROM Text        IMPORT AText;
+
+FROM TreeObjects IMPORT ATreeNode;
+
+
+TYPE
+     name          = ARRAY [0..10] OF CHAR;
+     LoadType      = (KeepOldMacros, ClearOldMacros);
+     AMacActionType = (Macro, Input);
+ 
+     AMacNamePtr    = POINTER TO ARRAY [0..40] OF CHAR;
+
+     AnEditRecordPointer = POINTER TO RECORD
+                                        MacText    : AText;
+                                        Macro      : ATreeNode;
+                                        code       : CARDINAL;
+                                        cancel     : CARDINAL;
+                                        macNamePtr : AMacNamePtr;
+                                        macName    : ARRAY [0..40] OF CHAR;
+                                        exit       : BOOLEAN;
+                                     END;
+
+     ACodeRecordPointer = POINTER TO RECORD
+                               code             : CARDINAL;
+                               exit             : BOOLEAN;
+                               Pause            : BOOLEAN;
+                               InputPause       : BOOLEAN;
+                               Cancel           : BOOLEAN;
+                          END;
+
+      ARecordingRecordPointer = POINTER TO  RECORD
+                                  code       : CARDINAL;
+                                  exit       : BOOLEAN;
+                                  break      : BOOLEAN;
+                                END;
+
+
+
+
+CONST
+    KeyOffset = 271;
+    FileSpec = ".5M0";
+
+VAR
+    OldGetCode              : Keyboard.AGetCodeProcedure;
+    OldKeyPress             : Keyboard.AYesNoProcedure;
+    OldFlushKeyboardBuffer  : Keyboard.AServiceProcedure;
+    OldBreakRequested       : Keyboard.AYesNoProcedure;
+    XKey                    : AnExtHandle (*ARRAY [0..182] OF name*);
+    NormKey                 : AnExtHandle (*ARRAY [0..31] OF name*);
+    Interlock               : CARDINAL;
+    StealHotkeyNode,
+    ReplacedMacro           : ATreeNode;
+    
+    OurEditRecord           : AnEditRecordPointer;
+    OurCodeRecord           : ACodeRecordPointer;
+    OurRecordingRecord      : ARecordingRecordPointer;
+    
+    ReplacedKeySet,
+    EditNavSet,
+    ExtendedCharSet,
+    SpecialCharSet,
+    EditCodeSet             : ASetOfCodes;
+
+    Editing,
+    EditMacroChange,
+    InAForm,
+    RecordingSecondaryMacro,
+    EditCancel,
+    SaveEdits               : BOOLEAN;
+
+    Command                 : ARRAY [0..10] OF name;
+    LastMacroSaved,
+    MacroFileName           : ARRAY [0..8] OF CHAR;
+    MacroFileMedia          : ARRAY [0..80] OF CHAR;
+    LinkedMacro             : ARRAY [0..126] OF CHAR;
+    Load                    : LoadType;
+    MacAction               : AMacActionType;
+    MacStoragePreference    : AnExtStoragePreference;
+    MacrosModified,
+    ListHotkeyOn,
+    DoRecord                : BOOLEAN;
+    FormAccepted,
+    PlaybackOK              : BOOLEAN;
+    LightsOnRecord          : RECORD
+                                  PlayLight,
+                                  StepLight,
+                                  PauseLight,
+                                  InputLight,
+                                  RecordLight   : BOOLEAN;
+                              END;
+
+
+    MenuOn                  : BOOLEAN;  (* 8-Mar-90 RSC *)
+
+END MacVars.
+

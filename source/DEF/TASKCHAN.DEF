@@ -1,0 +1,436 @@
+DEFINITION MODULE TaskChange;
+
+
+    (*
+        Task Change - Edit a task record
+
+            This module provides the ability to make changes to a task record
+            by changing "columns" of data.  It deals with the same columns as
+            are output by the "Captions" module.  For this reason, this module
+            and its cousins are sometimes refered to as "AntiCaptions".
+
+
+        Terminology:
+
+            For this module, we view the Task Tree as if it were a giant TABLE
+            of records, where each TASK is a ROW in the table.  Each FIELD in
+            a task record is a COLUMN in the table.
+
+            A Column HEADING is the formal name a column goes by.  This is the
+            name found in a Lotus, DBase, or CSV file.  This heading is
+            translated into a ColumnID, a "magic number" used to identify the
+            column.  Note that some exporters, notably DBase, may translate
+            the official formal name into a new name that is more compatible
+            with the external program.  It is the importer's job to translate
+            those names BACK into the "official" formal name.
+
+
+        Procedure Overview:
+
+            GetTaskColumnID()   Given a column's formal name, return the
+                                internal Column ID.
+
+            BeginTaskEdit()     Start the editing of a task.
+
+            DigestTaskString()  Change a text string into an internal format.
+
+            ChangeTaskColumn()  Change the value of a column.
+
+            EndTaskEdit()       End the editing of a task, and commit the
+                                changes if there were no serious errors.
+
+            SanitizeTask()      Rigorously check the task, and make sure that
+                                it is complete and consistant.  Called at the
+                                end of importing all files.  Takes whatever
+                                measures needed to insure the sanity of the
+                                internal model.
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module does not use Undo.  It is the job of clients to
+            back out records deemed not valid.
+
+
+        Related Modules:
+
+            TaskAcquire  is used to find the task record to be edited.
+            RsrcEdit     edits resource records.
+            AssEdit      edits assignment records.
+            EdgeEdit     edits edge records.
+
+
+        Modification History:
+
+
+         9-Feb-89  RSC  First version.
+         3-May-89  RSC  Added these to "ATaskEditContext" to better simulate
+                        a task form edit:
+                            KidsToGoSummary      To preserve rollup amounts.
+                            KidsCompletedSummary To preserve rollup amounts.
+        10-Jul-89  MWP  Added DurationUnitSeen and EffortUnitSeen to context
+                        so we can maintain a 'units precedence' in TaskEdit.
+        14-Sep-89  MWP  Created OrphanNode.
+        20-Aug-91  EGK  Added FixedEndSeen to AWhatsBeenSeenItem, to support
+                        the UserEnteredEndColumn.
+    *)
+
+
+
+
+FROM Allocs         IMPORT
+    (* TYPE *)          ATaskPtr, ADateBlock, AnAssignmentSummary, TskNmLen;
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM ImPorTable      IMPORT
+    (* TYPE *)              AImportTable, AnAskAlterBaselineProc;
+
+FROM IntFileIO      IMPORT
+                        AnIntDataRecord;
+
+FROM RealFormat     IMPORT
+    (* TYPE *)          AnAmountFormat;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+
+
+(* INTERNAL USE (EDITING SUBSYSTEM) ONLY *)
+
+TYPE
+    AWhatsBeenSeenItem = (EarlyStartSeen,
+                          EarlyEndSeen,
+                          DurationSeen,
+                          FixedStartSeen,
+                          FixedEndSeen,         (* 8/20/91 EGK *)
+                          BsLnDurationSeen,
+                          BsLnStartDate,
+                          BsLnEndDate
+                         );
+
+    AWhatsBeenSeenSet = SET OF AWhatsBeenSeenItem;
+
+    ADurationUnitItem = (DurHours,
+                         DurDays,
+                         DurWeeks,
+                         DurMonths
+                         );
+
+    ADurationUnitSet = SET OF ADurationUnitItem;
+
+    AEffortUnitItem = (EffHours,
+                       EffDays,
+                       EffWeeks,
+                       EffMonths
+                         );
+
+    AEffortUnitSet = SET OF AEffortUnitItem;
+
+    ATaskEditContext = RECORD
+        ErrorHandler            : AnErrorHandlerProc;
+        HandlersContext         : ADDRESS;
+        KidsBaseLineSummary     : AnAssignmentSummary;
+        KidsToGoSummary         : AnAssignmentSummary;
+        KidsCompletedSummary    : AnAssignmentSummary;
+        NeedsRecalc             : BOOLEAN;
+        NeedsSort               : BOOLEAN;
+        WhatsBeenSeen           : AWhatsBeenSeenSet;
+        DurationUnitSeen        : ADurationUnitSet;
+        EffortUnitSeen          : AEffortUnitSet;
+    END;
+
+
+
+VAR
+    CurrentTskNm            : ARRAY [0..TskNmLen] OF CHAR;
+    OrphanNode              : ATreeNode;
+
+
+(*
+    Get Task Column ID
+
+        Preconditions
+                        > "ColumnName" is an LString containing the FORMAL
+                          NAME of the task column (The same name that is
+                          exported by Captions).  The caller must resolve
+                          any differences between the name read in from a
+                          file and the "official" formal name.  For example,
+                          DBase translates some charactors.
+
+        Postconditions
+                        > Returns TRUE if the ColumnName is a known task
+                          column name, or FALSE if it is unknown.
+
+                        > ColumnID is the internal number to use for
+                          changing the data, if TRUE is returned.
+*)
+PROCEDURE GetTaskColumnID( VAR ColumnName       : ARRAY OF CHAR;
+                           VAR ColumnID         : CARDINAL ) : BOOLEAN;
+
+
+
+
+
+
+
+(*
+    Begin Task Edit
+
+        Preconditions
+                        > No task is currently being edited (close off an edit
+                          with EndTaskEdit)
+
+                        > RowNode is the TreeNode for the existing task
+                          to be edited.  It must not be NIL.
+
+                        > ErrorHandler is the procedure to be called when an
+                          edit error occurs.
+
+        Postconditions
+                        > Task is ready to be edited.
+*)
+PROCEDURE BeginTaskEdit(     RowNode            : ATreeNode;
+                             LErrorHandler      : AnErrorHandlerProc;
+                             LHandlersContext   : ADDRESS;
+                             LAlterBaselineProc : AnAskAlterBaselineProc;
+                             LImportTable       : ADDRESS );
+
+
+
+
+
+
+
+
+
+(*
+    Digest Task String
+
+        Convert a text string into the internal data record needed by
+        "ChangeTaskColumn".
+
+        Preconditions
+                        > "ColumnID" is a valid column id.
+
+                        > "TextString" is the string to be digested into
+                          "ColumnData".  It is not modified (VAR only for
+                          efficiency).
+
+                        > "Amount Format" is the real number format to use
+                          in analizing REAL numbers.  It is not altered.
+                          VAR is just for efficiency.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty text string.
+                          This is not allowed for all columns.
+
+        Postconditions
+                        > "ColumnData" is the data to be applied to the task.
+
+                        > The text is checked within the context of the
+                          column in question, and the "ColumnData" record
+                          is filled in appropriately.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.  Errors would all be simple formatting
+                          errors.
+
+                        > Returns TRUE if there were no formatting errors,
+                          FALSE if there were.
+*)
+PROCEDURE DigestTaskString(     ColumnID     : CARDINAL;
+                            VAR TextString   : ARRAY OF CHAR;
+                            VAR AmountFormat : AnAmountFormat;
+                            VAR ColumnData   : AColumnDataRecord;
+                                LErrorHandler    : AnErrorHandlerProc;
+                                LHandlersContext : ADDRESS          ) : BOOLEAN;
+
+
+
+PROCEDURE DigestIntTaskString (     ColumnID         : CARDINAL;
+                                    Type             : CARDINAL;
+                                VAR Data             : AnIntDataRecord;
+                                VAR AmountFormat     : AnAmountFormat;
+                                VAR ColumnData       : AColumnDataRecord ;
+                                    LErrorHandler    : AnErrorHandlerProc;
+                                    LHandlersContext : ADDRESS          ) : BOOLEAN;
+
+
+
+
+
+(*
+    Change Task Column
+
+        Change a single task column.  This may change anywhere from 0 to
+        several fields in the task record.
+
+        IMPLEMENTATION NOTE:
+
+            It is intended that this procedure can be used in both a batch
+            and an interactive environment.  In order for batch environments
+            to not be highly sensitive to the ORDER of fields coming in,
+            this procedure is designed to take any valid data, even if it
+            may be out of context for the whole record.  An example would
+            be accepting effort values for a duration driven task.
+
+            For interactive use, you must call EndTaskEdit each time you
+            change a column for the task record to be fixed up to look like
+            it should on, say, the task form.
+
+
+        Preconditions
+                        > A Task is being edited (BeginTaskEdit has been
+                          called).
+
+                        > "ColumnID" is a valid column id.
+
+                        > "ColumnData" is the data to be applied to the task.
+
+                        > Some columns may allow a "Null" value.  An example
+                          of this is the StartDate column, which allows
+                          the start date to TEMPORARILY be set to "null".
+                          This is handled here by an empty "DataFields" inside
+                          "ColumnData".  This is not allowed for all columns.
+
+        Postconditions
+                        > The data is checked within the context of the
+                          column in question, and the changes are applied,
+                          except as noted below.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.
+
+                        > If TRUE is returned, it is implied that no errors
+                          have yet been detected.  A call to EndTaskEdit MIGHT
+                          succeed, unless other errors are encountered.
+
+                        > If FALSE is returned, no further edits will
+                          be accepted (further calls to "ChangeTaskColumn"
+                          will return FALSE).  The changes should be ABORTED
+                          by the caller.
+*)
+PROCEDURE ChangeTaskColumn(     ColumnID    : CARDINAL;
+                            VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+    End Task Edit
+
+        Preconditions
+                        > A Task is being edited (BeginTaskEdit has been
+                          called).
+
+        Postconditions
+                        > Any changes made to the task after BeginTaskEdit
+                          have been applied to the task node, or else the
+                          ErrorHandler is called for each exception found.
+
+                        > If any errors were found that were not fixable, or
+                          where the error handler decided not to request
+                          fixing, FALSE is returned.  Otherwise, TRUE is
+                          returned.
+*)
+PROCEDURE EndTaskEdit() : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*
+    Sanitize Task
+
+        Preconditions
+                        > The task is thought to be complete and consistant
+                          (All referenced resources are present, any dependant
+                          tasks are present, etc)
+
+                          The intention is that this is called for all tasks
+                          at the end of importing ALL data for the schedule.
+
+        Postconditions
+                        > If any errors are found, they are fixed by whatever
+                          measures are needed to insure that the schedule
+                          contains only consistant data.
+*)
+(*****
+PROCEDURE SanitizeTask(     RowNode         : ATreeNode;
+                            ErrorHandler    : AnErrorHandlerProc;
+                            HandlersContext : ADDRESS          );
+*******)
+PROCEDURE SanitizeTask(     RowNode         : ATreeNode;
+                            ErrorHandler    : AnErrorHandlerProc;
+                            HandlersContext : ADDRESS;
+                            LAlterBaselineProc :  AnAskAlterBaselineProc;
+                            LImportTable       : ADDRESS );
+
+
+
+(*
+    Change Task Column
+
+        THIS PROCEDURE IS FOR INTERNAL USE BY THE EDIT SUBSYSTEM, AND IS NOT
+        FOR CLIENTS TO USE.
+
+        Use "ChangeTaskColumn" instead.
+
+        See the MOD for a description of the parameters.
+*)
+(*******
+PROCEDURE ChangeTaskRecord(     ColumnID    : CARDINAL;
+                                TaskPtr     : ATaskPtr;
+                            VAR ColumnData  : AColumnDataRecord;
+                            VAR Context     : ATaskEditContext
+                           ) : BOOLEAN;
+*******)
+PROCEDURE ChangeTaskRecord(     ColumnID       : CARDINAL;
+                                TaskPtr        : ATaskPtr;
+                            VAR ColumnData     : AColumnDataRecord;
+                            VAR Context        : ATaskEditContext;
+                            VAR AlterBaseline  : AnAskAlterBaselineProc;
+                                PImportContext : ADDRESS
+                           ) : BOOLEAN;
+
+END TaskChange.
+
+

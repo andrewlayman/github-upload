@@ -1,0 +1,55 @@
+DEFINITION MODULE MacNodes;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+FROM FlexStor      IMPORT AnExtHandle;
+
+FROM TreeObjects   IMPORT ATree, ATreeNode;
+
+EXPORT QUALIFIED   MacroNode, MacroRecord, EditMacro, OurMacro,
+                   MacroTree, EditTree, AMacroRecordPointer,
+                   EditRecordPointer, MacroRecordPointer, AMacroRecord;
+                
+
+
+TYPE
+
+    AMacroName     = ARRAY [0..40] OF CHAR;
+    AMacroDesc     = ARRAY [0..80] OF CHAR; (* change to Text with ExtHandle *)
+    AHotKeyStr     = ARRAY [0..9] OF CHAR;
+
+    AMacroRecordPointer    = POINTER TO AMacroRecord;
+                                              (* change POINTER TO *)
+                                              (* AMacroRecordHandle *)
+    AMacroRecord           = RECORD
+                              tag         : CARDINAL;
+                              hotkey      : CARDINAL;
+                              hotkeystr   : AHotKeyStr;
+                              name        : AMacroName;
+                              description : AMacroDesc;
+                              cardlen     : CARDINAL;
+                              handle      : AnExtHandle;
+                            END;
+
+
+
+
+VAR
+    MacroTree,
+    EditTree                : ATree;
+    EditMacro,
+    OurMacro,
+    MacroNode               : ATreeNode;
+    MacroRecord             : AMacroRecord;
+    EditRecordPointer,
+    MacroRecordPointer      : AMacroRecordPointer;
+
+
+END MacNodes.

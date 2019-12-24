@@ -1,0 +1,16 @@
+DEFINITION MODULE GrafLoad;
+
+FROM FileSystem IMPORT File;
+
+PROCEDURE GetGraphDetails(VAR f:File);
+
+
+ (* MOved here from TLStart and TLiTl3  11/16/87 RSC *)
+
+PROCEDURE GetPlotterDetails(VAR f:File);
+
+
+
+
+END GrafLoad.
+

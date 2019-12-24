@@ -1,0 +1,42 @@
+DEFINITION MODULE FontTLGS;
+   (*
+    Modification History:
+
+        22-Sep-89 CMH   Fixed uninitialized variable in InitCrateArrangement.
+                        Added new variable for independant font height.
+    *)                     
+
+CONST
+ (* font family *)   
+    HELVETICA  = 1;
+    TIMESROMAN = 2;
+    SPECIAL    = 3;
+ 
+ (* font member *)  
+    LIGHT  = 1;
+    MEDIUM = 2;
+    BOLD   = 3;
+    ITALIC = 4;
+    
+    HELVETICALIGHT  = 0;
+    HELVETICAMEDIUM = 1;
+    HELVETICABOLD   = 2;
+    HELVETICAITALIC = 3;
+ 
+    TIMESROMANLIGHT  = 4;
+    TIMESROMANMEDIUM = 5;
+    TIMESROMANBOLD   = 6;
+    TIMESROMANITALIC = 7;
+ 
+    SPECIALLIGHT  =  8;
+    SPECIALMEDIUM =  9;
+    SPECIALBOLD   = 10;
+    SPECIALITALIC = 11;
+    
+VAR
+    FontHeight,   (* Character size in Sedona units for text *)
+    ActiveFont : CARDINAL;
+
+PROCEDURE GetASedonaFontNumber(FontFamily,FontMember : CARDINAL) : CARDINAL;
+    
+END FontTLGS.

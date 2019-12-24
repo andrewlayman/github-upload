@@ -1,0 +1,9 @@
+DEFINITION MODULE TSEDUtility;
+
+FROM TreeObjects		     IMPORT
+   (* PROC *)				ATreeNode;
+					
+PROCEDURE GetFilterSetting(TaskTreeNode : ATreeNode) : CARDINAL; 
+
+END TSEDUtility.
+

@@ -1,0 +1,51 @@
+DEFINITION MODULE XArTable;
+    (* MODIFICATION HISTORY:
+
+       19 Oct 89      CEG - Added three new fields:
+                            ExportSummaryTasks - Controls option to suppress
+                              export of all summary tasks.
+                            CreateMilestones - If summary tasks are to be 
+                              exported, this option allows suppression of
+                              creation of the milestones around them.
+                            RecordID - Record to guarantee identification of
+                              a valid holder record.  Will be initialized to
+                              "ART", and if it does not hold this string 
+                              when a file is loaded it will be reinitialized.
+    27-Jan-92 TGS   Added FixV4ArtemisTable proc. Bug 5391.
+    *)
+
+TYPE
+    AnArtemisType = (PROJECT,A2000,A6000,A7000,A9000);
+    AnActivityIDSource =    (SequenceNumber, WBSCode, Keyword);
+    AnArtemisCalendarType = (DateHours,DateDays,Period);
+    AnArtemisPeriodType =   (PerDay,Days);
+    AnArtemisSummaryType = (No, Hammocks, XMilestones);
+
+    AnArtemisExportTable = RECORD
+        RecordID            : ARRAY [0..3] OF CHAR; (* Identifier for this holder record *)
+        ArtemisType         : AnArtemisType;        (* TYP: Artemis system to export to *)
+        CalendarType        : AnArtemisCalendarType;(* CAL: Type of calendar *)
+        PeriodSize          : CARDINAL;             (* PSZ: Number giving size of time period *)
+        PeriodType          : AnArtemisPeriodType;  (* PTY: Indicates periods per day or days per period *)
+        WorkpatternNumber   : CARDINAL;             (* WPN: Workpattern number *)
+        ActivityIDSource    : AnActivityIDSource;   (* ACT: What to use as the activity ID *)
+        ActivityPrefix      : ARRAY [0..2] OF CHAR; (* PRE: Precede activity numbers with this *)
+        ExportSummaryTasks  : AnArtemisSummaryType; (* EST: Export summary tasks *)
+        CreateSummaryHammock: BOOLEAN;              (* CSH: Create summary hammock: yes no *)
+        FileName            : ARRAY [0..7] OF CHAR; (* FNM: File name - max 7 char *)
+        FileDir             : ARRAY [0..65] OF CHAR;(* FDR: Directory to write in *)
+        UserDef1            : CARDINAL;             (* UF1: User defined field 1 *)
+        UserDef2            : CARDINAL;             (* UF2: User defined field 2 *)
+        UserDef3            : CARDINAL;             (* UF3: User defined field 3 *)
+        UserDef4            : CARDINAL;             (* UF4: User defined field 4 *)
+        Ready               : BOOLEAN;              (* Does the user want to export? *)
+    END;
+
+
+    (* Used by TLITL4 to renumber the UserDef ColumnID numbers.
+       There wasn't enough identifier space to put it in TLITL4. *)
+
+PROCEDURE FixV4HeldArtemisTable();
+
+END XArTable.
+

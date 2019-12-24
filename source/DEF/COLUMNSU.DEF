@@ -1,0 +1,137 @@
+DEFINITION MODULE ColumnSupport;
+
+    (*  MODIFICATION HISTORY
+        16-Mar-89 LAA   Created from the old ColumnNames module, to support
+                        the new Assignments Report.
+    *)
+
+FROM GoTo                   IMPORT
+    (* PROC *)                  AGoToNameProc, AGoToCheckProc;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+TYPE
+    AColumnTreeRecordPtr    = POINTER TO AColumnTreeRecord;
+
+    AColumnTreeRecord       = RECORD
+                                ID          : CARDINAL;
+                                Name        : ARRAY [0..25] OF CHAR;
+                              END;
+
+CONST
+
+    (*  The following constants correspond to the order information is
+        stored for columns in the phrases file.  These numbers and the
+        information in the phrases file must be kept in sync.
+    *)
+
+    FullTitle       =   1;
+    Title1          =   2;
+    Title2          =   3;
+    DefaultLength   =   4;
+    NarrowWidth     =   5;
+    NarrowTitle1    =   6;
+    NarrowTitle2    =   7;
+    FormalName      =   8;
+    UniqueID        =   9;
+    FormatType      =   10;
+    MaxDecimals     =   11;
+    DataType        =   12;
+    Percentage      =   13;     (*  Task columns only  *)
+    TotalByRsrc     =   13;     (*  Resource and Time v. Rsrc columns only  *)
+    Junk            =   13;     (*  Rsrc. Assign. and Edges columns only  *)
+    MinDecimals     =   14;
+    BslnRequired    =   15;
+    BslnDifferent   =   16;
+    RightJustify    =   17;
+    MinExportWidth  =   18;
+    SortOrder       =   19;     (*  Not used by Rsrc. Assign. or Edges columns  *)
+
+    (*  The following are for additional information needed by the column
+        naming form.  They cannot conflict with the numbers from phrases
+        above.
+    *)
+
+    DescriptionIndex    =   998;    (*  Description (or prompt) line  *)
+    OrigNameIndex       =   999;    (*  Original name of column  *)
+
+
+
+    (*  DisposeColumnTree --
+
+            Get rid of the given column name tree.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            one of the CreatexxxxColumnTree procedures.
+
+        Postconditions:
+            The column tree and all it's nodes will be discarded.
+    *)
+
+PROCEDURE DisposeColumnTree(VAR ColumnTree  : ATree);
+
+
+
+
+    (*  PickColumn --
+
+            Display the scrolling list of column names at the indicated
+            coordinates, and allow the user to select one from it.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreatexxxxColumnTree, and not discarded by DisposeColumnTree.
+
+        Postconditions:
+            The GetNameProc provides a column name given the column Id.
+            The column Id will be used to position the cursor on the current
+            selection.  If the user selects a new column name, the ColumnName 
+            and ColumnId will be changed to that for the new column, and TRUE 
+            will be returned.  If no column name is selected, FALSE will be 
+            returned and nothing will be changed.
+    *)
+
+PROCEDURE PickColumn(    ColumnTree         : ATree;
+                         Ulx                : ascreenx;
+                         Uly                : ascreeny;
+                         Lrx                : ascreenx;
+                         Lry                : ascreeny;
+                     VAR Title              : ARRAY OF CHAR;
+                         GetNameProc        : AGoToNameProc;
+                         PromptProc         : AGoToNameProc;
+                         GoToCheckProc      : AGoToCheckProc;
+                     VAR ColumnId           : CARDINAL;
+                     VAR ColumnName         : ARRAY OF CHAR)
+                                                            : BOOLEAN;
+
+
+(*----------------------------------------------------------------------------
+    GetFromPhrasesOrText --
+
+    Looks in memory for user-modified column info first, then in the Phrases
+    file.
+
+    Preconditions:
+        The user-defined columns must have been loaded in from the config
+        file first.
+
+    Postconditions:
+        The retrieved column info is placed in S.
+----------------------------------------------------------------------------*)
+
+
+
+
+END ColumnSupport.
+
+
+
+

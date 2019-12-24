@@ -1,0 +1,129 @@
+DEFINITION MODULE Timeu;
+
+(*--------------------------------------------------------------------------
+    MODIFICATION HISTORY:
+
+    22-Oct-90 RSC  Changed Hours to HalfHours in time table, and
+                   restructured the table to make TtoTimeU and TimeUtoT
+                   cleaner and maybe faster.
+     1-Nov-90 RSC  Well, we're going to quarter hours.
+     3-Jul-91 PFG  Added CalendarBaseYear constant so it could be used
+                   for BigTime limits, too.
+--------------------------------------------------------------------------*)
+
+FROM Timei      IMPORT
+    (* TYPE *)      ADurationUnit, ASetOfADurationUnit, ADate, 
+                    ADurationCounter, ADuration,
+    (* CONST *)     Jan, Dec, Sun, Sat;
+
+
+
+
+
+
+PROCEDURE UpScale (n:ADurationCounter; DurationUnit:ADurationUnit) : ADuration;
+
+PROCEDURE DownScale(Scale:ADuration; DurationUnit:ADurationUnit) : ADurationCounter;
+
+    (*  FindCorrectScale -- This procedure will adjust the passed Scale
+                            to a greater precision if that is necessary
+                            to correctly express the Duration.
+
+                            On the other hand, if the duration would take
+                            more than 4 digits to express in the chosen
+                            Scale, the scale will be broadened.
+    *)
+
+
+PROCEDURE FindCorrectScale(Duration: ADuration; VAR Scale:ADurationUnit);
+
+
+
+
+
+
+
+    (* all const, types and vars would be removed *)
+
+CONST
+    YearsOnFile         = 35;
+    CalendarBaseYear    = 1983;     (* 3-Jul-91 PFG *)
+
+
+TYPE
+
+        (* 22-Oct-90 RSC Changes:
+
+                - Made long sets rather than using ARRAYs of BITSETs.
+                - Use Cumulative Tics rather than Hours Per Month/Year.
+                  This way we can compare the TimeU with the Tics as of
+                  the start of the year or month, rather than accumulate
+                  hours until we have enough, forcing us to pass over
+                  every entry sequentially.  This opens up the opportunity
+                  for other search methods, like a Binary Search.
+
+                  Rules about precision:
+
+                    If Quarter hours are used in the WeekMap,
+                        you MUST use 1 min, 5 min, or 15 min precision.
+                    If even half hours are used (2:30 to 3:00) in the WeekMap,
+                        you MUST use 30 min or finer precision.
+                    If even hours (2 pm to 3 pm) are used only,
+                        any precision is ok.
+
+        *)
+    AMonthOfDays = [0..31];
+
+    AMonthSet    = SET OF AMonthOfDays;
+
+    ADayOfQtrHours = [0..95];  (* # of qtr hours in a day *)
+
+    ADaySet      = SET OF ADayOfQtrHours;
+
+    AMonthEntry  = RECORD
+        TicsAtStartOfMonth : ADuration;
+        StartDay           : [Sun..Sat];
+        YearMap            : AMonthSet;
+    END;
+
+    AWeekEntry = RECORD
+        TicsInDay          : ADuration;
+        WeekMap            : ADaySet;
+    END;
+
+    AYearTable = ARRAY [Jan..Dec] OF AMonthEntry;
+
+    AWeekTable = ARRAY [Sun..Sat] OF AWeekEntry;
+
+
+    ATimeTable = RECORD
+                     FirstYear  : CARDINAL;
+                     YearTable  : ARRAY [1..YearsOnFile] OF AYearTable;
+                     WeekTable  : AWeekTable;
+                     StdDayTics : CARDINAL;  (* Tics in a nominal "day".  *)
+                     StdWeek    : CARDINAL;  (* Days in a nominal "week". *)
+                 END;
+
+VAR
+    TimeTable         : ATimeTable;
+    SMU               : CARDINAL;  (* Smallest unit of time, in minutes. *)
+    SMUPH             : CARDINAL;  (* = 60 DIV SMU *)
+    WeeksBeginOn      : [Sun..Sat];
+    FSMUPH            : REAL;      (* = FLOAT(SMUPH).  RSC 21-Mar-89 *)
+
+
+
+(* RULE: SMU Can be anywhere from 1 to 60, but if TimeTable.StdDay
+         is an odd number (so there are, say, 7.5 hours in a day),
+         then SMU cannot be greater than 30.
+*)
+PROCEDURE SetSMU( NewSMU : CARDINAL );    (* RSC 21-Mar-89 *)
+
+PROCEDURE SetStartingMonth (Month: CARDINAL);
+
+PROCEDURE GetStartingMonth (VAR Month: CARDINAL);
+
+
+
+END Timeu.
+

@@ -1,0 +1,96 @@
+DEFINITION MODULE PlotStatic;
+
+  (* Plot Static - static records in timeline root.
+
+    MODIFICATION HISTORY
+
+    RSC  8/13/87  Cloned from Plotter.Def and PlotData.Def for TLG/SPIKE
+    RSC  9/ 2/87  Added stuff from TL 2.3 that slipped through the cracks.
+    RSC 11/16/87  Added highlight descriptions, BarSpacing.
+    RSC  1/18/87  Added AGanttLabelType for the Gantt record.
+   *)
+
+
+FROM Timeu IMPORT ATimeUnit, ADuration;
+
+
+
+TYPE
+    APlotType       = (NetworkPlot, GanttPlot, ActualVsPlanPlot, PERTPlot);
+    ALabelType      = ( NoLabel,  WBSNoL,  SeqNoL, EStartL, EEndL, DurSlackL, DurL, SlackL );
+    AGanttLabelType = (GNoLabel, GWBSNoL, GSeqNoL, OBSNoL, KeywordL );
+
+VAR
+
+    PlotType        : APlotType;
+
+    PlotterRecord : RECORD
+                        Name            : ARRAY [0..30] OF CHAR;
+                        EquivalentTo    : ARRAY [0..30] OF CHAR;
+                        PenSpeed        : CARDINAL;
+                        NumberOfCopies  : CARDINAL;
+                        NumberOfPens    : CARDINAL;
+                        BorderPen       : CARDINAL;
+                        BarSpacing      : CARDINAL;
+                        HighlightPenNums: ARRAY [1..5] OF CARDINAL;
+                        IncreasingSpeed : BOOLEAN;    (* High numbers are faster. *)
+                        DeleteAfterPlot : BOOLEAN;
+                        SolidBars       : BOOLEAN; (* RSC 9/2/87 *)
+                        SolidBarsAllowed: BOOLEAN; (* RSC 9/2/87 *)
+                        DrawBordersFlag : BOOLEAN; (* RSC 9/2/87 *)
+                        ReducedBar,
+                        PortraitOrientation,
+                        CascadeNetwork  : BOOLEAN; (* RSC 11/6/87 *)
+                        PaperSize       : CHAR;
+                    END;
+
+    GanttPlotRecord : RECORD
+        HorizPeriod           : ATimeUnit;
+        PeriodsPerInch        : REAL;
+        ActivityPen,
+        MilestonePen          : CARDINAL;
+        TaskNumberColumnWidth : CARDINAL;
+        MajorLinePeriod,
+        MinorLinePeriod       : ATimeUnit;
+        MajorLinePen,
+        MinorLinePen          : CARDINAL;
+        AdditionalLabel       : AGanttLabelType;
+        TotalFloat,
+        Descr,
+        VisSpace,
+        DurColumn,
+        ESColumn,
+        EFColumn,
+        LSColumn,
+        LFColumn,
+        FFColumn,
+        TFColumn,
+        StatusColumn,
+        MajorLineYes,
+        MinorLineYes          : BOOLEAN;
+    END;
+
+
+    NetPlotRecord : RECORD
+        HorizPeriod      : ATimeUnit;
+        PeriodsPerInch   : REAL;
+        MajorLineYes,
+        MinorLineYes     : BOOLEAN;
+        MajorLinePeriod,
+        MinorLinePeriod  : ATimeUnit;
+        ActivityPen,
+        LinkPen,
+        MilestonePen     : CARDINAL;
+        DependencyCriterion : CARDINAL;
+        MajorLinePen,
+        MinorLinePen     : CARDINAL;
+        LowerLeftLabel,
+        LowerRightLabel  : ALabelType;
+        TaskNames        : BOOLEAN;
+    END;
+
+
+
+
+END PlotStatic.
+

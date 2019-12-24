@@ -1,0 +1,509 @@
+DEFINITION MODULE ListViews;        (*  a subclass of ActiveViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AListViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView, AnActiveViewMethods;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM LinkedListObjects      IMPORT
+    (* TYPE *)                  ALinkedList, ALinkedListNode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+
+
+
+
+TYPE
+        (*  AListView is a subclass of AnActiveView  *)
+
+    AListView               = POINTER TO AListViewRecord;
+
+    AListViewMethods        = POINTER TO AListViewMethodsRecord;
+
+    AListViewRecord         = RECORD
+                                Methods     : AListViewMethods;
+                              END;
+
+
+
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for ListViews
+        *)
+
+TYPE
+    AListViewStatus         = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               ListViewSpare5, ListViewSpare6, 
+                               ListViewSpare7, ListViewSpare8, 
+                               ListViewSpare9);
+
+    AListViewStatusSet      = SET OF AListViewStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AListView to 
+        them.
+    *)
+
+TYPE
+    AListViewCloneProc      = PROCEDURE(    AListView,
+                                        VAR AListView)
+                                                      : BOOLEAN;
+
+    AListViewStoreOnProc    = PROCEDURE(    AListView,
+                                            AnObject );
+
+    AListViewDiscardProc    = PROCEDURE(VAR AListView);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AListView to
+        them.
+    *)
+
+TYPE
+    AListViewGetObjectProc  = PROCEDURE(    AListView)
+                                                      : ALinkedList;
+
+    AListViewSetObjectProc  = PROCEDURE(    AListView,
+                                            ALinkedList);
+
+    AListViewXYProc         = PROCEDURE(    AListView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny );
+
+    AListViewTitleProc      = PROCEDURE(    AListView,
+                                        VAR ARRAY OF CHAR);
+
+    AListViewProc           = PROCEDURE(    AListView);
+
+    AListViewMoveProc       = PROCEDURE(    AListView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AListView to
+        them.
+    *)
+
+
+TYPE
+    AListViewRecordProc     = PROCEDURE(    AListView,
+                                            AnEvent  );
+
+    AListViewGetEventProc   = PROCEDURE(    AListView,
+                                            CARDINAL,
+                                        VAR AnEvent  );
+
+    AListViewActOnProc      = PROCEDURE(    AListView,
+                                            AnEvent,
+                                        VAR AnEvent  );
+
+    AListViewGetCursorProc  = PROCEDURE(    AListView)        (* View *)
+                                                      : BOOLEAN;
+
+    AListViewSetCursorProc  = PROCEDURE(    AListView,        (* View *)
+                                            BOOLEAN  );       (* Displaying *)
+
+    AListViewSetCursorModeProc = PROCEDURE(    AListView,
+                                               avidmode    );
+
+
+
+
+
+
+    (*  Here are the methods that are specific to ListViews  *)
+
+TYPE
+    AListViewSetProc        = PROCEDURE(    AListView,
+                                            ALinkedListNode);
+
+    AListViewGetProc        = PROCEDURE(    AListView)
+                                                      : ALinkedListNode;
+
+    AListViewForceProc      = PROCEDURE(    AListView,         (* View *)
+                                            ALinkedListNode,   (* Node *)
+                                            CARDINAL       );  (* Position *)
+
+    AListViewInquireProc    = PROCEDURE(    AListView,
+                                            ALinkedListNode)
+                                                            : CARDINAL;
+
+
+
+
+    (*  These are the methods for AListView objects.  They inherit and
+        redefine methods from ObjectViews, and add new methods of their own.
+    *)
+
+TYPE
+    AListViewMethodsRecord  = RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AListViewCloneProc;
+                                StoreOn           : AListViewStoreOnProc;
+                                Discard           : AListViewDiscardProc;
+                                SuperclassMethods : AnActiveViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AListViewXYProc;
+                                GetInternalXY     : AListViewXYProc;
+                                GetTitle          : AListViewTitleProc;
+                                SetObject         : AListViewSetObjectProc;
+                                GetObject         : AListViewGetObjectProc;
+                                Move              : AListViewMoveProc;
+                                Display           : AListViewProc;
+                                GetHelp           : AListViewProc;
+                                HideView          : AListViewProc;
+                                RevealView        : AListViewProc;
+                                NotifyOfChange    : AListViewProc;
+                                ObjectViewTag     : CARDINAL;
+                                RecordEvent       : AListViewRecordProc;
+                                GetRecordedEvent  : AListViewGetEventProc;
+                                ActOnEvent        : AListViewActOnProc;
+                                GetCursor         : AListViewGetCursorProc;
+                                SetCursor         : AListViewSetCursorProc;
+
+        SetCursorMode       : AListViewSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AListView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+
+        ActiveViewTag       : CARDINAL;
+
+
+
+        SetFirst            : AListViewSetProc;
+    (*------------------------------------------------------------------------
+        Define the indicated list node to be the first displayed node within 
+        the list view.
+    
+        Preconditions:
+            The list view must be a valid list view object.
+    
+        Postconditions:
+            The indicated node will be the first one displayed in the list 
+            view,  if possible.  If the indicated list node is NIL, the list 
+            will be assumed to be empty.  This method will cause a 
+            re-synchronization of the internal list view data structures, so 
+            that an entirely different set of nodes may be displayed.  It 
+            will not do a display itself, but will set the view as needing to 
+            be redisplayed.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetFirst            : AListViewGetProc;
+    (*------------------------------------------------------------------------
+        Determine which list node is the first one within the view.
+    
+        Preconditions:
+            The list view must be a valid list view object.
+
+        Postconditions:
+            The first list node within the view will be returned.  This may 
+            be NIL if the view is of an empty list.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetLast             : AListViewGetProc;
+    (*------------------------------------------------------------------------
+        Determine which list node is the last one within the view.
+
+        Preconditions:
+            The list view must be a valid list view object.
+
+        Postconditions:
+            The last list node within the view will be returned.  This may be
+            NIL if the view is of an empty list.
+    ------------------------------------------------------------------------*)
+
+
+
+        SetCursorNode       : AListViewSetProc;
+    (*------------------------------------------------------------------------
+        Define the list node which has the cursor on it.
+ 
+        Preconditions:
+            The list view must be a valid list view object.
+
+        Postconditions:
+            The indicated list node will be made the cursor node.  If this 
+            node  is not within the view, the view will be changed, and the 
+            cursor node placed as close to the center of the view as is 
+            possible.  The list node may be NIL, in which case there will be 
+            no displayable cursor.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetCursorNode       : AListViewGetProc;
+    (*------------------------------------------------------------------------
+        Determine which list node is the current cursor node.
+
+        Preconditions:
+            The list view must be a valid list view object.
+
+        Postconditions:
+            The current cursor node is returned.  This may be NIL, if there 
+            is no cursor node.
+    ------------------------------------------------------------------------*)
+
+
+
+        Synchronize         : AListViewProc;
+    (*------------------------------------------------------------------------
+        Synchronize the view within the list view with the objects of the list 
+        which is being viewed.  This needs to be called if the list has 
+        changed, but the first node viewed is the same.
+
+        Preconditions:
+           The view must be a valid list view, and a first viewed node must 
+           have been established which is not NIL.
+
+        Postconditions:
+            The subviews which have changed because of changes in the list 
+            being viewed will be marked as needing to be redisplayed.
+    ------------------------------------------------------------------------*)
+
+
+
+        ForceToPosition     : AListViewForceProc;
+    (*------------------------------------------------------------------------
+        Force the given node to be displayed in the view at the indicated
+        position, if at all possible.  Blank lines may be allowed at the
+        bottom of the view, but not at the top.  If the position indicated
+        is too large, the node will be placed as the last one in the view.
+
+        Preconditions:
+            The view must be a valid list view, and the node must be a valid
+            linked list node.
+
+        Postconditions:
+            The linked list node will be displayed at or above the indicated
+            position with the list view.
+    ------------------------------------------------------------------------*)
+
+
+
+        InquirePosition     : AListViewInquireProc;
+    (*------------------------------------------------------------------------
+        Determine the position in this view of the indicated node.  If the
+        node is not in the view, zero will be returned.
+
+        Preconditions:
+            The view must be a valid list view, and the node must be a valid
+            linked list node.
+
+        Postconditions:
+            The position of the node in the view (or zero) will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        NotifyNodeDeleted   : AListViewSetProc;
+    (*------------------------------------------------------------------------
+        Notify the list view that the indicated node has been deleted.  The
+        view must make whatever adjustments are necessary to remain valid as
+        a result of this node being deleted.
+
+        Preconditions:
+            The view must be a valid list view.  The node does not have to
+            be valid at the time of this method.
+
+        Postconditions:
+            The view will be adjusted as necessary to compensate for the 
+            indicated node having been deleted.
+    ------------------------------------------------------------------------*)
+
+
+                                ListViewTag       : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsListView --
+
+    Initialize the indicated object as a list view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid list view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsListView(    ListView       : AListView;
+                             SuperView      : AnActiveView;
+                             Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                             Box            : ABoxType;
+                             VideoMode      : avidmode;
+                         VAR Title          : ARRAY OF CHAR;
+                             HelpKey        : CARDINAL;
+                             TakeRug        : BOOLEAN      );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateListView --
+
+    Allocate storage for, and initialize the indicated object as a list
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid list view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateListView(VAR ListView       : AListView;
+                             SuperView      : AnActiveView;
+                             Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                             Box            : ABoxType;
+                             VideoMode      : avidmode;
+                         VAR Title          : ARRAY OF CHAR;
+                             HelpKey        : CARDINAL;
+                             TakeRug        : BOOLEAN      ) 
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsListView --
+
+    UnInitialize the indicated object as a list view.
+
+    Preconditions:
+        The object will be a valid list view object. 
+
+    Postconditions:
+        The list associated with this view will be discarded, and the view
+        will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsListView(    ListView     : AListView);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneListViewMethods --
+
+    Make a copy of the list view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The list view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneListViewMethods(    MethodObject : AListViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateListView --
+
+    Determine that the indicated object is in fact a valid list view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid list view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateListView(    ListView : AListView);
+
+
+
+END ListViews.
+

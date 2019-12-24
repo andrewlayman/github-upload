@@ -1,0 +1,67 @@
+DEFINITION MODULE TSEDData;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+CONST
+ (* pipe WIDTH keywords *)
+    NORMAL      = 10;
+    
+ (* frame types *)
+    NOFRAME     = 0;
+    DOUBLELINE  = 1;
+    PLUSCORNERS = 2;
+    PLUSEDGES   = 3;
+    SINGLELINE  = 4;
+    PIPELINE    = 5;
+ 
+ (* textures *)
+    SOLID	 = 0;
+    DOTTED	 = 1;
+    DASHED	 = 2;
+    
+    TEXTLEFT       = 1;  (* left justified, proportional spacing *)
+    TEXTCENTERED   = 2;  (* center justified, proportional spacing *)
+    NUMERICONLY    = 3;  (* right justified, equal spacing *)
+    NUMERICANDTEXT = 4;  (* left justified, equal spacing *)
+    DATE           = 5;  (* center justified, equal spacing *)
+
+    INCHESPERPOINT = 0.01389;  (* 1/72 *)
+    SEDONAUNITPERINCH = 1000.0;
+    SEDONAUNITPERPIXEL = 24.0; (* vertical, 17 in the horizontal *)
+    PIXELSPERPOINT = 0.58;     (* INCHESPERPOINT*SEDONAUNITPERINCH/SEDONAUNITPERPIXEL *)
+    
+    MAXCARDINAL = 65535;
+
+ (* pipe STYLE keywords *)
+    THINLINE       = 1;		
+    NORMALLINE     = 2;
+    FLOWLINE       = 8;
+    THICKTUBE      = 5;
+    FLOWTUBE       = 7;
+    
+ (* Chart Type *)
+    TREE    = 1;	(* trees *)
+    NETWORK = 2;  	(* network diagramss *)
+    GANTT   = 3;	(* gantt charts *)
+    
+VAR
+ 
+    CharPointSize,
+    SpacePointSize,
+    VerticalGap,		(* vertical gap for scaling *)
+    RealVerticalGap,		(* vertical gap edona units *)
+    BaseCharacterHeight,        (* Character size for scaling *)
+    BaseCharacterWidth,         (* Character size for scaling *)
+    RealCharacterHeight,        (* Character size in Sedona units *)
+    RealCharacterWidth          (* Character size in Sedona units *)
+                         : CARDINAL;
+                         
+    DrawingScale         : REAL;
+    ChartType            : CARDINAL;
+    
+PROCEDURE GetDataJustification(ColumnDataType : CARDINAL) : CARDINAL;
+PROCEDURE ShowThisTask(TaskTreeNode:ATreeNode) : BOOLEAN;
+
+END TSEDData.
+

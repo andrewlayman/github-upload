@@ -1,0 +1,422 @@
+DEFINITION MODULE EmsStorage;
+
+(*  =========================================================================
+    Last Edit : October 9, 1990 3:41PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+
+        This module manages allocation of EMS memory pages.
+
+        General idea:
+
+            EMS comes in 16K pages.  Each page, when accessed, is mapped
+            into a "Page Frame" of 16K.  There are 4 of these frames.
+
+            This module is the manager of the pages and the frames.
+
+            Clients request allocation of an EMS Page for storage.  The
+            request has a particular PRIORITY, which determines how
+            desperately it is needed.  EMS pages are DeAllocated if
+            no longer needed.
+
+            When a client needs access to a previously allocated EMS page,
+            the client requests that the page be LOCKED into a PAGE FRAME.
+            When the client is done with the page frame, it is UNLOCKED.
+
+            A client may elect to LOCK a frame and then UNLOCK it only when
+            absolutely nescessary.  FlexStor uses this.  Because of this,
+            if all page frames are locked, a request is made for the client
+            to release one or all locked page frames.  A request is made to
+            release all page frames when we are exiting to DOS or are doing
+            a simular drastic "flush" of the program.
+
+
+    MODIFICATION HISTORY:
+
+        3-Aug-89 RSC First version, based on ideas from Larry and Andrew.
+
+        9-Oct-90 RSC Added two new procedres, EMSWriteRecordToPage and
+                     EMSReadRecordFromPage.
+
+    =========================================================================
+*)
+
+
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+
+
+
+
+
+CONST
+    EMSPageSizeInBytes  = 16384;
+    NilEMSHandle        = 0FFFFH;
+
+
+
+
+
+TYPE
+    (* An Ems Handle is the secret internal handle for these EMS routines
+       to use.  It is defined here only becuase other modules will actually
+       implement these procedures.  This is not intended for clients.
+    *)
+    AnEmsHandle      = CARDINAL;    (* No, you can't look at it. *)
+
+
+    (* Priority determines how urgently you need additional pages.
+    *)
+    AnEmsPriority    = (LowEmsPriority, MediumEmsPriority, HighEmsPriority);
+
+
+    (* If you lock EMS Pages and don't release them except when absolutely
+       nescessary, you must respond to an EmsPageFrameRequest.  Here are
+       the requests you will get.  If asked for One page frame, please try
+       your best to free up one frame.  If asked for All frames, free up
+       all frames or complain.
+    *)
+    AnEmsPageFrameRequest = (OneEmsPageFrame, AllEmsPageFrames);
+
+VAR
+    (*  =====================================================================
+        
+        PROCEDURE - EMSAllocate
+
+                Allocate a page of EMS Storage, if one is available.
+
+            Preconditions :
+
+                Time Line has initialized, but it is not important that
+                any overlays have been read in.  There need not be any
+                EMS memory available.
+
+            Postconditions :
+
+                If there was some EMS memory available given your priority,
+                one EMS page of EMSPageSizeInBytes will be reserved for you.
+                You must Lock and Unlock it to access the page.
+
+                If you are not High Priority, you must respond to
+                EMSLowMemory notices, and free up EMS pages on request.
+
+                General priority rules:
+
+                    HighPriority means "I desperately need EMS, and Time Line
+                                       will suffer greatly if I run out".
+                                       This will probably ONLY be FlexStor,
+                                       and perhaps, say, one index page for
+                                       other clients who use medium and low
+                                       priority memory.
+
+                    MediumPri    means "I could get a lot of speed out of a
+                                       small amount of EMS".  Clients would
+                                       be, say, MsgFile, where the total
+                                       EMS use would be around 10-15 pages
+                                       of memory.
+
+                    LowPriority  means "I need gobs of EMS and it will help
+                                       me some if I get it".  Clients would
+                                       be, say, Overlays and Help Text.
+
+                EMS Low Memory notices are sent out when a page is requested
+                for Medium or High priority and there are none free.
+                We free up pages starting with the lowest priority, and
+                always from a priority lower than the requested priority.
+
+            Parameters :
+                Input:      EmsPriority is how desperately you need the
+                                           memory.  FlexStor would be
+                                           High Priority, Others Low Priority.
+
+                Output:     EmsHandle   is the internal EMS Handle to give
+                                           to the lock and unlock routines.
+
+                            RETURN      is TRUE if an EMS page was found
+                                           for you, FALSE if no page was
+                                           found.
+
+        =====================================================================
+    *)
+    EMSAllocate : PROCEDURE( VAR (* EmsHandle *)   AnEmsHandle,
+                                 (* EmsPriority *) AnEmsPriority ) : BOOLEAN;
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSDeAllocate
+
+            Preconditions  :
+
+                You have previously allocated EMS memory and been given
+                an EMS Handle.  You have decided to free up this EMS page,
+                perhaps because of an EMS low memory notice.
+
+            Postconditions :
+
+                The EMS memory was returned to the EMS pool.
+
+            Parameters :
+
+                Input:      EmsHandle   is the handle that was returned
+                                           to you by the EMSAllocate proc.
+
+                Output:     EmsHandle   has been made invalid.
+
+        =====================================================================
+    *)
+    EMSDeAllocate   : PROCEDURE( VAR (* EmsHandle *) AnEmsHandle );
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSLock
+
+            Preconditions  :
+
+                You have previously allocated EMS memory and been given
+                an EMS Handle.  No more than three other EMS pages have
+                been locked by all clients of this module.
+
+            Postconditions :
+
+                The EMS page has been locked down in a page frame, or else
+                FALSE was returned.
+
+                The "page frame" is the address of where the EMS memory is
+                mapped to.  Writes into the page frame are handled correctly,
+                causing the EMS page to be "saved" into EMS later when the
+                page is unlocked.
+
+                It must be unlocked "soon", or else other code could
+                try to lock pages down.  There is a maximum of 4 simultanious
+                page locks available (the number of page frames).
+
+            Parameters :
+
+                Input:      EmsHandle   is the handle that was returned
+                                           to you by the EMSAllocate proc.
+
+                Output:     PageFrame   is the address of where the EMS page
+                                           has been loaded, if RETURN is TRUE.
+                            FrameHandle is an internal handle to be given back
+                                           to the Unlock.
+                            RETURN      is TRUE  if the page frame is correct.
+                                           FALSE if EMS has shut down.
+
+        =====================================================================
+    *)
+    EMSLock         : PROCEDURE(     (* EmsHandle *)   AnEmsHandle,
+                                 VAR (* PageFrame *)   ADDRESS,
+                                 VAR (* FrameHandle *) CARDINAL ) : BOOLEAN;
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSUnLock
+
+            Preconditions  :
+
+                You have previously locked an EMS page via EMSLock.
+
+            Postconditions :
+
+                The EMS page frame has been released.
+
+            Parameters :
+
+                Input:      EmsHandle   is the handle that was returned
+                                           to you by the EMSAllocate proc.
+                            FrameHandle is the handle given back by EMSLock.
+
+                Output:     None.
+
+        =====================================================================
+    *)
+    EMSUnLock       : PROCEDURE(     (* EmsHandle *)   AnEmsHandle,
+                                     (* FrameHandle *) CARDINAL     );
+                   
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSFrameRequest
+
+            Preconditions  :
+
+                This procedure vector is stolen by any client who will lock
+                down page frames and not release them unless requested to
+                do so.  This is not the desired behaviour of clients, but
+                is used by FlexStor to optimize repeated access to a page.
+
+                This procedure is called as a request from the EmsStorage
+                module to the client module, requesting back one or all
+                page frames.
+
+                One page frame is requested when there are no free (unlocked)
+                page frames, and some client is trying to LOCK a page.  If
+                none can be freed up, then the LOCK request is refused.
+
+                All page frames are requested when we are exiting to DOS,
+                Quitting the program, or some other massive flush operation.
+
+                Remember, this is not a request that a CLIENT makes, this
+                is a request that THIS MODULE makes of its CLIENTS.
+
+            Postconditions :
+
+                The called procedure will have done its best to satisfy the
+                request for page frames.
+
+            Parameters :
+
+                Input:      RequestType  is whether one frame is requested,
+                                            or all frames.
+
+                Output:     RETURN       is TRUE if the request was satisfied,
+                                            or if there were no locked pages.
+                                         is FALSE if there are locked pages
+                                            which CANNOT be unlocked at this
+                                            time.
+
+            TechNote:  This is implemented as a TYPE, because we expect
+                       clients to keep an "old" copy around.
+
+        =====================================================================
+    *)
+TYPE
+    AnEMSFrameRequest = PROCEDURE( (* RequestType *) AnEmsPageFrameRequest
+                                 ) : BOOLEAN;
+VAR
+    EMSFrameRequest : AnEMSFrameRequest;
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSStatistics
+
+            Preconditions :
+
+                This module has initialized.
+
+            Postconditions :
+
+                Statistics about EMS are returned.
+
+            Parameters :
+                Input:  None.
+
+                Output: TotalPages      Total EMS 16KB pages.  If 0, there
+                                        is no EMS.
+                        FreePages       Pages free right now.
+                        HighPriFree     Pages that could be made avail to
+                                        a high priority request.
+
+        =====================================================================
+    *)
+    EMSStatistics   : PROCEDURE( VAR (* TotalPages *)   CARDINAL,
+                                 VAR (* FreePages  *)   CARDINAL,
+                                 VAR (* HighPriPages *) CARDINAL );
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSReadRecordFromPage
+
+                Read some data from within an EMS page.  This is designed
+                for record-level access from EMS pages, as may be used
+                by caching schemes.  With this request, there is no need
+                to mess with page frames.  If all page frames are busy,
+                one will be freed up momentarily for the transfer, and then
+                put back with the proper page.
+
+            Preconditions :
+
+                You have previously allocated EMS memory and been given
+                an EMS Handle.
+
+            Postconditions :
+
+                Bytes are copied from the EMS page into your (local)
+                memory.
+
+            Parameters :
+
+                Input:  EmsHandle   The EMS handle returned by EMSAllocate.
+                        Offset      The starting byte within that page to
+                                    copy.
+                        Length      The number of bytes to copy.
+                        TargetAddr  Where to copy the bytes to.
+
+                Output: RETURN      TRUE iff transfer took place.
+
+        =====================================================================
+    *)
+    EMSReadRecordFromPage : PROCEDURE(     (* EmsHandle  *) AnEmsHandle,
+                                           (* Offset     *) CARDINAL,
+                                           (* Length     *) CARDINAL,
+                                           (* TargetAddr *) ADDRESS
+                                     ) : BOOLEAN;
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - EMSWriteRecordToPage
+
+                Write some data into an EMS page.  This is designed
+                for record-level access to EMS pages, as may be used
+                by caching schemes.  With this request, there is no need
+                to mess with page frames.  If all page frames are busy,
+                one will be freed up momentarily for the transfer, and then
+                put back with the proper page.
+
+            Preconditions :
+
+                You have previously allocated EMS memory and been given
+                an EMS Handle.
+
+            Postconditions :
+
+                Bytes are copied from your (local) memory into the EMS page.
+
+            Parameters :
+
+                Input:  EmsHandle   The EMS handle returned by EMSAllocate.
+                        Offset      The starting byte within that page to
+                                    copy.
+                        Length      The number of bytes to copy.
+                        SourceAddr  Where to copy the bytes from.
+
+                Output: RETURN      TRUE iff transfer took place.
+
+        =====================================================================
+    *)
+    EMSWriteRecordToPage : PROCEDURE(     (* EmsHandle  *) AnEmsHandle,
+                                          (* Offset     *) CARDINAL,
+                                          (* Length     *) CARDINAL,
+                                          (* SourceAddr *) ADDRESS
+                                    ) : BOOLEAN;
+
+
+
+
+
+END EmsStorage.
+
+

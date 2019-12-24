@@ -1,0 +1,19 @@
+DEFINITION MODULE AsmTimeu;
+
+(* MODIFICATION HISTORY:
+
+    30-Mar-90 RSC  Made Timeu to Timei conversions.
+*)
+
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+
+EXPORT QUALIFIED            TimeUtoT;
+
+
+PROCEDURE TimeUtoT (TimeU:ADate; VAR Year,Month,Date,Hour,Minute:CARDINAL);
+
+END AsmTimeu.
+

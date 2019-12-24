@@ -1,0 +1,393 @@
+DEFINITION MODULE Assignments;
+
+  (*  Module created 5/6/87 by RSC.
+
+            Assignments - Manage Assignment and Expense records.
+
+      This module defines and maintains the cost related records.
+      These records are kept in extended storage.  The Task record
+      points to arrays of AnAssignmentRecord, which each can point
+      to an array of AnExpenseRecord.
+
+      AssignmentRecords tie resources to tasks.  A task can have many
+      resources, each requiring exactly one AssignmentRecord.
+
+      ExpenseRecords tie a specific line item cost to a resource for
+      this task.  A resource can have many ExpenseRecords.
+
+      MODIFICATION HISTORY:
+
+        RSC 05/06/87 - First version, based on Andrew's 5/4/87 costs
+                       document.
+        RSC 07/23/87 - Removed Time fields and replaced with people ... at
+                       fields.
+        EGK 01/10/88 - Added two procedures from Allocs.
+        EGK 03/07/89 - Added "ComputeByHours" to AnAssignmentAttribute.
+        EGK 03/12/89 - Added "CalcError" to AnAssignmentAttribute.  If this
+                       is set, the percentage could not be correctly
+                       computed based on the total quantity.
+        EGK 04/03/89 - Changed "TempFlag" to "RTempFlag" to avoid conflicts
+                       with TempFlag enumerations in TreeObjects.DEF.
+        RSC 05/26/89 - Added in AnAssignmentPointer and ANextAssignmentProc.
+        JES 01/08/90 - Added new types "AnAssignmentCell" and 
+                       "AnAssignmentCellPointer", in preparation for
+                       varying assignments (for multiple calendars etc).
+                        Also added VaryingAssignment field to the
+                        Assignment record, a handle to the head of
+                        the linked list of assignment cells.
+        30-Mar-90 RSC  Made Timeu to Timei conversions. 
+        AJL 05/30/90 - Moved the Expenses definitions to a new module,
+                       "Expenses".
+                     - Added OvertimeHours to each assignment record.
+                     - Added ExtraCosts to each assignment record.
+                     - These are initialized in AssList.mod.
+                     - Added InitAssignment proc.
+        AJL 29-Jun-90 - Added ARole, ASetOfRoles, etc.
+        AJL  6-Jul-90 - Removed the AnAssignmentCell.  It has been
+                        superceeded by VaryingAssignments.
+                      - Added CopyOneAssignmentRecord and 
+                        DisposeOneAssignmentRecordContents.
+        AJL 10-Jul-90 - Add DurationOf procedure.
+        JES  7-Aug-90 - Added and then removed fields "ComputedStartDate"
+                        and "ComputedEndDate" from assignment record. (They
+                        were to replace varying assignment structure but
+                        it turns out we still need that.)
+        AJL 26-Aug-90 - Added EndOfSpentDate to each assignment.
+                      - Indented and touched-up documentation.
+        RSC 27-Aug-90 - Removed the "NextAssignmentProc".
+        RSC 14-Sep-90 - Even-Aligned the records.
+        RSC 16-Oct-90 - Added OvertimeTimeUnits.
+        AJL  3-Jan-90 - Added a filler byte at the end, since the previous
+                        change, 16-Oct, made the record odd-lengthed.
+        RSC 22-Jan-91 - Removed VaryAssignment import to save 4KB from the
+                        root.
+
+                        PLEASE NOTE THAT THE "VaryingAssignment" is REALLY
+                        a VaryAssignment type.
+        RSC 11-Feb-91   Put the assignment tree here for assignment editing.
+                        this is used by AssForms and by tlaslist.
+        RSC 14-Feb-91   Added InitializeAssignments.
+        AJL 14-Feb-91   Renamed EndOfActualDate to EndOfSpentDate.
+  *)
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle, AnExtStoragePreference;
+
+FROM RsrcMod                IMPORT
+    (* TYPE *)                  AResourcePointer;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS, BYTE;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADuration, ADurationUnit;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree;
+
+(*FROM VaryAssgnment          IMPORT*)
+(*    (* TYPE *)                  AVaryingAssgnList;*)
+
+
+(*$A+*)
+
+
+TYPE
+
+      (* For resource leveling, we need Overloaded and AllowLevel.  For
+         Costing, we need whether the time is billable or not. *)
+
+    AnAssignmentAttribute = (Overloaded,        (* The resource used causes an overload.
+                                                   That is, this assignment occurs during a
+                                                   period when the resource is overbooked. *)     
+                             AllowLevel,        (* Allow this assignment to be leveled. *)
+                             Billable,          (* Costs contribute to total task cost. *)
+                             ComputeByHours,
+                             CalcError,
+                             AssFormsWorkFlag1, (* Available for temp use *)
+                             AssFormsWorkFlag2,
+                             PlannerWorkFlag1,
+                             PlannerWorkFlag2,
+                             RTempFlag1,
+                             RTempFlag2,
+                             RTempFlag3,
+                             RTempFlag4,
+                             RTempFlag5 );
+
+    AnAssignmentAttributeSet = SET OF
+                             AnAssignmentAttribute;
+
+       (* What role does this person play in the performance of the 
+          task? *)
+
+    ARole =  ( RoleResponsible,     (* Primary responsibility *)
+               RoleLabor,           (* Works on it. *)
+               RoleInformation,     (* Provides information. *)
+               RoleDecision,        (* Needed for decisions. *)
+               RoleConsult,         (* Must be consulted. *)
+               RoleVeto,            (* Can veto it. *)
+               RoleSponsor,         (* Provides authority *)
+               RoleNotify,          (* Need to notify of results. *)
+               RoleAlert );         (* Alert when action is pending. *)
+
+     ASetOfRoles = SET OF ARole;
+
+
+     (* One AssignmentRecord is used per Task per Resource.  This record
+        is stored in Extended Storage, and so is accessed via a Handle. *)
+
+    AnAssignmentRecord = RECORD
+                       Resource     : AResourcePointer;
+                       Attributes   : AnAssignmentAttributeSet;
+
+                               (* MaxRatePercent is the field that tells what fraction of the
+                                  resource pool is assigned.  It is a computed field, calculated
+                                  by multiplying the number of people assigned by the 
+                                  percentage rate they are to work (PercentageEach, below.)
+                               *)
+                       MaxRatePercent  : CARDINAL;
+
+                               (* The assignment form enters "5 people at 20% each".  Here
+                                  we store the % field.  Using this, we can calculate the
+                                  # of people field by this formula:
+                  
+                                     # of resources = MaxRatePercent / Percentage Each.
+                  
+                                  PercentageEach is stored in the range 1-250.
+                               *)
+                       PercentageEach  : CHAR; (* SMALLCARDINAL *)
+
+                               (* Resources have the prefered display time units for both
+                                  Actual and YetToGo.  This says whether to display the 
+                                  effort in hours, days or whatever.
+                               *)
+                       ActualTimeUnits : ADurationUnit;
+
+                       MaxRateUnits    : CARDINAL; (* TEMP USE IN PLANNER ONLY *)
+
+                               (* Expense records handle.  This is the list of <date>, <$> *)
+                  
+                       Expenses        : AnExtHandle;
+
+                               (* For Fixed Costs, Quantity is the bucks.
+                                  For Unit  Costs, Quantity is the # of units.
+                                  For Var   Costs and Resources, Quantity is the number of
+                                            Man-Hours (not clock tics!).
+                               *)
+                       ActualQuantity  : REAL;
+                       YetToGoQuantity : REAL;
+
+                               (* OvertimeHours is the number of hours that
+                                  will be worked as overtime.   These count
+                                  as part of the total task effort, and are
+                                  costed at a potentially different rate.
+                                  They are overlooked during resource 
+                                  scheduling. *)
+
+                       OvertimeHours,
+                       YetToGoOvertimeHours  : LONGINT;
+
+                               (* ExtraCosts is a catch-all for allowing a
+                                  variance to be entered between the costs
+                                  implied by the assignment effort and the
+                                  actual costs, which could be different. *)
+
+                       ExtraCosts       : REAL;
+
+(*                       VaryingAssignment : AVaryingAssgnList;*)
+                       VaryingAssignment : AnExtHandle;
+
+                               (* EndOfSpentDate is used for assignments
+                                  when some of the effort has been spent.  
+                                  This is the date before which the assignment
+                                  records spending, and after which it records 
+                                  future projection. *) 
+
+                       EndOfSpentDate    : ADate;
+
+                       Spare             : BITSET;  
+
+                       Roles             : ASetOfRoles;
+
+                       OvertimeTimeUnits : ADurationUnit;
+
+                       Filler            : CHAR;  (* Pad to even length record. *)
+
+    END; (* AnAssignmentRecord *)
+
+
+
+
+
+
+         (* This is the "open-ended" array pointer for accessing all
+            AssignmentRecords for this task.
+         *)
+    AnAssignmentArray = POINTER TO ARRAY [0..1000] OF AnAssignmentRecord;
+
+
+         (* These procedure types are used in the "ForEach...." procedures.
+            They are passed one assignment or expense record, and they
+            return TRUE to continue processing, or FALSE to stop.
+            In addition, the ADDRESS is for communication between the
+            procedure and the caller of ForEach.... .
+          *)
+    AnAssignmentProc = PROCEDURE( VAR AnAssignmentRecord,
+                                      ADDRESS ) : BOOLEAN;
+
+    AnAssignmentPointer     = POINTER TO AnAssignmentRecord;
+
+(*$A=*)
+
+
+
+ (* ********  PROCEDURES  ********** *)
+
+
+ (* InitAssignment -- 
+
+    Make the assignment reflect the resource, and fill in some
+    default values, based on attributes of the resource. 
+
+  *)
+
+
+
+PROCEDURE InitAssignment(     ResourcePtr      : AResourcePointer;
+                          VAR AssignmentRecord : AnAssignmentRecord );
+
+                          
+                          
+                          
+(*  ForEachAssignment - Call a routine for each assignment record.
+
+      Preconditions  - Must have a valid assignment handle.
+                       Must provide a procedure to be called for each
+                       assignment record.
+                       Context is user context and not used by this procedure.
+                       use it to pass any data you want between levels.
+
+      Postconditions - your procedure will have been called once for
+                       each found assignment.  If there were no assignment
+                       records, then it will never have been called.
+  *)
+
+PROCEDURE ForEachAssignment( AssignmentHandle : AnExtHandle;
+                             CalledEachTime   : AnAssignmentProc;
+                             Context          : ADDRESS );
+
+
+
+(*----------------------------------------------------------------------------
+    RemoveAssignmentsAndExpenses --
+
+    Remove all references to this Assignment record and its expenses, if any.
+
+    Preconditions:
+        Handle to AnAssignmentRecord.
+
+    Postconditions:
+        Assignment record and its expenses removed.
+----------------------------------------------------------------------------*)
+PROCEDURE RemoveAssignmentsAndExpenses( VAR Handle : AnExtHandle );
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CopyOneAssignmentWithSpeed --
+
+    Copy one assignment handle to another, including any expenses.
+
+    Preconditions:
+        FromHandle is the valid (though possibly NIL) assignment handle from
+            a Task record.
+        ToHandle is the destination handle.  It is created by this procedure.
+        Speed is the new speed for the copy.  It is here because BaseLine may
+            be very slow, while Actual may be medium or fast.
+
+    Postconditions:
+        ToHandle has a COPY of the assignment records, and each assignment
+        record contains a COPY of its expense record.  They may be NIL.
+----------------------------------------------------------------------------*)
+PROCEDURE CopyOneAssignmentWithSpeed( FromHandle : AnExtHandle;
+                                VAR   ToHandle   : AnExtHandle;
+                                      Speed      : AnExtStoragePreference);
+
+
+
+    (*----------------------------------------------------------------------
+
+     CopyOneAssignmentRecord
+
+     Deep copy a single assignment record.  Subrecords will be allocated in
+     the speed class passed in.
+
+     ----------------------------------------------------------------------*)
+
+PROCEDURE CopyOneAssignmentRecord ( VAR Target : AnAssignmentRecord;
+                                        Source : AnAssignmentRecord;
+                                        Speed      : AnExtStoragePreference);
+
+
+
+    (*----------------------------------------------------------------------
+
+     DisposeOneAssignmentRecordContents
+
+     Deep dispose any subrecords of a single assignment record.
+
+     ----------------------------------------------------------------------*)
+
+
+
+PROCEDURE DisposeOneAssignmentRecordContents( VAR R : AnAssignmentRecord );
+
+    (*----------------------------------------------------------------------
+
+    DurationOf
+
+    Return the minimum duration that could be used be the assignment record,
+    given its percentage assigned and effort hours.
+
+    This uses the formula "Duration = Effort/NumberOfPeople" and does conversions
+    to the current calendar precision.
+
+    Input:  NumberOfPeople : The number of people, times one hundred, so that
+                             one person would be 100; two, 200; half, 50 etc.
+
+            EffortHours    : The number of hours of effort.  This is hours, not
+                             clock ticks.
+
+    Output: RETURNS        : A Duration, in clock ticks (whose meaning varies
+                             depending on calendar precision).
+
+
+    ------------------------------------------------------------------------*)
+
+PROCEDURE DurationOf ( NumberOfPeople : CARDINAL;
+                       EffortHours    : REAL      ) : ADuration;
+
+
+
+    (* 11-Feb-91 RSC
+       Put the assignment tree here, which is only used for
+       editing resource assignments.  This is because we need
+       to be able to register for notices to notice resource deletion,
+       which we could not do in a resident overlay.
+    *)
+VAR
+    AssTree             : ATree;
+
+
+(* 14-Feb-91 RSC  *)
+(* Initialize the assignments module.  Called once in TimeLine.mod
+*)
+PROCEDURE InitializeAssignments();
+
+
+END Assignments.
+
+
+

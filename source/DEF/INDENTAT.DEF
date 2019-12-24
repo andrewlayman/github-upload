@@ -1,0 +1,46 @@
+DEFINITION MODULE Indentation;
+
+    (* Indentation  - outline indentations.
+
+        12/16/88  RSC  Cloned from Captions.
+
+    *)
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+VAR
+    SpacesPerLevel   : CARDINAL;
+
+
+(*----------------------------------------------------------------------------
+    FormatIndentation --
+
+    Create a string according to the level of the node, indicate if this
+    task is a summary task or not, and limit the resulting LString to the
+    indicated width.  
+
+    Preconditions:
+        The given task node must not be NIL.
+
+    Postconditions:
+        An LString of the indicated width will be generated, containing blanks
+        according to the indentation required, with the indicator of whether 
+        this is a summary or detail task.  The length of the LString will 
+        always be of the requested width, as long as the string variable is 
+        big enough. Therefore, it may have to be padded with trailing blanks.
+----------------------------------------------------------------------------*)
+
+PROCEDURE FormatIndentation(    TaskNode       : ATreeNode;
+                                Length         : CARDINAL;
+                            VAR String         : ARRAY OF CHAR);
+
+
+
+
+
+END Indentation.
+

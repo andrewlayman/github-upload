@@ -1,0 +1,80 @@
+DEFINITION MODULE RollupResourceModule;
+
+    (*  MODIFICATION HISTORY
+        26-Feb-88 LAA   Changed parameters of RollupResource.
+         4-Mar-88 AJL   Added PeriodType parameter to RollupResource.
+        23-Aug-89 EGK   Added "CostTracking" parameter ro RollupResource.               
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+        22-Oct-90 TGS   Add Spent/ToGoOTDollars to ASingleAccumulation.
+                        Add RealDone/ToGoOTHours so OvertimeHours can be
+                            prorated in the accumulation record.
+    *)
+
+FROM Assignments            IMPORT
+    (* TYPE *)                  AnAssignmentRecord;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+TYPE
+    ASingleAccumulation     = RECORD
+                                Assignment  : AnAssignmentRecord;
+                                SpentDollars: REAL;
+                                ToGoDollars : REAL;
+                                SpentOTDollars  : REAL;
+                                ToGoOTDollars   : REAL;
+                                RealDoneOTHours : REAL; (* 22-Oct-90 TGS *)
+                                RealToGoOTHours : REAL;
+                                TotalMaxRate: REAL;
+                                DataExists  : BOOLEAN;
+                              END;
+
+    AResourceKind           = (Rsrc, FixedCost, UnitCost, VarCost);
+
+    AnAccumulationRecord    = ARRAY AResourceKind OF ASingleAccumulation;
+
+    APeriodType             = (NormalPeriod, FinalPeriod);
+
+
+  (* Rollup Resource - Rollup a tasks' resource[s].
+
+        The goal of this module is to return assignment data for one or more
+        resources for a task AND ALL ITS FILTERED-IN kids.  This is different
+        from Rollups.Rollup.
+
+        Preconditions  - Task          is a valid task node
+                         ResourceNode  is a valid resource node, or NIL if
+                                          all resources, costs, etc. are to
+                                          be accumulated.
+                         StartDate     -  defines the period during which
+                         EndDate          resource info is rolled up
+                         KidsToo       is "Rollup task's Children?"
+                         Baseline      is 'Do you want Baseline information'
+                         FirstTime     is 'Do you want me to initialize?'
+                         PeriodType    should be NormalPeriod for all date
+                                       ranges except when accumulating costs
+                                       for the terminal range.
+
+        Postconditions - Accumulation  is record containing rolled up values.
+  *)
+
+PROCEDURE RollupResource(    Task           : ATreeNode;
+                             ResourceNode   : ATreeNode;
+                             StartOfPeriod,
+                             EndOfPeriod    : ADate;
+                             KidsToo,
+                             Baseline,
+                             FirstTime,
+                             CostTracking   : BOOLEAN;
+                             PeriodType     : APeriodType;
+                         VAR Accumulation   : AnAccumulationRecord);
+
+
+END RollupResourceModule.
+

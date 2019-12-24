@@ -1,0 +1,78 @@
+DEFINITION MODULE RcDynMem;
+
+(*  =========================================================================
+    Last Edit : January 29, 1991 9:53AM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        This is a newer version of DynMem and BTDynMem.  It has the advantage
+        that it does NOT use one word of memory on each side of data items
+        like its forefathers.  It also does not require that the "Block"
+        have an OFFSET of 0, or that the block size be < MaxInt (it can
+        be any CARDINAL number of bytes).
+
+    MODIFICATION HISTORY:
+
+    RSC 28-Jan-91 First version, with interface from DynMem and BTDynMem.
+
+    =========================================================================
+*)
+
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+
+TYPE
+    ABlock;
+
+
+
+(* Block is any valid address, including HMA addresses of FFFF:10.
+   Size  is any number of bytes, greater than about 2 bytes.
+*)
+PROCEDURE InstallDynMem( Block : ABlock; Size : CARDINAL );
+
+
+
+
+
+(* Allocate "Adr" of "Size" bytes from block Block.  Block must have been
+   given to InstallDynMem before.  Adr may be returned as NIL if there
+   is not enough space.
+*)
+PROCEDURE Alloc( Block : ABlock; VAR Adr : ADDRESS; Size : CARDINAL );
+
+
+
+
+(* DeAlloc a chunk of memory that had been returned from Alloc.
+   Size MUST be the same as the size passed to Alloc.
+   Adr will be returned as NIL.
+   RETURN is TRUE if the block is now completely empty.
+*)
+PROCEDURE DeAlloc(     Block : ABlock;
+                   VAR Adr   : ADDRESS;
+                       Size  : CARDINAL ): BOOLEAN;
+
+
+
+(* Avail returns TRUE iff Block can hold Size bytes.
+   Block must have been passed to InstallDynMem.
+*)
+PROCEDURE Avail( Block : ABlock; Size : CARDINAL ): BOOLEAN;
+
+
+
+(* How many bytes are free in Block in chunks of at least SizeToCount
+   size.
+*)
+PROCEDURE CountOfFree(    HeapBlock         : ABlock;
+                          SizeToCount       : CARDINAL)
+                                                       : CARDINAL;
+
+
+END RcDynMem.
+
+

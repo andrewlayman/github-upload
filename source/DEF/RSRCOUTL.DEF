@@ -1,0 +1,402 @@
+DEFINITION MODULE RsrcOutlines;        (*  a subclass of OutlineViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AResourceOutlineStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+TYPE
+
+        (*  AResourceOutline is a subclass of AnOutlineView  *)
+
+    AResourceOutline        = POINTER TO AResourceOutlineRecord;
+
+    AResourceOutlineMethods = POINTER TO AResourceOutlineMethodsRecord;
+
+    AResourceOutlineRecord  = RECORD
+                                Methods     : AResourceOutlineMethods;
+                              END;
+
+
+
+
+
+    (*  These types are re-definitions of types exported from OutlineViews. *)
+
+
+    AResourceOutlineStatus    = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                                 CursorOn,
+                                 ResourceOutlineSpare5, ResourceOutlineSpare6, 
+                                 ResourceOutlineSpare7, ResourceOutlineSpare8, 
+                                 ResourceOutlineSpare9);
+
+    AResourceOutlineStatusSet = SET OF AResourceOutlineStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AResourceOutline to
+        them.
+    *)
+
+
+    AResourceOutlineCloneProc   = PROCEDURE(    AResourceOutline,
+                                            VAR AResourceOutline )
+                                                                  : BOOLEAN;
+
+    AResourceOutlineStoreOnProc = PROCEDURE(    AResourceOutline,
+                                                AnObject         );
+
+    AResourceOutlineDiscardProc = PROCEDURE(VAR AResourceOutline);
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AResourceOutline
+        to them.
+    *)
+
+
+    AResourceOutlineGetObjectProc = PROCEDURE(    AResourceOutline)
+                                                                   : ATree;
+
+    AResourceOutlineSetObjectProc = PROCEDURE(    AResourceOutline,
+                                                  ATree            );
+
+    AResourceOutlineXYProc        = PROCEDURE(    AResourceOutline,
+                                              VAR ascreenx,
+                                              VAR ascreeny,
+                                              VAR ascreenx,
+                                              VAR ascreeny         );
+
+    AResourceOutlineTitleProc     = PROCEDURE(    AResourceOutline,
+                                              VAR ARRAY OF CHAR    );
+
+    AResourceOutlineProc          = PROCEDURE(    AResourceOutline );
+
+    AResourceOutlineMoveProc      = PROCEDURE(    AResourceOutline,    
+                                                  ascreenx,        
+                                                  ascreeny         );
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AResourceOutline 
+        to them.
+    *)
+
+
+
+    AResourceOutlineRecordProc    = PROCEDURE(    AResourceOutline,
+                                                  AnEvent          );
+
+    AResourceOutlineGetEventProc  = PROCEDURE(    AResourceOutline,
+                                                  CARDINAL,
+                                              VAR AnEvent          );
+
+    AResourceOutlineActOnProc     = PROCEDURE(    AResourceOutline,
+                                                  AnEvent,
+                                              VAR AnEvent          );
+
+    AResourceOutlineGetCursorProc = PROCEDURE(    AResourceOutline)
+                                                                   : BOOLEAN;
+
+    AResourceOutlineSetCursorProc = PROCEDURE(    AResourceOutline,
+                                                  BOOLEAN          );
+
+    AResourceOutlineSetCursorModeProc = PROCEDURE(    AResourceOutline,
+                                                      avidmode        );
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AResourceOutline to
+        them.
+    *)
+
+
+
+    AResourceOutlineSetNodeProc   = PROCEDURE(    AResourceOutline,
+                                                  ATreeNode        );
+
+    AResourceOutlineGetNodeProc   = PROCEDURE(    AResourceOutline )
+                                                                    : ATreeNode;
+
+    AResourceOutlineForceProc     = PROCEDURE(    AResourceOutline,   (* View *)
+                                                  ATreeNode,          (* Node *)
+                                                  CARDINAL         ); (* Position *)
+
+    AResourceOutlineInquireProc   = PROCEDURE(    AResourceOutline,
+                                                  ATreeNode        )
+                                                                    : CARDINAL;
+
+
+
+
+    AResourceOutlineGetCountProc = PROCEDURE ( AResourceOutline )
+                                                                 : CARDINAL;
+
+    AResourceOutlineFindCharProc = PROCEDURE ( AResourceOutline,
+                                               CHAR             )
+                                                                 : BOOLEAN;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+
+    These are the methods for AResourceOutline objects.  They inherit and
+    redefine methods from OutlineViews, but do not add any new methods
+    of their own.
+
+----------------------------------------------------------------------------*)
+
+
+    AResourceOutlineMethodsRecord = RECORD
+
+        Methods                 : AnObjectMethods;
+        Clone                   : AResourceOutlineCloneProc;
+        StoreOn                 : AResourceOutlineStoreOnProc;
+        Discard                 : AResourceOutlineDiscardProc;
+        SuperclassMethods       : AnOutlineViewMethods;
+        MethodSize              : CARDINAL;
+        ObjectMethodsTag        : CARDINAL;
+
+        GetExternalXY           : AResourceOutlineXYProc;
+        GetInternalXY           : AResourceOutlineXYProc;
+        GetTitle                : AResourceOutlineTitleProc;
+        SetObject               : AResourceOutlineSetObjectProc;
+        GetObject               : AResourceOutlineGetObjectProc;
+        Move                    : AResourceOutlineMoveProc;
+        Display                 : AResourceOutlineProc;
+        GetHelp                 : AResourceOutlineProc;
+        HideView                : AResourceOutlineProc;
+        RevealView              : AResourceOutlineProc;
+        NotifyOfChange          : AResourceOutlineProc;
+        ObjectViewTag           : CARDINAL;
+
+        RecordEvent             : AResourceOutlineRecordProc;
+        GetRecordedEvent        : AResourceOutlineGetEventProc;
+        ActOnEvent              : AResourceOutlineActOnProc;
+        GetCursor               : AResourceOutlineGetCursorProc;
+        SetCursor               : AResourceOutlineSetCursorProc;
+
+        SetCursorMode           : AResourceOutlineSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AResourceOutline.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag           : CARDINAL;
+
+        SetFirst                : AResourceOutlineSetNodeProc;
+        GetFirst                : AResourceOutlineGetNodeProc;
+        GetLast                 : AResourceOutlineGetNodeProc;
+        SetCursorNode           : AResourceOutlineSetNodeProc;
+        GetCursorNode           : AResourceOutlineGetNodeProc;
+        Synchronize             : AResourceOutlineProc;
+        ForceToPosition         : AResourceOutlineForceProc;
+        InquirePosition         : AResourceOutlineInquireProc;
+        NotifyNodeDeleted       : AResourceOutlineSetNodeProc;
+        ListViewTag             : CARDINAL;
+
+        ResetMatching           : AResourceOutlineProc;
+        GetMatchCount           : AResourceOutlineGetCountProc;
+        FindChar                : AResourceOutlineFindCharProc;
+        OutlineViewTag          : CARDINAL;
+
+        ResourceOutlineTag      : CARDINAL;
+
+                                  END;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsResourceOutline --
+
+    Initialize the indicated object as a resource outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid resource outline view object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsResourceOutline(  ResourceOutline : AResourceOutline;
+                                  SuperView       : AnActiveView;
+                                  Ulx             : ascreenx;
+                                  Uly             : ascreeny;
+                                  Lrx             : ascreenx;
+                                  Lry             : ascreeny;
+                                  Box             : ABoxType;
+                                  VideoMode       : avidmode;
+                              VAR Title           : ARRAY OF CHAR;
+                                  HelpKey         : CARDINAL;
+                                  TakeRug         : BOOLEAN          );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateResourceOutline --
+
+    Allocate storage for, and initialize the indicated object as a resource 
+    outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid resource outline view object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateResourceOutline(VAR ResourceOutline : AResourceOutline;
+                                    SuperView       : AnActiveView;
+                                    Ulx             : ascreenx;
+                                    Uly             : ascreeny;
+                                    Lrx             : ascreenx;
+                                    Lry             : ascreeny;
+                                    Box             : ABoxType;
+                                    VideoMode       : avidmode;
+                                VAR Title           : ARRAY OF CHAR;
+                                    HelpKey         : CARDINAL;
+                                    TakeRug         : BOOLEAN        ) 
+                                                                      : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsResourceOutline --
+
+    UnInitialize the indicated object as a resource outline view.
+
+    Preconditions:
+        The object will be a valid resource outline view object. 
+
+    Postconditions:
+        The outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsResourceOutline(    ResourceOutline : AResourceOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneResourceOutlineMethods --
+
+    Make a copy of the resource outline view methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The taks outline view methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneResourceOutlineMethods(    MethodObject : AResourceOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateResourceOutline --
+
+    Determine that the indicated object is in fact a valid outline view 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid resource outline view object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateResourceOutline(    ResourceOutline : AResourceOutline);
+
+
+
+END RsrcOutlines.
+

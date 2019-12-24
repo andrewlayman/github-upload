@@ -1,0 +1,124 @@
+DEFINITION MODULE ColFind;
+
+(*  =========================================================================
+    Last Edit : October 2, 1990 7:22PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Retrieve column information for user modification.
+
+    MODIFICATION HISTORY:
+    
+    27-Aug-90 PFG   First version.
+    28-Sep-90 PFG   Added ColumnGoToCheckProc and AColumnGetInfoProc.
+    2-Oct-90  PFG   Removed the (short-lived) ColumnGoToCheckProc.  Now
+                    handled in TLColName.
+    =========================================================================
+*)
+
+
+FROM ColData                IMPORT
+    (* TYPE  *)                 AColumnType;
+
+
+(*----------------------------------------------------------------------------
+    GetColInfoFromPhrasesOrText --
+
+    Looks in memory for user-modified column info first, then in the Phrases
+    file.  Client of this proc has no need to know about different kinds
+    of column lines.  This proc retrieves column info lines only.
+
+    Preconditions:
+        The user-defined columns must have been loaded in from the config
+        file first.
+
+    Postconditions:
+        The retrieved string is placed in Line.
+----------------------------------------------------------------------------*)
+
+
+PROCEDURE GetColInfoFromPhrasesOrText(    ModuleNumber : CARDINAL;
+                                          ColumnType   : AColumnType;
+                                          ID           : CARDINAL;
+                                      VAR Line         : ARRAY OF CHAR);
+
+
+(*----------------------------------------------------------------------------
+    GetColumnItem --
+
+    Retrieve a particular type of column information.
+
+    Preconditions:
+        A string must be passed that's large enough to hold the 
+        retrieved information.  The ColumnItem must be a valid number,
+        from the list in ColumnSupport.
+
+    Postconditions:
+        The retrieved information is returned in Value or Name, 
+        depending on whether it is a number.
+        
+----------------------------------------------------------------------------*)
+
+PROCEDURE GetColumnItem(    ModuleNumber    : CARDINAL;   
+                            ColumnType      : AColumnType;
+                            ID              : CARDINAL;
+                            ColumnItem      : CARDINAL;
+                            ToNumber        : BOOLEAN;
+                        VAR Value           : CARDINAL;
+                        VAR Name            : ARRAY OF CHAR);
+
+
+(*----------------------------------------------------------------------------
+    SetColumnItem --
+
+    Save a particular type of column information.
+
+    Preconditions:
+        The ColumnItem must be a valid number, from the list in 
+        ColumnSupport.
+
+    Postconditions:
+        The information is saved in the Text for this ColumnType.
+        
+----------------------------------------------------------------------------*)
+
+PROCEDURE SetColumnItem(    ModuleNumber: CARDINAL;
+                            ColumnType  : AColumnType;
+                            ID          : CARDINAL;
+                            ColumnItem  : CARDINAL;
+                            ToNumber    : BOOLEAN;
+                            Value       : CARDINAL;
+                        VAR Name        : ARRAY OF CHAR);
+
+
+
+(* ----------------------------------------------------------------
+
+    EnumerateColumns
+
+    Calls the DoThis proc once for each possible column in the table,
+    beginning with column 1 and through the highest numbered column
+    defined.
+
+-----------------------------------------------------------------*)
+
+(*<  Not used yet...
+
+
+FROM SYSTEM                 IMPORT
+    (* TYPE  *)                 ADDRESS;
+
+TYPE
+    AColDefProc = PROCEDURE( AColumnType, CARDINAL, ADDRESS);
+
+
+PROCEDURE EnumerateColumns     (     ColumnType   :  AColumnType;
+                                     DoThis       :  AColDefProc;
+                                     Context      :  ADDRESS  );  
+
+
+>*)
+
+END ColFind.
+
+

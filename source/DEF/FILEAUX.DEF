@@ -1,0 +1,68 @@
+DEFINITION MODULE FileAux;
+
+(* MODIFICATION HISTORY:
+
+     7-Jun-89 RSC  1) Made "OverlayPath" 255 bytes (was 70).
+                   2) Added "EXEPath", which is the path that TimeLine.Exe
+                      resides in.
+                   3) Added "TextPath", whis is where the text files reside.
+*)
+
+
+
+
+FROM FileSystem  IMPORT File, Response;
+
+FROM SYSTEM      IMPORT ADDRESS;
+
+
+VAR
+    (* RSC 7-Jun-89 *)
+
+    (* The EXEPath     is where Time Line's EXE is.
+       The OverlayPath is where all the *.OVL's are.
+       The TextPath    is where the forms, phrases, config files, etc., are.
+    *)
+    EXEPath         : ARRAY [0..65]  OF CHAR; (* Where TimeLine.Exe is. *)
+    OverlayPath     : ARRAY [0..255] OF CHAR; (* Full overlay path *)
+    TextPath        : ARRAY [0..75]  OF CHAR; (* Text path *)
+
+
+
+
+
+PROCEDURE InitializeFiles():BOOLEAN;
+
+PROCEDURE TerminateFiles;
+
+
+    (*  PrepareForIO -- Call this before doing I/O.  Check the results with
+                        CheckIO.  *)
+
+PROCEDURE PrepareForIO(VAR f:File);
+
+PROCEDURE CheckIO(VAR f:File):Response;
+
+
+    (*  FileResultMeans -- Return a string indicating the meaning of the
+                           result value of the file f. *)
+
+PROCEDURE FileResultMeans(VAR f:File; VAR s:ARRAY OF CHAR);
+
+
+
+     (*  FlushBuffer  --  Force buffered writes to disk. *)
+
+PROCEDURE FlushBuffer(VAR f:File);
+
+     (* DisplayFileError -- Display a dialog box describing the
+                            error.  Description should be the name
+                            of the file or some other description of
+                            it. *)
+
+PROCEDURE DisplayFileError( VAR f           : File;
+                            VAR Description : ARRAY OF CHAR );   
+
+
+END FileAux.
+

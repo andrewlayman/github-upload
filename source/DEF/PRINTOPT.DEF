@@ -1,0 +1,31 @@
+DEFINITION MODULE PrintOptions;
+
+
+TYPE
+    ADimensionSpec          = RECORD
+                                Paged           : BOOLEAN;
+                                RepeatHeaders   : BOOLEAN;
+                                RepeatFooters   : BOOLEAN;
+                                RepeatTitles    : BOOLEAN;
+                                RepeatHeadings  : BOOLEAN;
+                                Spacing         : CARDINAL;
+                              END;
+
+    AReportSetting          = RECORD
+                                RowSpec         : ADimensionSpec;
+                                ColumnSpec      : ADimensionSpec;
+                                PageBreakLevel  : CARDINAL;
+                                PrintZeros      : BOOLEAN;
+                              END;
+
+    AReportSettingPointer   = POINTER TO AReportSetting;
+
+VAR
+    ReportSettings          : AReportSettingPointer;
+
+
+PROCEDURE DoPrintDialog (   Dimensions  : CARDINAL  ) : BOOLEAN;
+
+
+END PrintOptions.
+

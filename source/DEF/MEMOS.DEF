@@ -1,0 +1,80 @@
+DEFINITION MODULE Memos;
+
+    (*---------------------------------------------------------------------*)
+    (*  This module implements storage of texts (memos) which may be       *)
+    (*  edited and accessed by a hot-key.                                  *)
+    (*---------------------------------------------------------------------*)
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+TYPE
+    AMemoRecordPointer      = POINTER TO AMemoRecord;
+
+    AMemoRecord             = RECORD
+                                text        : AText;
+                                ID          : CARDINAL;
+                                MemoFlags   : BITSET;
+                                open        : BOOLEAN;
+                              END;
+
+
+VAR
+    MemoTree                : ATree;
+
+
+
+(*----------------------------------------------------------------------------
+    PickAndEditMemo --
+
+    Allow the user to select a memo off of the pick list of all memos for 
+    editing.  Also allows creation and deletion of memos.
+----------------------------------------------------------------------------*)
+
+PROCEDURE PickAndEditMemo();
+
+
+
+(*----------------------------------------------------------------------------
+    EditMemo --
+
+    Given a memo, bring up an editing session on its text.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EditMemo (Memo            : ATreeNode );
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateMemo --
+
+    Create a new memo, using the given text.  Return its handle.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateMemo (Text               : AText)               (* in     *)
+                                                 : ATreeNode;
+
+
+
+
+(*----------------------------------------------------------------------------
+    DiscardMemo --
+
+    Release all storage for the specified memo, including it's text.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DiscardMemo(VAR Memo              : ATreeNode);              (* in/out *)
+
+
+
+END Memos.
+

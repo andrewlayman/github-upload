@@ -1,0 +1,72 @@
+DEFINITION MODULE Events;
+
+(* MODIFICATION HISTORY:
+
+     8-Dec-89  RSC  Added Mouse coordinates.
+*)
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+
+
+
+TYPE
+    AnEventType             = (KeyboardEvent, PseudoKeyboardEvent, MouseEvent,
+                               MenuEvent, PicklistEvent);
+
+    AnEvent                 = RECORD
+                                EventCode   : ACode;
+                                EventType   : AnEventType;
+                                (* 6-Dec-89 RSC  Removed comment. *)
+                                EventX      : ascreenx;
+                                EventY      : ascreeny;
+                              END;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    GetNextEvent --
+
+    Return the next event which happens (or has happened).
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The next available event will be returned.  If no event is available, 
+        this procedure will wait for one, and then return it.
+----------------------------------------------------------------------------*)
+
+PROCEDURE GetNextEvent(VAR Event            : AnEvent);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    PushEvent --
+
+    Force the indicated event to be the next one returned by GetNextEvent.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated event will be pushed onto an internal 1-deep stack so
+        that the next call to GetNextEvent will return it.  Only one event
+        may be pushed between calls to GetNextEvent, or data will be lost.
+----------------------------------------------------------------------------*)
+
+PROCEDURE PushEvent(    Event               : AnEvent);
+
+
+END Events.
+

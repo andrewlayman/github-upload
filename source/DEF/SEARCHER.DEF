@@ -1,0 +1,26 @@
+DEFINITION MODULE Searcher;
+
+
+FROM FilterRc               IMPORT
+    (* TYPE *)                  AFilterMatch;
+
+
+
+    (* See if and where the string S contains the pattern Pattern.
+       Allow the wildcard character "?". *)
+
+PROCEDURE PatternSearch (   S           : ARRAY OF CHAR;
+                            Pattern     : ARRAY OF CHAR ) : INTEGER;
+
+
+
+    (*  StringMatch  -- Compare the string s2 to the sample string pattern. *)
+
+
+PROCEDURE StringMatch ( VAR pattern     : ARRAY OF CHAR;
+                        VAR s2          : ARRAY OF CHAR;
+                            matchplace  : AFilterMatch  ) : BOOLEAN;
+
+
+END Searcher.
+

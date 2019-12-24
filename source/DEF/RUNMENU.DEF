@@ -1,0 +1,357 @@
+DEFINITION MODULE RunMenu;
+
+(*  =========================================================================
+    Last Edit : 03-Aug-1989 04:53PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        
+        RunMenu -- Put up a menu of possible names of
+                   the class indicated.  If one is picked, run it.
+
+    MODIFICATION HISTORY:
+
+       23-07-87  AJL Added Dispatch procedures.
+       30-07-87  AJL Added WhatWasPicked procedure.
+       16-Feb-88 AJL Added a StartList parameter to LoadMenuTree.
+        2-Feb-89 RSC Moved some code to InitMenu.  Had to export more of
+                     the insides here.
+       19-Jul-89 RSC We now read menu records from the message file.
+                     We store the pre-built menu in FlexStor, but still
+                     access full lines from the phrase file.  Exceptions
+                     are stored in FlexStor.
+        3-Aug-89 RSC Bumped up the max actions string length for GRAPHICS.
+                     Converted to the new file header format.
+        9-Jul-91 AJL Added more parameters to ExtraFancyMenu.
+                     Removed FancyMenu.
+
+    =========================================================================
+*)
+
+
+FROM Boxes          IMPORT
+    (* TYPE *)          ABoxType, ABoxAttribute;
+
+FROM Codes          IMPORT
+    (* TYPE *)          ACode, ASetOfCodes;
+
+FROM FlexStor       IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM Kbio           IMPORT
+    (* CONST *)         maxcol,
+    (* TYPE *)          ascreenx, ascreeny;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATree,      ATreeNode,
+    (* PROC *)          CreateTree, CreateTreeNode;
+
+
+
+
+
+
+CONST
+    MaxActionsLength = 201;     (* RSC 3-Aug-89 *)
+    MaxNameLength    = 29;
+    MaxClassLength   = 19;
+    MaxItemsPerMenu  = 20;     (* Max Number of items per menu. *)
+
+
+TYPE
+    AnItemAttribute = (ItemDisabled,            (* Cannot choose *)
+                       ItemMarked               (* Mark         *)
+                       );
+    ASetOfItemAttributes = SET OF AnItemAttribute;
+
+    ADispatchProcedure = PROCEDURE ( CARDINAL );
+
+
+    ADescription    = ARRAY [0..(maxcol * 2)] OF CHAR; (* two lines of text. *)
+    AParm           = ARRAY [0..31]  OF CHAR;
+    AParmArray      = ARRAY [1..5]   OF AParm;
+    AClass          = ARRAY [0..MaxClassLength]     OF CHAR;
+    AnItemName      = ARRAY [0..MaxNameLength]      OF CHAR;
+    AnActionString  = ARRAY [0..MaxActionsLength+2] OF CHAR;
+
+    AnItem          = RECORD
+                          Class        : AClass;
+                          ClassNumber  : CARDINAL;
+                          ItemName     : AnItemName;
+                          ActionString : AnActionString;
+                          Description  : ADescription;
+                          Attr         : ASetOfItemAttributes;
+                          Key          : ACode;
+                          DispatchProc : ADispatchProcedure;
+                      END;
+
+
+    (* We keep an index of the class names in memory, organized as
+       a Linked List.  The DataObject for the list nodes are
+       "AClassIndex".  Exceptions is the list head for "AnExceptionEntry".
+       MenuItems is a handle to "AMenuItemList"
+    *)
+    AClassIndex = RECORD
+        Class           : AClass;
+        ClassNumber     : CARDINAL;
+        MenuItems       : AnExtHandle;
+        Exceptions      : AnExtHandle;
+        StartingPhrase  : CARDINAL;
+    END;
+
+
+    (* When you want to put up a menu, this list contains all of the
+       item names, in order, for the class.  This is a shortcut for
+       putting up menus.
+    *)
+    AMenuItemList = RECORD
+        MenuItems   : CARDINAL;
+        Codes       : ARRAY [1..MaxItemsPerMenu] OF ACode;
+        MenuString  : ARRAY [0..(maxcol*2)+1] OF CHAR;
+    END;
+
+
+    (* Exceptions are installed by client modules who want to "take
+       control" of some portion of the menu system.  You can dynamicly
+       replace items, delete items, or add items.
+
+       These exceptions are pointed to by the class index record.
+       This is a simple chain of exceptions.  The "Index" is like
+       the index used as passed to "LocateItem", it means the Nth
+       entry, starting with 1.
+
+       So, a CHANGE of item 5 replaces any existing item 5.
+           A DELETE of item 5 makes the old item 6 now item 5.
+          An INSERT of item 5 pushes the old item 5 to be item 6.
+
+          The "Item" record is used for INSERTS and CHANGES, but not for
+          DELETEs.
+    *)
+    AnExceptionReason   = (Inserted, Deleted, Changed);
+
+    AnExceptionEntry    = RECORD
+        NextException   : AnExtHandle;
+        Index           : CARDINAL;     (* Affects the Nth entry *)
+        Item            : AnItem;
+        Reason          : AnExceptionReason;
+    END;
+
+
+
+(* Locate Item Proc
+
+    Given a class name and an index, try to return the item record that
+    corresponds to this.
+
+    Preconditions   - The message file is opened and this module has been
+                      initialized.  "LoadMenuTree()" has been called.
+
+    Postconditions  - The item is returned iff TRUE.
+
+    Input Parameters:
+
+        Class       The Class name, as an LString, properly UPSHIFTED or
+                    whatever (case is important).
+        Index       The Nth item for this menu.  1 is the first.
+
+    Output Parameters:
+
+        IF FALSE,
+            No class or indexth entry to the class.
+
+        IF TRUE,
+            Item        The item record filled in.
+            At          Phrase number containing the item.
+*)
+    ALocateItemProc     = PROCEDURE ( VAR ARRAY OF CHAR, (* Class *)
+                                          CARDINAL,      (* Index *)
+                                      VAR AnItem,        (* Item *)
+                                      VAR CARDINAL )     (* At   *)
+                                    : BOOLEAN;
+
+
+VAR
+
+    (* Locate Item is the stealable vector for searching the list of
+       menu items.  With this, a client could filter out menu items
+       so that they are not seen, or they could ADD menu items.
+       This is in lieu of having special attributes.
+
+       For now, the "Attr" in AnItem is not used.
+    *)
+    LocateItem  : ALocateItemProc;
+
+
+    ClassList   : ATree;  (* A tree so we can use things like GoTo. *)
+
+
+
+
+
+
+    (* --------------------------------------------------------------
+
+       ExtraFancyMenu --
+
+       Purpose:     Display a hierarchy of menu choices based on the
+                    main menu list in the phrases file.  Return either
+                    a code or a string indicating what to do.
+                    Also returns a ChoiceSequence indicating the series
+                    of choices that led to the final choice.
+
+       Input:
+           Class:   The name of the menu to start with.
+           Prefix:  Title for the initial menu.
+           ULX..LRY Coordinates of the region in which the menu goes.
+           BoxType: Box type around the menu.
+           ExitCodes: If any code in this set is typed, the procedure 
+                      will return immediately with this code, and
+                      ReturnString will be empty.
+           InitialChoice:
+                      If < 256, this sets the initial selection position
+                      in the first menu.
+                      If >= 256, this signals to use the CallSequence
+                      array to return to the position of the choice
+                      indicated by that array.
+           CallDepth: Pass this a zero, please.
+           ChoiceSequence: See below.
+                      
+                      
+       Output:
+           VALUE:     Returns the key code pressed by the user that
+                      indicated his selection, or CancelKey (Esc).
+           ReturnString:  If the VALUE is DoIt, this string may
+                      contain text indicating the value of the choice.
+           Dispatch:  If the menu choice has an associated Dispatch
+                      procedure, this is returned.
+           ChoiceSequence: Returns the sequence of menu choices, by
+                      menu position, that led to the final choice.
+                      ChoiceSequence[0] contains the depth of the 
+                      final choice, while the remaining entries contain
+                      the choices chosen up to and including the final
+                      choice.
+
+      ------------------------------------------------------------ *)
+
+VAR ExtraFancyMenu : PROCEDURE(  (* Class  :*)    ARRAY OF CHAR,
+                                 (* Prefix :*)    ARRAY OF CHAR,
+                                 (* ULX :*)       ascreenx,
+                                 (* ULY :*)       ascreeny,
+                                 (* LRX :*)       ascreenx,
+                                 (* LRY :*)       ascreeny,
+                                 (* BoxType:*)    ABoxType,
+                                 (* ExitCodes :*) ASetOfCodes,
+                                 (* InitialChoice :*) CARDINAL,
+                             VAR (* ReturnString  :*) ARRAY OF CHAR,
+                             VAR (* Dispatch      :*) ADispatchProcedure,
+                                 (* CallDepth :*)     CARDINAL,
+                             VAR (* ChoiceSequence :*) ARRAY OF CARDINAL
+                            ):ACode;
+
+
+
+
+    (* SelectAndRunMenu    -- Put up a menu of all possible names
+                              of the indicated class, based on the 
+                              main menu classes listed in the phrases
+                              file.  Allow a choice, and then run the action.
+                                  If only one name is in the class, no
+                              menu is given, but the action is immediately
+                              taken.
+                                  Menus can bring up submenus, can
+                              cause help to be selected, and can cause
+                              overlays to be called.
+                                  If the user presses some keys, the
+                              procedure returns their value.
+    *)
+
+PROCEDURE SelectAndRunMenu   ( VAR Class,Prefix:ARRAY OF CHAR):ACode;
+
+
+    (* ExecuteOverlay -- Like SelectAndRunMenu, except that no code
+                         value is returned. *)
+
+PROCEDURE ExecuteMenu        ( VAR Class,
+                                   Prefix   : ARRAY OF CHAR );
+
+
+
+
+
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+        GetMenuItem
+
+        Preconditions:
+            Index > 0.
+
+        Postconditions:
+            If there is an item in the Class with the indicated
+            index number, its information will be returned, and the
+            function will return TRUE.  Else FALSE.
+
+
+    -----------------------------------------------------------------*)
+
+
+PROCEDURE GetMenuItem ( VAR Class           : ARRAY OF CHAR;
+                            Index           : CARDINAL;
+                        VAR Name,
+                            Action,
+                            Prompt          : ARRAY OF CHAR;
+                        VAR KeyEquivalent   : ACode;
+                        VAR Attributes      : ASetOfItemAttributes;
+                        VAR Dispatch        : ADispatchProcedure
+                       ) : BOOLEAN;
+
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+        LoadMenuTree
+
+        Preconditions:
+
+        Postconditions:
+            The STARTUP overlays are read in to CHAINER.  ONLY.
+
+    -----------------------------------------------------------------*)
+
+PROCEDURE LoadMenuTree();
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+        AddToMenuTree
+
+        Preconditions:
+            The message file must be open.
+            There must be a fair amount of free memory.
+            FlexStor must be running.
+
+        Postconditions:
+            The menu system can be used.  Before this, there ARE NO
+            MENU ITEMS.
+
+    -----------------------------------------------------------------*)
+
+PROCEDURE AddToMenuTree();
+
+
+
+
+
+
+END RunMenu.
+

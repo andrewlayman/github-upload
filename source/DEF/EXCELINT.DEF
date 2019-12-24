@@ -1,0 +1,234 @@
+    (*V1=OS2 OS2 code changes.	  *)
+    (*V2=DOS Regular DOS TL code. *)
+
+DEFINITION MODULE ExcelInt;
+
+  (* Excelint - A variety of routines used by the Excel importers.
+
+        MODIFICATION HISTORY:
+
+        31-Aug-89 MWP Code cleanup.
+        22-Sep-89 MWP GetExcelData has new paramter 'RowsImported'.
+        22-Sep-89 MWP Removed RangePtr and RangeListRecord def's, as they
+                      are no longer used.
+        08-Jul-91 LAA Turned off the OS2 version toggle, which was causing
+                      bug # 4645.
+   *)
+
+FROM FileSystem     IMPORT
+    (* TYPE *)              File;
+
+FROM ImPorTable     IMPORT
+    (* TYPE *)              AImportTable;
+
+CONST
+      VERSIONEXCEL          = 2;
+      VERSIONEXCELOS2       = 6;
+      VERSIONMULTIPLAN      = 3;
+
+      EXCELWORKSHEET        =  010H;
+      EXCELCHART            =  020H;
+      EXCELMACROSHEET       =  040H;
+
+      MAXBUFSIZE            =  256;
+
+      ptgArea               =  025H;
+      ptgAreaN              =  02DH;
+(*
+ * Excel record type codes. All valid record types are defined here.
+ * Any omissions in this list mean the record type is undefined formally.
+*)
+
+      BDIMENSIONS           =  0;
+      BBLANK                =  1;
+      BINTEGER              =  2;
+      BNUMBER               =  3;
+      BLABEL                =  4;
+      BBOOLERR              =  5;
+      BFORMULA              =  6;
+      BSTRING               =  7;
+      BROW                  =  8;
+      BBOF                  =  9;
+      BEOF                  =  10;
+      BINDEX                =  11;
+      BCALCCOUNT            =  12;
+      BCALCMODE             =  13;
+      BPRECISION            =  14;
+      BREFMODE              =  15;
+      BDELTA                =  16;
+      BITERATION            =  17;
+      BPROTECT              =  18;
+      BPASSWORD             =  19;
+      BHEADER               =  20;
+      BFOOTER               =  21;
+      BEXTRNCOUNT           =  22;
+      BEXTRNSHEET           =  23;
+      BNAME                 =  24;
+      BWINPROTECT           =  25;
+      BVERPGBRKS            =  26;
+      BHORPGBRKS            =  27;
+      BNOTE                 =  28;
+      BSELECTION            =  29;
+      BFORMAT               =  30;
+      BCOLDEFAULT           =  32;
+      BARRAY                =  33;
+      BEXTRNNAME            =  35;
+      BCOLWIDTH             =  36;
+      BDEFROWHEIGHT         =  37;
+      BLMARGIN              =  38;
+      BRMARGIN              =  39;
+      BTOPMARGIN            =  40;
+      BBOTMARGIN            =  41;
+      BROWHDRS              =  42;
+      BPGRIDLINES           =  43;
+      BFILEPASS             =  47;
+      BFONT                 =  49;
+      BFONT2                =  50;
+      BTABLE                =  54;
+      BTABLE2               =  55;
+      BCONTINUE             =  60;
+      BWINDOW1              =  61;
+      BWINDOW2              =  62;
+      BBACKUP               =  64;
+      BPANE                 =  65;
+
+(*
+ * 20 pre-defined Excel format codes. These are reserved internal Excel formats
+ * that are present in all excel worksheet files. If format codes exist from
+ * code >= 20, then they are user defined.
+ *
+ * We currently do NOT recognize user defined format codes.
+*)
+
+      F_GENERAL             =   0;
+
+      F_INTEGER             =   1;
+
+      F_FIXED               =   2;
+      F_FIXED1              =   3;
+      F_FIXED2              =   4;
+
+      F_CURR1               =   5;
+      F_CURR2               =   6;
+      F_CURR3               =   7;
+      F_CURR4               =   8;
+
+      F_PERCENT1            =   9;
+      F_PERCENT2            =  10;
+      F_EXPONENT            =  11;
+
+      F_DATE_1              =  12;
+      F_DATE_2              =  13;
+      F_DATE_3              =  14;
+      F_DATE_4              =  15;
+
+      F_TIME_1              =  16;
+      F_TIME_2              =  17;
+      F_TIME_3              =  18;
+      F_TIME_4              =  19;
+
+      F_DATE_TIME           =  20;
+
+
+
+TYPE
+    ARecordPreface = RECORD
+                        RecordType   : CARDINAL;
+                        RecordLength : CARDINAL;
+                     END;
+
+    ABOFRecord     = RECORD
+                        Version  : CARDINAL;
+                        DocType  : CARDINAL;
+                     END;
+
+    AIntegerRecord = RECORD
+                        Row    : CARDINAL;
+                        Column : CARDINAL;
+                        Cell1  : CHAR;
+                        Cell2  : CHAR;
+                        Cell3  : CHAR;
+                        Value  : CARDINAL;
+                     END;
+
+    ANumericRecord = RECORD
+                        Row       : CARDINAL;
+                        Column    : CARDINAL;
+                        Cell_Att1 : CHAR;
+                        Cell_Att2 : CHAR;
+                        Cell_Att3 : CHAR;
+                        Value     : REAL;
+                     END;
+
+
+    ABooleanRecord = RECORD
+                        Row         : CARDINAL;
+                        Column      : CARDINAL;
+                        Cell_Att1   : CHAR;
+                        Cell_Att2   : CHAR;
+                        Cell_Att3   : CHAR;
+                        Value       : CHAR;
+                        Bool_Or_Err : CHAR;
+                     END;
+
+    ALabelRecord   = RECORD
+                        Row         : CARDINAL;
+                        Column      : CARDINAL;
+                        Cell_Att1   : CHAR;
+                        Cell_Att2   : CHAR;
+                        Cell_Att3   : CHAR;
+                        LabelLen    : CHAR;
+                        Content     : ARRAY [0..256] OF CHAR;
+                     END;
+
+    ABlankRecord   = RECORD
+                        Row         : CARDINAL;
+                        Column      : CARDINAL;
+                        Cell_Att1   : CHAR;
+                        Cell_Att2   : CHAR;
+                        Cell_Att3   : CHAR;
+                     END;
+
+    ARangeNameRecord   = RECORD
+                            Name       : ARRAY [0..15] OF CHAR;
+                            StartCol   : CARDINAL;
+                            StartRow   : CARDINAL;
+                            EndCol     : CARDINAL;
+                            EndRow     : CARDINAL;
+                         END;
+    (* XNAME *)
+    ANameRecordOne     = RECORD
+                          byAttr1        : CHAR;
+                          byAttr2        : CHAR;
+                          byKbCode       : CHAR;
+                          Name_Text_Len  : CHAR;
+                          Name_Parse_Len : CHAR;
+                        END;
+    (* XNAME_COORDS *)
+    ANameRecordTwo    = RECORD
+                          TopRow   : CARDINAL;
+                          LastRow  : CARDINAL;
+                          FirstCol : CHAR;
+                          LastCol  : CHAR;
+                        END;
+
+VAR
+     DataStartRow,
+     DataEndRow             : CARDINAL;
+     ImportTableP           : POINTER TO AImportTable;
+
+
+PROCEDURE ReadExcelRangeNames ( VAR f : File ) : BOOLEAN;
+
+PROCEDURE ReadExcelData       ( VAR f : File;
+                                VAR RowsImported : CARDINAL ) : BOOLEAN; (* 22-Sep-89 MWP *)
+
+PROCEDURE CheckForValidExcelFile ( VAR  f : File ) : BOOLEAN;
+
+(*<OS2
+PROCEDURE ExcelIntInitForOS2 ();
+OS2>*)
+
+
+END ExcelInt.
+

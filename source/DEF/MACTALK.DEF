@@ -1,0 +1,41 @@
+DEFINITION MODULE MacTalk;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+
+EXPORT QUALIFIED MacError, MacDeath, MacWarningBox;
+
+(* MacDeath is like FatalError, only it asks users to call Cybersoft. *)
+
+PROCEDURE MacDeath;
+
+
+(* MacError is to be used with TL/Macro.  Input is:
+   - Interlock : the cardinal that determines which KeyBoard procedure to use,
+   - S         : a normal array oc characters ( TString ) for the message.
+*)
+
+PROCEDURE MacError (S : ARRAY OF CHAR);
+
+
+(*---------------------------------------------------------------------
+
+Uses Dialog's WarningBox, but allows no help, and input strings are
+explicit (in quotes). Also INCs and DECs Interlock so OldGetCode is used.
+
+----------------------------------------------------------------------*)
+
+PROCEDURE MacWarningBox (VAR Interlock : CARDINAL;
+                             S         : ARRAY OF CHAR;
+                             Title     : ARRAY OF CHAR);
+
+END MacTalk.
+

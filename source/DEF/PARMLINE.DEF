@@ -1,0 +1,40 @@
+DEFINITION MODULE ParmLine;
+(*
+            Parameter Line (from COMMAND.COM)
+
+     Based on ProgArg by Roger Collins 8/14/87
+
+     11/9/87  RSC - altered defs a little for new scheme.  See mod.
+*)
+
+
+
+
+ (* Get Option - Get one option.  
+
+        Preconditions  - Option is the text you want, upshifted.
+        Postconditions - Found  is TRUE if found, FALSE if not found.
+                         Param  is the text parameter, if any.
+  *)
+PROCEDURE GetOption( VAR Option : ARRAY OF CHAR;
+                     VAR Found  : BOOLEAN;
+                     VAR Param  : ARRAY OF CHAR );
+
+
+
+
+ (* Get File Name - get the file name from the command string.
+
+        Preconditions  - none.
+        Postconditions - filename, if found, is returned in s.
+                         filename is not checked for validity.
+                         filename is the first token and must not be
+                             followed by an equals sign.
+ *)
+PROCEDURE GetFileName( VAR s : ARRAY OF CHAR );
+
+
+
+
+END ParmLine.
+

@@ -1,0 +1,28 @@
+DEFINITION MODULE CSVToInt;
+
+
+    (*
+        Import records from a comma delimited export file.
+
+        Modification History:
+
+         2-Oct-89 MWP  Delete procedure RetrieveRowCount.
+     *)
+
+FROM FileSystem    IMPORT
+        (* TYPE *)      File;
+
+FROM ImPorTable     IMPORT
+    (* TYPE *)              AImportTable;
+
+VAR
+     ImportTableP           : POINTER TO AImportTable;
+
+
+PROCEDURE WriteCSVHeaderData ( VAR f : File ) : BOOLEAN;
+
+PROCEDURE WriteCSVData ( VAR f    : File;
+                         VAR Rows : CARDINAL ) : BOOLEAN;
+
+END CSVToInt.
+

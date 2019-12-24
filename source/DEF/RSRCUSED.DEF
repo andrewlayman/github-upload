@@ -1,0 +1,32 @@
+DEFINITION MODULE RsrcUsed;
+
+    (*  Used to be part of Changer.DEF; moved here 8/11/89 EGK  *)
+
+
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+    (*  ResourceIsUsed --
+
+        Determine whether or not a resource is in use.
+
+        Preconditions:
+            Resource must be a valid tree node.  It need not be a member of
+            the ResourceTree.
+
+        Postconditions:
+            Iff the resource is assigned (on the plan or baseline) to any
+            task in the task tree, OR any registered procedure (through
+            Notices) returns FALSE with a Step of RequestPermission, an
+            Occasion of DeleteAResource, and a context of this resource,
+            then TRUE will be returned.
+    *)
+
+PROCEDURE ResourceIsUsed (Resource : ATreeNode) : BOOLEAN;
+
+
+END RsrcUsed.
+

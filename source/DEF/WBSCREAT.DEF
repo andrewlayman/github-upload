@@ -1,0 +1,96 @@
+DEFINITION MODULE WBSCreate;
+
+  (*   Routines used in the creation and validation of WBS codes.
+
+        MODIFICATION HISTORY:
+
+         19-Apr-89  MWP  In the beginning...
+         20-Jul-89  MWP  Added modification history, and documented.
+         29-Jul-89  MWP  Added VAR parameter 'WBSError' to CreateWBSCode.
+         03-Aug-89  LAA  Imported AWBSError from WBSCommon.
+         15-Aug-89  MWP  Use AWBSPtr as parameter.
+  *)
+
+
+FROM WBSCommon     IMPORT
+    (* TYPE *)              AWBSError,
+                            AWBSPtr;                                (* 15-Aug-89 MWP *)
+
+FROM SYSTEM        IMPORT
+    (* THINGS *)            SIZE, TSIZE, ADDRESS, ADR;
+
+
+        (*
+           Strips off any 'Always Show' characters which may exist in
+           WBSCode. The resultant LString is placed in 'OutString'.
+           This routine used the WBSFormP, which is a pointer to
+           the WBS form values to use for breaking down the WBS
+           code.
+           If the WBS code cannot be deciphered, or other errors
+           occur such as the Form values being incorrect, FALSE
+           is returned, else TRUE.
+        *)
+PROCEDURE StripOffShowCharacters (     SegmentLevel     : CARDINAL;
+                                       WBSFormP         : AWBSPtr;  (* 15-Aug-89 MWP *)
+                                   VAR WBSCode          : ARRAY OF CHAR;
+                                   VAR OutString        : ARRAY OF CHAR ) : BOOLEAN;
+
+         (*
+             Given a decomposed WBS code, extract the 'nth' segment as defined
+             by 'SegmentNumber' and return in OutString. If an error occurs,
+             FALSE is returned, else TRUE will be returned.
+         *)
+PROCEDURE ExtractDecomposedSegment (     SegmentNumber    : CARDINAL;
+                                     VAR DecomposedString : ARRAY OF CHAR;
+                                     VAR OutString        : ARRAY OF CHAR ) : BOOLEAN;
+
+       (* Input WBSCode will be broken down into it's component segment
+          values, and placed into an output string. Each segment in the
+          output string will be seperated by a space.
+          The current WBS form values willl be used to break the CODE
+          down. If any discrepancies are encountered during the decomposition
+          then a FALSE value will be returned and the output string will
+          be set to length 0, else a TRUE is returned.
+
+          Validation of the WBS Code is performed at this level.
+          We will validate the Prefix, follow-by chars, and contents of the
+          segment ensuring that each character is valid.
+       *)
+PROCEDURE DecomposeWBSCode ( VAR WBSCode    : ARRAY OF CHAR;
+                                 WBSFormP   : AWBSPtr;              (* 15-Aug-89 MWP *)
+                                 Level      : CARDINAL;
+                             VAR Decomposed : ARRAY OF CHAR ) : BOOLEAN;
+
+         (*
+             Turn 'Value' into a string representation, using the
+             rules stored in WBSFormP, a pointer to a WBS form
+             data structure. If the transformation is successful, the
+             resultant string is placed in 'WBSString' and TRUE is
+             returned, else 'WBSString' is nil, and FALSE is returned.
+         *)
+PROCEDURE CreateAWbsCode  (     Value         : CARDINAL;
+                                Level         : CARDINAL;
+                            VAR WBSString     : ARRAY OF CHAR;
+                            VAR ParentWBS     : ARRAY OF CHAR;
+                                WBSFormP      : AWBSPtr;            (* 15-Aug-89 MWP *)
+                            VAR ErrChoice     : AWBSError ) : BOOLEAN;
+
+         (*
+          * Convert the cardinal 'Value' into a string representation
+          * in using 'base'. The converted string is returned in 'Out'.
+          * Note that we use contiguous ascii character values to represent
+          * the digits used in constructing the string. For example,
+          * normally Base 16 ( hex ), used digits 0..9 A..F. Internally
+          * we always start digits at '0' and move up from there
+          * contiguously, so we do not skip groups of characters. Our
+          * Base 16 would use the ascii digits 0..9 and then :;<=>?.
+          * This makes our lives a lot easier when converting a user
+          * defined character sequence value back into a cardinal value.
+         *)
+
+PROCEDURE CardToBaseString (     Value : CARDINAL;
+                                 Base  : CARDINAL;
+                             VAR Out   : ARRAY OF CHAR );
+
+END WBSCreate.
+

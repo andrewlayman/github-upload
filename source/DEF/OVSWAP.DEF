@@ -1,0 +1,89 @@
+DEFINITION MODULE OVSwap;
+
+(*  =========================================================================
+    Last Edit : April 26, 1991 10:53AM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Overlay Swpper
+
+
+
+    MODIFICATION HISTORY:
+
+        1-Feb-91 RSC First version.
+       26-Apr-91 RSC Added new stealable vectors.  FlushOverlay, called
+                     to flush the cache to free up space for an overlay
+                     that wants to enter the cache.  It is stealable so
+                     that TLTrace or TLDoom can steal it.
+                     Also, made SwapOut and SwapIn stealable.
+
+    =========================================================================
+*)
+
+
+
+FROM OvTree         IMPORT
+    (* TYPE *)          AResidenceWhere;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+(* Stealable flush routine.
+
+   26-Apr-91 RSC Broke out from FreeSwapSpace and made stealable.
+*)
+TYPE
+    AFlushOverlayProc = PROCEDURE ( (* OverlayEntry : *) ATreeNode );
+
+VAR
+    FlushOverlay      : AFlushOverlayProc;
+
+
+
+
+
+TYPE
+(* Swap out the overlay, if possible.
+
+        TRUE  - swapped out.
+        FALSE - not swapped out.
+
+    TheSizeToSwap is in PARAGRAPHS.
+*)
+    ASwapOutProc = PROCEDURE (     (* Critical       *) BOOLEAN,
+                               VAR (* Where          *) AResidenceWhere,
+                                   (* TheSizeToSwap  *) CARDINAL,
+                                   (* FromHere       *) ADDRESS ) : BOOLEAN;
+
+
+
+
+
+
+(* Swap In the overlay.  If the overlay is in use, then dispose of the
+   swap space.
+
+    TheSizeSwapped is in PARAGRAPHS.
+*)
+    ASwapInProc = PROCEDURE (     (* Discard         *) BOOLEAN,
+                              VAR (* Where           *) AResidenceWhere,
+                              VAR (* TheSizeSwapped  *) CARDINAL,
+                                  (* ToHere          *) ADDRESS );
+
+
+VAR
+    SwapOut     : ASwapOutProc;
+    SwapIn      : ASwapInProc;
+
+
+END OVSwap.
+
+

@@ -1,0 +1,237 @@
+DEFINITION MODULE IntFileIO;
+
+(*
+    This module provides definitions of, as well as procedures for reading
+    and writing of, the elements of an intermediate file used by reports
+    and exporters to spreadsheet products.
+
+    Modification History:
+
+    21-Mar-89  RSC  Added common handling of translations between Captions
+                    modules and Intermediate File procedures.
+    04-Apr-89  EGK  Increased size of OverallRecord.ReportName.
+    14-Jun-89  MWP  Added field to IntDataRecord to discern the contents of
+                    the record type.
+    14-Jun-89  MWP  Added Operator field as per Andrew's wishes. This field
+                    is for future expansion.
+    21-Jun-89  AJL  Added format type FPercent.
+    30-Mar-90  RSC  Made Timeu to Timei/TimeForm conversions.
+     3-Jul-91  AJL  Added UsesSelectFilter and UsesHighlightFilter to 
+                    OverallRecord.
+*)
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnDataRecord;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+
+
+
+CONST
+    OverallSubfileNumber    = 1;
+    PredicateSubfileNumber  = 2;
+
+    TextType                = 1;
+    RealNumberType          = 2;
+    IntegerType             = 3;
+    CardinalType            = 4;
+    BooleanType             = 5;
+    EnumeratedType          = 6;
+    BigStartTimeType        = 7;
+    BigEndTimeType          = 8;
+    StartDateType           = 9;
+    EndDateType             = 10;
+
+    HeadingRecordType       = 200;
+    SkipRecordType          = 201;
+    RepeatRecordType        = 202;
+    PredicateRecordType     = 203;
+    AggregatorRecordType    = 204;
+
+TYPE
+
+    AFont           = CHAR;         (* 0 = default font
+                                       1 = normal font
+                                       2.. bold font        *)
+    ADataType       = CARDINAL;
+
+
+    AnOverallRecord =   RECORD
+                            Revision        : CARDINAL;     (* unused *)
+                            Dimensions      : CARDINAL;     (* 1 or 2 *)
+                            Font            : AFont;
+                            UsesSelectFilter,
+                            UsesHighlightFilter : BOOLEAN;
+                            ReportName      : ARRAY [0..50] OF CHAR;
+                        END;
+
+
+    APredicateHeadingRecord =   RECORD
+                                    HeadingDepth    : CARDINAL;
+                                END;
+
+
+    (*  There will always be either one or two domain records.  Discrete is
+        TRUE for tasks, resources, etc. and FALSE for continuous ranges such
+        as times.
+    *)
+
+    ADomainRecord =     RECORD
+                            HeadingDepth    : CARDINAL;
+                            Width           : CARDINAL;
+                            DimensionName   : ARRAY [0..30] OF CHAR;
+                            Discrete        : BOOLEAN;
+                        END;
+
+
+    AFormatType = (FText, FDate, FNumeric, FCurrency, FBoolean, FPercent);
+
+
+    AFormat           = RECORD
+                            FormatType          : AFormatType;
+                            DecimalDigits       : CHAR;
+                        END;
+
+    (*  Each predicate record defines the attribute being displayed in a
+        column (1-dimensional report) or at a row-column intersection
+        (2-dimensional report).
+
+        Name is the name of the value being displayed
+        DataType indicates the type of value displayed
+        HeadingDepth tells how many lines of heading follow  *)
+
+    APredicateRecord  = RECORD
+                            ID              : CARDINAL;
+                            HeadingDepth    : CARDINAL;
+                            Width           : CARDINAL;
+                            Format          : AFormat;
+                            Name            : ARRAY [0..30] OF CHAR;
+                            DataType        : ADataType;
+                            IsHeading       : BOOLEAN;
+                            IsUniqueID      : BOOLEAN;
+                        END;
+
+
+
+    (*  These define aggregate values to be computed for the values
+        produced by the predicates (e.g. min, max, sum, average).
+
+        Note:  If DataInFile is FALSE, then whoever reads the data file
+               must also compute the values (i.e., the file data is not
+               valid).
+     *)
+
+    AnAggType   = (AggSum, AggAverage, AggMin, AggMax);
+
+    AnAggregatorRecord  = RECORD
+                            Dimensions  : BITSET;
+                            AggType     : AnAggType;
+                            DataType    : ADataType;
+                            Format      : AFormat;
+                            DataInFile  : BOOLEAN;
+                          END;
+
+
+    AHeadingRecord      = RECORD
+                              UniqueID            : CARDINAL;
+                              HeadingDepth        : CARDINAL;
+                              DataIndentation     : CARDINAL;
+                              Summary             : BOOLEAN;
+                          END;
+
+
+    AIntDataField        = ( IntegerUsed,
+                             CardinalUsed,
+                             RealUsed,
+                             DateUsed,
+                             BigTimeUsed,
+                             FontUsed,
+                             BooleanUsed,
+                             EnumUsed,
+                             LStringUsed
+                           );
+
+    ASetOfIntDataFields  = SET OF AIntDataField;
+
+    AOperationField        = ( Replace,
+                               AddToCurrent,
+                               SubtractFromCurrent,
+                               PercentOfCurrent,
+                               AddAPercentage,
+                               SubtractAPercentage,
+                               Concat
+                              );
+
+    ASetOfOperators  = SET OF AOperationField;
+
+    (*  If the high-order bit of the font byte is set, then this data record
+        is an aggregate value.
+    *)
+
+    AnIntDataRecord =   RECORD
+                            Integer      : INTEGER;
+                            Cardinal     : CARDINAL;
+                            Real         : REAL;
+                            Date         : ADate;
+                            BigTime      : ABigTime;
+                            Font         : AFont;
+                            Boolean      : BOOLEAN;
+                            LString      : ARRAY [0..255] OF CHAR;
+                            IntDataField : ASetOfIntDataFields;
+                            Operation    : ASetOfOperators;
+                        END;
+
+
+
+PROCEDURE WriteIntData (    Type    : CARDINAL;
+                        VAR Data    : AnIntDataRecord );
+
+
+PROCEDURE ReadIntData  (VAR Type    : CARDINAL;
+                        VAR Data    : AnIntDataRecord );
+
+
+
+
+
+(*  Export Data Type
+
+    Given a data type from Captions (A GetxxxxInfo procedure), return the
+    appropriate data type for the intermediate file record.
+
+*)
+PROCEDURE ExportDataType(    DataType       : CARDINAL): CARDINAL;
+
+
+
+
+
+(* Convert Captions To Intermediate
+
+    Converts a Captions data record into an intermediate file data record.
+
+    Preconditions:
+
+        Value       is a data record returned from a Captions routine.
+        ColumnWidth is the width of a returned string, used in some real
+                       number formatting.
+
+    Postconditions:
+
+        LDataType   is the intermediate file data type
+        DataRecord  is the filled-in intermediate file data record.
+*)
+PROCEDURE ConvertCaptionsToIntermediate( VAR Value       : AColumnDataRecord;
+                                             ColumnWidth : CARDINAL;
+                                         VAR LDataType   : CARDINAL;
+                                         VAR DataRecord  : AnIntDataRecord
+                                        );
+
+
+END IntFileIO.
+

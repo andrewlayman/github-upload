@@ -1,0 +1,26 @@
+DEFINITION MODULE FlexTrace;
+
+    FROM Kbio     IMPORT ascreenx, ascreeny;
+
+    FROM SYSTEM   IMPORT ADDRESS;
+
+    PROCEDURE TraceOn;
+    PROCEDURE TraceOff;
+    PROCEDURE TraceLS( What : ARRAY OF CHAR );
+    PROCEDURE Trace ( What : ARRAY OF CHAR );
+    PROCEDURE TraceSize( What : ARRAY OF CHAR;  Size : CARDINAL );
+    PROCEDURE TraceHandle( What : ARRAY OF CHAR;  A : ADDRESS );
+    PROCEDURE TraceHandleAndSize( What : ARRAY OF CHAR;
+                                  A : ADDRESS; Size : CARDINAL );
+
+    PROCEDURE ShowTrace( ULX : ascreenx; ULY : ascreeny;
+                         LRX : ascreenx; LRY : ascreeny );
+
+    PROCEDURE GetStepMode():BOOLEAN;
+    PROCEDURE SetStepMode(On:BOOLEAN);
+    PROCEDURE GetTraceMatchString( VAR MatchString : ARRAY OF CHAR );
+    PROCEDURE SetTraceMatchString( VAR MatchString : ARRAY OF CHAR );
+
+END FlexTrace.
+
+

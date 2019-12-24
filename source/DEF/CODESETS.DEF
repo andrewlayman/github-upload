@@ -1,0 +1,12 @@
+DEFINITION MODULE CodeSets;
+
+FROM Codes IMPORT ASetOfCodes;
+
+VAR
+    CommandCodes,
+    MenuCodeSet,
+    FormsCodeSet,
+    ChartCodeSet   : ASetOfCodes;
+
+END CodeSets.
+

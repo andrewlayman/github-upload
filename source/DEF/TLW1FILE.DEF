@@ -1,0 +1,212 @@
+DEFINITION MODULE TLW1File;
+
+    (* Definition of records in the Time Line Windows 1.0 file format.
+       See also the implementation module for additional, internally
+       used records.
+
+    MODIFICATION HISTORY:
+
+    13-Jan-92 AJL   Created from OTFIles.def.
+     4-Mar-92 TGS   Moved ReadStringBody here from TLLnkTW1.
+    11-Mar-92 TGS   ATLWinTask.Fixes is now a set, not a CHAR.
+    16-Mar-92 LAA   Defined the SetKindOfFile procedure and it's associated
+                    enumeration type.
+    17-Mar-92 TGS   Add ATLWinEdge type and NullEffortConst.  Rename
+                    ATLWinTask.BaseLineEfort to BaseLineEffort.
+    *)
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM LinkSupport            IMPORT
+    (* TYPE *)                  A4ByteReal;
+
+FROM SYSTEM                 IMPORT    
+    (* TYPE *)                  BYTE;
+
+
+CONST
+    NullEffortConst     = -2147483647L;  (* magic number indicates "no baseline" *)
+
+TYPE
+
+    (*$A- *)   (* Alignment off *)
+
+
+    ACost          =  REAL;
+
+
+    AFileHeaderRecord = RECORD
+                          VersionMinor    : CHAR;
+                          VersionMajor    : CHAR;
+                          NumberOfTasks,
+                          NumberOfResources     : INTEGER;
+                          Checksum              : CARDINAL;
+                          NumberOfPredecessors,
+                          NumberOfAssignments,
+                          Dummy1,
+                          MaximumTaskID,
+                          MaximumResourceID,
+                          Dummy2,
+                          MaximumPredecessorID,
+                          MaximumAssignmentID,
+                          Dummy3                : CARDINAL;
+                          Flags                 : BITSET;
+                          TenthHoursPerWorkDay,
+                          TenthHoursPerWorkWeek,
+                          TenthHoursPerWorkMonth,
+                          TenthHoursPerWorkYear : LONGINT;
+                          AsOfDate              : LONGINT;
+                          Dummy4                : ARRAY [0..7] OF CHAR;
+                          CanRead,
+                          CantRead              : CHAR;
+                          Reserved1             : ARRAY [0..1] OF INTEGER;
+                          RecalcRequired        : INTEGER;
+                          Date                  : CARDINAL;
+                          NumberOfFonts         : INTEGER;
+                          Reserved2             : ARRAY [0..15] OF INTEGER;
+                      END;
+
+    AFixesSetElement = (HasFixedStart,
+                        HasFixedEnd,
+                        DataEntryFlag,  (* FALSE = Start & duration entered;
+                                           TRUE  = End   & duration entered *)
+                        IsEffortDriven, (* TLWin only, i.e., not OT *)
+                        IsALAP,
+                        HasPotentialOverload,
+                        HasResOverload,
+                        HasLevelingDelay );
+
+    AFixesSet = SET OF AFixesSetElement;
+
+    ATLWinTask =  RECORD
+                      Priority              : CHAR;
+                      Fixes                 : AFixesSet;
+                      Parent                : INTEGER;
+                      XYLoc                 : ARRAY [0..1] OF INTEGER;
+                      Fixed                 : ARRAY [0..1] OF LONGINT;
+                      EarlyCPM              : ARRAY [0..1] OF LONGINT;
+                      EarlyLevelled         : ARRAY [0..1] OF LONGINT;
+                      BaselineCost          : ACost;
+                      Cost                  : ACost;
+                      TotalCost             : ACost;
+                      Late                  : ARRAY [0..1] OF LONGINT;
+                      Baseline              : ARRAY [0..1] OF LONGINT;
+                      Duration              : LONGINT;
+                      Slack                 : LONGINT;
+                      BaselineDuration      : LONGINT;
+                      Color,
+                      BackgroundColor       : LONGINT;
+                      Kids                  : INTEGER;
+                      Level                 : CARDINAL;
+                      ListLocation          : CARDINAL;
+                      Font                  : INTEGER;
+                      Complete              : CHAR;
+                      OriginalTimeUnits     : CHAR;
+                      ManualCost            : ACost;
+                      GenericNumeric        : A4ByteReal;
+                      TotalEffort           : LONGINT;
+                      BaseLineEffort        : LONGINT;
+                      PartialEffort         : LONGINT;
+                  END;
+
+
+    ATLWinResource = RECORD
+                      TotalCost             : ACost;
+                      Rate                  : A4ByteReal;
+                      Capacity              : A4ByteReal;
+                      Color                 : LONGINT;
+                      BackgroundColor       : LONGINT;
+                      BillingUnits          : INTEGER;
+                      Status                : BITSET;
+                      Font                  : INTEGER;
+                      ListLocation          : CARDINAL;
+                      StandardWeek          : ARRAY [0..6] OF CHAR;
+                      Dummy                 : CHAR;
+                      DefaultUsage          : A4ByteReal;
+                      TotalEffort           : LONGINT;
+                  END;
+
+    ATLWinAssignment = RECORD
+                      Cost                  : ACost;
+                      UtilizationRate       : A4ByteReal;
+                      ResourceID            : CARDINAL;
+                      TaskID                : CARDINAL;
+                      Status                : BITSET;
+                      Role                  : CARDINAL;
+                      Effort                : LONGINT;
+                  END;
+
+    ATLWinEdge = RECORD
+                    PredecessorID           : CARDINAL;
+                    SuccessorID             : CARDINAL;
+                    LagOrLead               : LONGINT;
+                    TypeOfConnection        : CHAR;
+                    OriginalTimeUnits       : CHAR;
+                END;                     
+
+    AKindOfFile     = (OnTargetFile, RockyFile);
+
+
+    (*$A= *)   (* Alignment restore *)
+
+    (*  SetKindOfFile --
+        Condition all other procedures here for reading the various kinds
+        of Time Line for Windows files (including OnTarget).  The default
+        if this procedure is not called is RockyFile.
+    *)
+
+PROCEDURE SetKindOfFile(     KindOfFile     : AKindOfFile );
+
+
+
+    (*  KindOfFile --
+        Determine the kind of file currently being read with this module.
+        This is set ONLY via SetKindOfFile, so this procedure just makes it
+        possible to retain this information in just one place.
+    *)
+
+PROCEDURE KindOfFile() : AKindOfFile;
+
+
+
+    (*  ReadRecordPreface -- Reads the preface of the record, returning
+                             the Type and Length of the following record
+                             body. *)
+
+PROCEDURE ReadRecordPreface( VAR F      : File;
+                             VAR Type   : CARDINAL;
+                             VAR ID     : CARDINAL;
+                             VAR Length : LONGINT    );
+
+    (*  ReadRecordBody -- After a call to ReadRecordPreface, reads
+                          the record body. *)
+
+PROCEDURE ReadRecordBody( VAR F             : File;
+                              Length        : LONGINT;
+                          VAR Record        : ARRAY OF BYTE);
+
+
+    (* ReadStringBody -- Read a string in, do ANSIToOEM conversion. *)
+
+
+PROCEDURE ReadStringBody( VAR F : File;
+                              Length : LONGINT;
+                          VAR S : ARRAY OF CHAR );
+
+
+PROCEDURE SkipRecordBody(VAR F      : File;
+                             Length : LONGINT );
+
+    (* StartFileInput -- Check the file for valid format *)
+
+PROCEDURE StartFileInput      (VAR F                : File;
+                               VAR FileHeaderRecord : AFileHeaderRecord ):BOOLEAN;
+
+
+
+
+END TLW1File.
+
+

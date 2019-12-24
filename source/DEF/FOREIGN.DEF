@@ -1,0 +1,59 @@
+DEFINITION MODULE Foreign;
+
+
+    (*  Foreign -- Tables needed for conversion of stuff into foreign
+                   character sets, and such. *)
+
+TYPE
+    ACharacterConversionTable = ARRAY [0..255] OF CHAR;
+
+VAR
+    UpshiftTable,
+    SortOrderTable       : ACharacterConversionTable;
+
+
+PROCEDURE ConvertedCharacter (     C        : CHAR;
+                               VAR Table    : ACharacterConversionTable
+                             ) : CHAR;
+
+PROCEDURE ConvertString      ( VAR S        : ARRAY OF CHAR;
+                               VAR Table    : ACharacterConversionTable
+                             );
+
+
+    (*  Decode the ascii string into a string of control characters.
+        The string is copied, character for character, except:
+
+            ^  causes the next character to be interpreted as a
+               control character (range 0C..37C).
+
+            \  causes the next 1, 2 or 3 digits to be interpreted
+               as the decimal representation of a character.
+
+      *)
+
+PROCEDURE DecodeString (VAR From, To: ARRAY OF CHAR);
+
+
+    (* DoDash -- Translate source LString to a series of characters
+                 beginning at position j of Dest.  Update j.
+                 All characters are copied literally into the Dest
+                 array (which is probably NOT an LString).  A
+                 sequence of characters separated by elipses ("..")
+                 will be expanded into a series of characters
+                 from the lower to the higher character, with all
+                 characters in between represented.
+                   E.G. "a..l" would be expanded to "abcdefghijkl".
+           *)
+
+PROCEDURE DoDash(VAR Source   : ARRAY OF CHAR;
+                 VAR Dest     : ARRAY OF CHAR;
+                 VAR j        : CARDINAL       );
+
+    (* ExpandStringToXLAT -- Translate the Source LString to a
+                             character translation table.   *)
+
+PROCEDURE ExpandStringToXLAT( VAR Source    : ARRAY OF CHAR;
+                              VAR XLAT      : ARRAY OF CHAR   );
+END Foreign.
+

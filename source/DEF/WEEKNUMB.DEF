@@ -1,0 +1,63 @@
+DEFINITION MODULE WeekNumberInfo;
+
+(*  =========================================================================
+    Last Edit : October 26, 1990 2:58PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Week number support.
+
+    MODIFICATION HISTORY:
+
+    25-Oct-90 PFG   Put in Timei/TimeFormat changes from Roger and graphics-
+                    related changes from Patrick for 4.5.
+
+    =========================================================================
+*)
+
+
+
+FROM Timei IMPORT
+                   ADate;
+
+
+FROM Timeu IMPORT
+                   YearsOnFile;
+
+TYPE
+   AWeekStartRecord = RECORD
+                        FirstWeekStartDay : CARDINAL;
+                        NumDaysTillWeekTwo: CARDINAL;
+                        LastWeekNumber    : CARDINAL;
+                        DaysInLastWeek    : CARDINAL;
+                      END;
+
+VAR
+    UsingWeekNumbers : BOOLEAN;
+    WeekStartTable : ARRAY [0..YearsOnFile - 1] OF AWeekStartRecord;
+
+PROCEDURE WeekNumberToTimeU (     Year, WeekNumber, WeekDay,
+                                  Hour, Minute      : CARDINAL;
+                              VAR Timeu             : ADate ) : BOOLEAN;
+
+PROCEDURE WeekNumberToTime (     WeekNumber, WeekDay : CARDINAL;
+                             VAR Year, Month, Day    : CARDINAL ) : BOOLEAN;
+
+
+PROCEDURE TimeToWeekNumber (      Month, Day,
+                                  Hour, Minute      : CARDINAL;
+                             VAR  Year, WeekNumber,
+                                  WeekDay           : CARDINAL ) : BOOLEAN;
+
+PROCEDURE TimeUToWeekNumber (     Timeu             : ADate;
+                              VAR Year, WeekNumber, WeekDay,
+                                  Hour, Minute      : CARDINAL ) : BOOLEAN;
+
+PROCEDURE CtoIntDay (     C : CARDINAL;
+                      VAR s : ARRAY OF CHAR );
+
+PROCEDURE InitWeekNumberInfo;
+
+END WeekNumberInfo.
+
+

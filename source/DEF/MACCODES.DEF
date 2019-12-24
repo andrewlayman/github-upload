@@ -1,0 +1,81 @@
+DEFINITION MODULE MacCodes;
+
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+FROM Codes      IMPORT
+                        ASetOfCodes;
+
+EXPORT QUALIFIED InCodeSet, GetCodeString, CodeIsAHotKey,
+                 CToStr, ExtendedCharStr,
+                 NameCode,
+                 MessageCode,
+                 MenuCode,
+                 PauseCode,
+                 ChainCode,
+                 BeginCode,
+                 EndCode;
+
+
+CONST
+                 NameCode    = 1000;
+                 MessageCode = 2000;
+                 MenuCode    = 3000;
+                 PauseCode   = 4000;
+                 ChainCode   = 5000;
+                 BeginCode   = 7000;
+                 EndCode     = 8000;
+
+(*------------------------------------------------------------------------
+
+Returns TRUE iff the code is found to be in the specified codeset.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE InCodeSet (VAR codeset : ASetOfCodes;
+                     code        : CARDINAL):BOOLEAN;
+
+
+
+(*------------------------------------------------------------------------
+
+Gets the string equivalent of extended characters and control characters.
+Used in the editor.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE GetCodeString (C       : CARDINAL;
+                         VAR str : ARRAY OF CHAR);
+
+PROCEDURE CodeIsAHotKey (code : CARDINAL):BOOLEAN;
+
+
+(*------------------------------------------------------------------------
+
+Converts the character (cardinal representation) into its string equivalent.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE CToStr (C       : CARDINAL;
+                  VAR Str : ARRAY OF CHAR);
+ 
+
+(*------------------------------------------------------------------------
+
+If the string matches a character string equivalent, then return the
+cardinal value of the character and TRUE.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE ExtendedCharStr (str   : ARRAY OF CHAR;
+                           VAR c : CARDINAL):BOOLEAN;
+ 
+
+END MacCodes.

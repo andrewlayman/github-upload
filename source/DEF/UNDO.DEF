@@ -1,0 +1,210 @@
+DEFINITION MODULE Undo;
+
+    (*  MODIFICATION HISTORY --
+
+        6/6/89 EGK  Added InitUndo procedure to fix problem of
+                    calling RegisterForNotices before Notices
+                    modules is initialized.
+    *)
+
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree;
+
+
+
+TYPE
+
+    AnUndoableObject = (Task, Resource, Edge);
+
+    AnUndoAction = (None, Add, Delete, Change, Open, Close,
+                    Move, Promote, Demote, ChartActive);
+
+    AnUndoStatus = (Inactive, Active, Aborted);
+
+
+VAR
+    UndoStatus          : AnUndoStatus;
+
+    UndoTree            : ATree;
+    RedoTree            : ATree;
+
+
+
+
+(*----------------------------------------------------------------------------
+    BeginTransactionSet --
+
+    Prepare to record a sequence of transactions which can be later undone as
+    a single set.
+
+    Preconditions:
+
+    Postconditions:
+        After this call, any actions which can be undone will be recorded.
+        Use EndTransactionSet to terminate recording in this set.
+----------------------------------------------------------------------------*)
+PROCEDURE BeginTransactionSet();
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    EndTransactionSet --
+
+    Close the current transaction set.
+
+    Preconditions:
+        A transaction set must have been opened with a call to
+        BeginTransactionSet.
+
+    Postconditions:
+        Any further undoable actions will not be recorded in this transaction
+        set.
+----------------------------------------------------------------------------*)
+PROCEDURE EndTransactionSet();
+
+
+
+
+(*----------------------------------------------------------------------------
+    AbortTransactionSet --
+
+    Close the current transaction set and immediately undo all of the actions
+    recorded in it, without storing any of these transactions for later use.
+
+    Preconditions:
+        A transaction set must have been opened with a call to
+        BeginTransactionSet.
+
+    Postconditions:
+        Any further undoable actions will not be recorded in this transaction
+        set.  The next call to EndTransactionSet will be ignored.
+----------------------------------------------------------------------------*)
+PROCEDURE AbortTransactionSet();
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    GetUndoLimit --
+
+    Return the maximum number of transaction sets that may be stored at one
+    time.
+
+    Preconditions:
+
+    Postconditions:
+        The maximum number of transaction sets that can be stored in memory
+        will be returned.
+----------------------------------------------------------------------------*)
+PROCEDURE GetUndoLimit() : CARDINAL;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    SetUndoLimit --
+
+    Set the maximum number of transaction sets that can be stored in memory.
+
+    Preconditions:
+
+    Postconditions:
+        The maximum number of transaction sets that can be stored in memory
+        will be initialized to the number given.  If there are more than this
+        number of transaction sets currently stored for undo, the excess
+        transaction sets will be immediately purged from memory and cannot
+        be undone.  If, however, there are an excess number of transactions
+        stored for redo, they will not be immediately erased; instead, they
+        will be erased as they are pushed through the undo list.
+
+        Note:  A value of zero will disable undo entirely.
+----------------------------------------------------------------------------*)
+PROCEDURE SetUndoLimit (Limit : CARDINAL);
+
+
+(*----------------------------------------------------------------------------
+    NotifyUndo --
+
+    Provide notification that an object is about to be moved, deleted, or
+    added.  This allows undo to make copies and store other information about
+    the objects to facilitate undoing of the action.
+
+    Preconditions:
+        A transaction set should be open for recording.  If not, this call
+        will have no effect.
+        For tasks and resources, the DataObject must be ATreeNode;  for
+        joins, the DataObject must be AnEdgePtr.
+
+    Postconditions:
+        The specified action, on the specified object, will be recorded for
+        later undo in the currently open transaction set.
+----------------------------------------------------------------------------*)
+PROCEDURE NotifyUndo    (   UndoObject      : AnUndoableObject;
+                            UndoAction      : AnUndoAction;
+                            DataObject      : ADDRESS           );
+
+
+(*----------------------------------------------------------------------------
+    UndoLastChange --
+
+    Undo the effect of the most recently recorded transaction set.
+        
+    This has two modes:  If the Redo value is FALSE, then the transaction
+    sets will come from the list of transaction sets which have been recorded
+    (through calls to NotifyUndo).  If the value is TRUE, then the
+    transaction sets will come from the list of transaction sets which have
+    already been undone, thus allowing them to be redone.
+
+    Preconditions:
+
+    Postconditions:
+        If there are no closed transaction sets available for undo, FALSE
+        will be returned.  Otherwise, the most recently recorded transaction
+        will be undone, and TRUE will be returned.
+----------------------------------------------------------------------------*)
+PROCEDURE UndoLastChange (  Redo            : BOOLEAN ) : BOOLEAN;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    FlushUndos --
+
+    Remove all stored transaction sets without undoing their effects.
+
+    Preconditions:
+
+    Postconditions:
+        All stored transaction sets will be erased.
+----------------------------------------------------------------------------*)
+PROCEDURE FlushUndos();
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    DebugUndo --
+
+    Used internally;  brings up a dialog box which allows for inspection of
+    the stored transaction sets and changing of the undo and redo stack size.
+----------------------------------------------------------------------------*)
+PROCEDURE DebugUndo();
+
+
+PROCEDURE InitUndo();
+
+
+
+END Undo.
+

@@ -1,0 +1,99 @@
+DEFINITION MODULE PrintStatic;
+    (* MODIFICATION HISTORY:
+
+        Apr 19, 1989    KKC - New variables:
+                                NNotesPrintLines, ReportActiveFilters,
+                                ReportHeaderTextIn, ReportHeaderTextGen.
+        May 4, 1989     KKC - Delete ReportHeaderTextGen and move it to
+                              PrintCaption.mod.
+        Jun 12, 1989    MWP - Added support for outputting data to a Null device.
+        Jul 4, 89       MWP - Add storage space for the Output device name.
+        Aug 3, 89       MWP - Changed Init and Terminate from Array to AText.
+        10-Aug-89       RSC - Remove OldInit and OldTerminate strings.
+         4-Sep-89       MWP - Also store the output to disk filename.
+        27-Sep-89   MWP/KKC - Store the Timeout so print routines can actually
+                              use it.
+    *)
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+
+
+    (*  DoPrinterForm  -- Allow printer parameters to be changed. *)
+
+
+TYPE
+    APrinterStyle = (OutToPrinter, OutToDisk, OutToScreen);
+    AControlStyle = (PrinterNormal,PrinterCompressed,WPNormal,NoControls);
+    APortType     = (PortParallel, PortSerial, PortDOS, PortNull);
+    AProtocol     = (NoProtocol,CheckCTS,XonXoff,EtxAck);
+    AControlGroup = RECORD
+                        NewPage      : ARRAY [0..20] OF CHAR;
+                        NewLine      : ARRAY [0..20] OF CHAR;
+                        Normal       : ARRAY [0..30] OF CHAR;
+                        Bold         : ARRAY [0..30] OF CHAR;
+                        TopMargin,
+                        BottomMargin,
+                        LeftMargin,
+                        RightMargin  : CARDINAL;
+                        Pause        : BOOLEAN;
+                        FillerByte   : CHAR;    (* MAKE EVEN LENGTHED *)
+                        Init         : AText;                      (* 3-Aug-89 MWP *)
+                        Terminate    : AText;                      (* 3-Aug-89 MWP *)
+                    END;
+
+
+    APrintCB      = RECORD
+                            (* Where is the output directed. *)
+                        Style    : APrinterStyle;
+                            (* Margins currently in use? *)
+                        TopMargin,
+                        BottomMargin,
+                        LeftMargin,
+                        RightMargin  : CARDINAL;
+                            (* If a printer, which one. *)
+                        PrinterNumber : CARDINAL;
+                            (* What kind of control sequences. *)
+                        ControlStyle      : AControlStyle;
+                            (* Serial or parallel printer or DOS calls *)
+                        PortType     : APortType;
+                            (* These next fields are used only if
+                               we are using a serial port.   The port
+                               number is then stored in PrinterNumber. *)
+                        BaudRate,
+                        StopBits,
+                        NumberOfBits : CARDINAL;
+                        ParityBit,
+                        EvenParity   : BOOLEAN;
+                        Protocol     : AProtocol;
+                            (* Some useful filler. *)
+                        Filler1      : ARRAY [0..15] OF CARDINAL;
+                            (* The secret controls. *)
+                        ControlStrings : ARRAY AControlStyle OF AControlGroup;
+                    END;
+
+VAR
+    ReportFinishedOK    : BOOLEAN;
+    PrintCB             : APrintCB;
+    PrintDiskFileName   : ARRAY [0..80] OF CHAR;
+
+        (* PrintXLAT translates screen characters for printing. *)
+    PrintXLAT           : ARRAY [OutToPrinter..OutToDisk] OF ARRAY [0..255] OF CHAR;
+
+        (* Translate overlay is a program name that should be called
+           after the disk file is created on output to disk. *)
+    TranslateOverlay    : ARRAY [0..8] OF CHAR;
+    NNotesPrintLines    : CARDINAL;
+    ReportActiveFilters : BOOLEAN;
+    ReportHeaderTextIn  : AText; (* User input this *)
+    OutputDeviceName    : ARRAY [0..255] OF CHAR;                  (* 4/Jul/89 MWP *)
+    OutputDiskName      : ARRAY [0..255] OF CHAR;                  (* 1-Sep-89 MWP *)
+    GlobalTimeOut       : CARDINAL;                                (* 27-Sep-89 MWP/KKC *)
+
+VAR
+        (* A work area for use by report overlays.  These must be
+           shared and each report must only use his portion. *)
+    ReportSettings    : ARRAY [0..50] OF CARDINAL;
+
+END PrintStatic.
+

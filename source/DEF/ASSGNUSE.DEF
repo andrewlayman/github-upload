@@ -1,0 +1,163 @@
+DEFINITION MODULE AssgnUse;
+
+(*  =========================================================================
+    Last Edit : October 4, 1990 4:02PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Compute the usage of an assignment over a time period.
+
+
+    MODIFICATION HISTORY:
+
+        15-Aug-90 RSC First version.
+         4-Oct-90 RSC Added AssignmentTics() and made its return value
+                      a LONGINT of how many clock ticks elapsed.
+        30-Jan-92 TGS   AssignmentTics() now returns a REAL, as Rate is now
+                        a REAL.
+
+    =========================================================================
+*)
+
+
+FROM Allocs         IMPORT
+    (* TYPE *)          ATask;
+
+FROM Assignments    IMPORT
+    (* TYPE *)          AnAssignmentRecord;
+
+FROM Timei          IMPORT
+    (* TYPE *)          ADate;
+
+
+
+
+
+TYPE
+    ACompletion = (CompletedHours, YetToGoHours, TotalHours);
+
+
+
+
+(*  =====================================================================
+    
+    PROCEDURE - Assignment Hours
+
+            How many hours has this assignment worked, or
+            How many hours WILL this assignment work, or both,
+            during the period specified?
+
+
+        Preconditions :
+
+            FlexStor is running
+            Recalc has run, filling in the assignment record's
+                VaryingAssignment list.
+                
+                If this condition is not met, the results will be
+                    just a guess, based on the task record.
+
+        Postconditions :
+
+            No changes are made to the records passed.
+
+        Parameters :
+
+            Input:
+
+                Assignment      The assignment record to report on.
+                                It must have its resource pointer filled in,
+                                and the VaryingAssignment list must be
+                                VALID or NIL.
+
+                Task            The task record to use as a fallback,
+                                in case the VaryingAssignment list is NIL.
+
+                Completion      Completed, ToGo, or both hours?
+
+                StartOfPeriod   The beginning of the period to report on.
+
+                EndOfPeriod     The end of the period to report on.
+
+
+            Output:
+
+                RETURN is the number of WorkHours in the period, taking
+                          varying assigned rates into account.  See the
+                          note in Preconditions.
+
+    =====================================================================
+*)
+PROCEDURE AssignmentHours( VAR Assignment     : AnAssignmentRecord;
+                           VAR Task           : ATask;
+                               Completion     : ACompletion;
+                               StartOfPeriod,
+                               EndOfPeriod    : ADate
+
+                          ) : REAL;
+
+
+
+
+
+(*  =====================================================================
+    
+    PROCEDURE - Assignment Tics
+
+            How many clock tics has this assignment worked, or
+            How many clock tics WILL this assignment work, or both,
+            during the period specified?
+
+
+        Preconditions :
+
+            FlexStor is running
+            Recalc has run, filling in the assignment record's
+                VaryingAssignment list.
+                
+                If this condition is not met, the results will be
+                    just a guess, based on the task record.
+
+        Postconditions :
+
+            No changes are made to the records passed.
+
+        Parameters :
+
+            Input:
+
+                Assignment      The assignment record to report on.
+                                It must have its resource pointer filled in,
+                                and the VaryingAssignment list must be
+                                VALID or NIL.
+
+                Task            The task record to use as a fallback,
+                                in case the VaryingAssignment list is NIL.
+
+                Completion      Completed, ToGo, or both hours?
+
+                StartOfPeriod   The beginning of the period to report on.
+
+                EndOfPeriod     The end of the period to report on.
+
+
+            Output:
+
+                RETURN is the number of clock tics in the period, taking
+                          varying assigned rates into account.  See the
+                          note in Preconditions.
+
+    =====================================================================
+*)
+PROCEDURE AssignmentTics( VAR Assignment     : AnAssignmentRecord;
+                          VAR Task           : ATask;
+                              Completion     : ACompletion;
+                              StartOfPeriod,
+                              EndOfPeriod    : ADate
+
+                         ) : REAL;
+
+END AssgnUse.
+
+

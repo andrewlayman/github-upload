@@ -1,0 +1,378 @@
+DEFINITION MODULE Forms;
+
+    (* MODIFICATION HISTORY:
+
+       Aug. 27, 1985  AJL - Added procedures FieldIsProtected,
+                            FindFieldXY, MaxFieldNumber, MinIndex and MaxIndex;
+                          - Removed FormFields,
+                            MaxChoice, AFieldNo,AChoiceNo, AFieldType,
+                            and AFieldValue to module FormRec.
+                          - Added "Form" as a parameter to several
+                            procedures.
+                          - Rearranged the order of parameters to
+                            several procedures to consistently place
+                            "Form" before "FormValue".
+                          - Added parameters, ULX, LRX and LRY to
+                            DoForm.  Changed y to ULY.
+       Mar. 17, 1987  AJL - IMPORT AFormHandle.
+                          - Added CheckProc as a parameter to OpenForm.
+                          - Added procedure PassEventToForm.
+                          - Added procedure DoFormByHandle.
+                          - Removed ManageForm procedure.
+       10/15/87 RSC       - Added procedure "SetFormChange".
+       Feb. 16, 1989  AJL - Added SetFormContext, QueryFormContext,
+                            AQueryPromptProc, and SetQueryPrompt;   
+       Mar. 2, 1989   AJL - Removed explicit exports.  
+                          - Added some documentation to FindFieldXY.
+       Jul 17, 1989   KKC - Added new procedure ChangeFormTitle.
+    *)
+
+FROM Codes    IMPORT ACode;
+
+FROM Kbio   IMPORT ascreenx, ascreeny;
+
+FROM FormCon IMPORT AFieldNo, AFieldType;
+
+FROM FormHand IMPORT AFormHandle;
+
+FROM SYSTEM   IMPORT ADDRESS;
+
+
+
+
+
+CONST
+    MaxFormStringLen = 80;  (* Largest string length on a form *)
+TYPE
+    AStringValue  = ARRAY [0..MaxFormStringLen] OF CHAR;
+    AStringValuePointer = POINTER TO AStringValue;
+
+        (*  Each field value contains either a Character value or a
+            Cardinal value.  If it is a Choice field,
+            the CardValue contains the number of the choice.  The
+            CharValue is stored as a LString; see the LStrings module.
+            For the convenience of client modules, we keep the CardValue
+            separately form everything else.  That way, if you want to
+            store something in it, (like a date) you can.   The
+            Private value is for internal use by DoForm.
+         *)
+
+    AFieldValue   = RECORD
+                       Private   : BITSET;
+                       CardValue : CARDINAL;
+                       RealValue : REAL;
+                       CharValue : AStringValuePointer;
+                    END;
+
+    ACursorAttribute = (CursorOn, CursorOff, CursorResting);
+
+TYPE
+    AForm;        (* Opague reference to a form. *)
+
+
+        (*  ACheckProc is called within DoForm whenever a field is assigned
+            a new value, whenever a key in CheckCodeSet is typed, when
+            a field is entered, exitted, or whenever the form is entered
+            or exitted.
+
+            Special hooks:
+
+                IF the CheckProc is called with CheckReason of
+                CheckFieldKey then the value returned in the Code
+                parameter will be processed as though it has been
+                entered.  (A code of 0 will have no effect).
+
+                If the CheckProc is called with CheckFieldEntry, and
+                returns FALSE, then the code value returned by it
+                will be processed as though it were the next code
+                entered on the keyboard.
+
+                If the field has the "ResetCursorOnError" attribute
+                defined (see FormRead.def), then, if CheckProc is
+                called with CheckFormExit or CheckFieldExit, the
+                code "ACode" returned by the checkproc will be used
+                to reposition the cursor within the field.  Valid
+                range is 1..field length.
+
+         *)
+
+TYPE
+    ACheckReason  = (CheckFormEntry,   (* Once per field, at start. *)
+                     CheckFormExit,    (* If OKKey is pressed.      *)
+                     CheckFieldEntry,  (* Whenever field is entered.*)
+                     CheckFieldChange, (* When Choice is changed.   *)
+                     CheckFieldExit,   (* When field is exitted.    *)
+                     CheckFieldKey);   (* When special code is hit. *)
+
+    ACheckProc    = PROCEDURE (    AForm,
+                                   AFieldNo,
+                               VAR ARRAY OF AFieldValue,
+                                   ACheckReason,
+                               VAR CARDINAL ) :BOOLEAN;
+
+              (*  A Check Proc that always returns true. *)
+
+    PROCEDURE NullCheckProc (    Form        : AForm;
+                                 FieldNo     : AFieldNo;
+                             VAR FormValue   : ARRAY OF AFieldValue;
+                                 CheckReason : ACheckReason;
+                             VAR Code        : CARDINAL
+                            ) : BOOLEAN;
+
+
+
+    (*  DOFORM -- Display the identified form on the screen at line
+                  y and following lines.
+                  Exit when OKKey or CancelKey is pressed.
+                  Incidently, one code is reserved for internal
+                  form use to signify no action: the 0.  This
+                  allows the CheckProc to signal no action.
+                  *)
+
+PROCEDURE DoForm        
+                (     ULX          : ascreenx;     (* Upper-left x coordinate. *)
+                      ULY          : ascreeny;     (* Upper-left y coordinate. *)
+                      LRX          : ascreenx;     (* Lower-right x  *)
+                      LRY          : ascreeny;     (* Lower-right y  *)
+                      FormID       : CARDINAL;     (* Form number    *)
+                      SaveScreen   : BOOLEAN;      (* Save and restore screen area used? *)
+                  VAR FormValue    : ARRAY OF AFieldValue;
+                      CheckProc    : ACheckProc
+                 ): ACode;
+
+
+
+
+    (*  DOFORM -- Display the identified form on the screen at line
+                  y and following lines.
+                  Exit when OKKey or CancelKey is pressed.
+                  Incidently, one code is reserved for internal
+                  form use to signify no action: the 0.  This
+                  allows the CheckProc to signal no action.
+                  *)
+
+PROCEDURE DoFormByHandle
+                (     ULX          : ascreenx;     (* Upper-left x coordinate. *)
+                      ULY          : ascreeny;     (* Upper-left y coordinate. *)
+                      LRX          : ascreenx;     (* Lower-right x  *)
+                      LRY          : ascreeny;     (* Lower-right y  *)
+                      FormHandle   : AFormHandle;  (* Form handle    *)
+                      SaveScreen   : BOOLEAN;      (* Save and restore screen area used? *)
+                  VAR FormValue    : ARRAY OF AFieldValue;
+                      CheckProc    : ACheckProc
+                 ): ACode;
+
+
+
+    (* OpenForm -- An alternative to DoForm, OpenForm will create
+                   the form as an output area on the screen.  Rather
+                   than allowing input, it will return immediately.
+                   Data may be updated via ShowValue.  When the
+                   form is no longer needed on the screen, use
+                   CloseForm to dispose of it. *)
+
+
+PROCEDURE OpenForm(   ULX          : ascreenx;
+                      ULY          : ascreeny;
+                      LRX          : ascreenx;
+                      LRY          : ascreeny;
+                      FormHandle   : AFormHandle;
+                      SaveScreen   : BOOLEAN;
+                  VAR FormValue    : ARRAY OF AFieldValue;
+                      CheckProc    : ACheckProc;
+                  VAR Form         : AForm
+                      ) : BOOLEAN;
+
+
+    (*     PassEventToForm -- The Form will attempt to act on the
+                              event.  If successful, a TRUE is
+                              RETURNED.  *)
+
+PROCEDURE PassEventToForm ( VAR Form  : AForm;
+                                Event : ACode  ) : BOOLEAN;
+
+
+    (* CloseForm -- Close a form opened with OpenForm. *)
+
+PROCEDURE CloseForm ( VAR Form : AForm );
+
+
+    (* MoveForm  -- Relocate an active form.   This also forces redisplay
+                    of all the form.   Can be called from within CheckProc. *)
+
+PROCEDURE MoveForm (    Form    : AForm;
+                        ULX     : ascreenx;
+                        ULY     : ascreeny;
+                        LRX     : ascreenx;
+                        LRY     : ascreeny  );
+
+
+    (* HideForm -- Reveal the previous screen image behind the
+                   form. *)
+
+PROCEDURE HideForm( Form : AForm );
+
+
+    (* RevealForm -- Redraw the form on the screen. *)
+
+PROCEDURE RevealForm(     Form       : AForm;
+                          SaveScreen : BOOLEAN ):BOOLEAN;
+
+
+    (* SHOWVALUE -- Show a single field's value.  If you are writing your
+                    own CheckProc you may want to use this. *)
+
+PROCEDURE ShowValue(     Form     : AForm;
+                         FieldNo  : AFieldNo;
+                     VAR FormValue: ARRAY OF AFieldValue);
+
+     (*  HighlightField -- Turn the field to a highlighted
+                           condition if On is TRUE, else
+                           unhighlighted. *)
+
+
+PROCEDURE HighlightField(    Form      : AForm;
+                         VAR FormValue : ARRAY OF AFieldValue;
+                             FieldNo   : AFieldNo;
+                             Attribute : ACursorAttribute );
+
+     (*  SetFieldProtection -- Turn protection on or off. *)
+
+PROCEDURE SetFieldProtection(    Form      : AForm;
+                                 FieldNo   : AFieldNo;
+                             VAR FormValue : ARRAY OF AFieldValue;
+                                 On:BOOLEAN  );
+
+
+     (*  FieldIsProtected  -- Returns TRUE iff the field is currently
+                              protected.  *)
+
+PROCEDURE FieldIsProtected(     Form       : AForm;
+                                FieldNo    : AFieldNo;
+                            VAR FormValue  : ARRAY OF AFieldValue
+                           ) : BOOLEAN;
+
+
+     (*  SetFieldHidden -- Turn hidden on or off. *)
+
+PROCEDURE SetFieldHidden(    Form      : AForm;
+                             FieldNo   : AFieldNo;
+                         VAR FormValue : ARRAY OF AFieldValue;
+                                 On:BOOLEAN  );
+
+     (*  FieldIsHidden  -- Returns TRUE iff the field is currently
+                           hidden.  *)
+
+PROCEDURE FieldIsHidden   (     Form       : AForm;
+                                FieldNo    : AFieldNo;
+                            VAR FormValue  : ARRAY OF AFieldValue
+                           ) : BOOLEAN;
+
+
+    (* FindFieldXY -- Given a Field number and an index in that Field,
+               this returns the starting x,y coordinates and
+               the ending x coordinate for that position on the
+               Form. 
+                  To find the starting position of the field, use
+               Index = MinIndex(Form,Field). 
+    *)
+
+PROCEDURE FindFieldXY(    Form     : AForm;
+                          Field    : AFieldNo;
+                          Index    : CARDINAL;
+                      VAR Cursorx  : ascreenx;
+                      VAR Cursory  : ascreeny;
+                      VAR Endx     : ascreenx );
+
+    (* MinIndex -- Returns the least value acceptable for the
+                   field.  For a Choice field, this will be 0.
+                   For other field types this will be 1. *)
+
+PROCEDURE MinIndex (     Form    : AForm;
+                         FieldNo : AFieldNo ) : CARDINAL;
+
+    (* MaxIndex -- Returns the greatest value acceptable for the
+                   field.  For a Choice field, this will be
+                   the ordinal value of the largest choice possible.
+                   For other types of fields, this will be the
+                   greatest possible string length. *)
+
+PROCEDURE MaxIndex (     Form    : AForm;
+                         FieldNo : AFieldNo ) : CARDINAL;
+
+    (* MaxFieldOnForm -- Field numbers are 0 through this. *)
+
+PROCEDURE MaxFieldNumber ( Form : AForm ) : AFieldNo;
+
+
+    (* FindFormBoundaries -- Return the current boundaries of the
+                             form. *)
+
+
+PROCEDURE FindFormBoundaries(     Form         : AForm;
+                              VAR ULX          : ascreenx;
+                              VAR ULY          : ascreeny;
+                              VAR LRX          : ascreenx;
+                              VAR LRY          : ascreeny  );
+
+
+
+PROCEDURE SetFormChange(     Form      : AForm   );
+
+
+
+    
+    (*---------------------------------------------------------------*)
+
+    (* SetFormContext -- Associate an address with a form.  *)
+
+PROCEDURE SetFormContext(    Form      : AForm;
+                             Context   : ADDRESS );
+
+    (* QueryFormContext --
+
+       Return the last address associated with the Form via
+       SetFormContext.  If no such address, return NIL. 
+    *) 
+
+PROCEDURE QueryFormContext(  Form      : AForm ) : ADDRESS;
+
+    (*---------------------------------------------------------------*)
+
+
+
+    (*---------------------------------------------------------------*)
+TYPE
+        (* Allow the client of a form to supply field prompts himself
+           rather than having them pulled from the phrases file.  The
+           default value for this is MsgFile.GetMessage.   The 
+           QueryPromptProc will have passed to it as an input parameter
+           a number.  This number, modulo 100, identifies the field
+           number.  Return a string which describes the field. *)
+           
+
+    AQueryPromptProc = PROCEDURE(     CARDINAL,           (* Phrase number *)
+                                  VAR ARRAY OF CHAR );    (* Prompt LString *)
+
+PROCEDURE SetQueryPrompt(  Form        : AForm;
+                           QueryPrompt : AQueryPromptProc );
+
+
+
+  (* ChangeFormTitle    -   
+
+      This procedure changes the form title.
+
+      Preconditions  - Form is already read it.
+
+      Postconditions - The form title is changed.
+  *)
+
+PROCEDURE ChangeFormTitle( VAR Form : AForm; VAR NewTitle : ARRAY OF CHAR );
+
+    (*---------------------------------------------------------------*)
+
+
+
+END Forms.
+

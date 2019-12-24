@@ -1,0 +1,51 @@
+DEFINITION MODULE FilterSelect;
+
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  ATaskFilter;
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+(*  For use by this module and the TLFILTER overlay *)
+
+TYPE
+    AnOverlayContext    = RECORD
+                            FilterNode      : ATreeNode;
+                            ReturnCode      : ACode;
+                          END;
+
+
+
+(*----------------------------------------------------------------------------
+    DoFilterForm --
+
+    Bring up the form allowing display of and changes to the specified filter
+    record.  The key used to exit the form is passed as the returned value.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DoFilterForm ( Filter   : ATreeNode)
+                                              : ACode;
+
+
+
+
+(*----------------------------------------------------------------------------
+    ChooseFilter --
+
+    Display a list of filter names, with the cursor initially on the name of
+    the current filter for the appropriate type, and allow selection of a
+    different named filter or changes to the contents of any of the named
+    filters.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ChooseFilter ( Variety    : ATaskFilter);
+
+
+END FilterSelect.
+

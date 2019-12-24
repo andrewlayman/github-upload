@@ -1,0 +1,133 @@
+DEFINITION MODULE BigTimeU;
+
+
+  (* BigTimeU - Big Time Units.
+
+       This procedure provides the routines to convert into and out of time
+       units that are absolute off some base of time.  That is, # of seconds
+       since, say, 1950.  
+
+       BigTimes are not linear.  You can't add a number to a big time and
+       get another big time that is number moments away.
+
+       Modification History -
+
+       Jun 19, 1987  RSC  First version.
+
+       Jun 11, 1990  RSC  Changed internal format.  Must convert old big
+                          times to new ones via TimeXlat module.
+
+                          Added MINBIGTIME/MAXBIGTIME and CompareBigTimes.
+
+  *)
+
+
+
+FROM Timei      IMPORT
+    (* TYPE *)      ATimeInfo;
+
+
+
+TYPE
+    ABigTime = RECORD
+        Low,
+        High    : CARDINAL;
+    END;
+
+
+VAR
+    MINBIGTIME : ABigTime;
+    MAXBIGTIME : ABigTime;
+
+
+
+
+
+  (* TimeToBigTime - Convert into BigTime units.
+
+     Preconditions  - Year, Month, Day, Hour, Minute, Second must be set
+                      to reasonable values.  Keeping with TimeU conventions,
+                      'Month' Starts with 0 as January.
+
+     Postconditions - BigTime is set to the internal big representation.
+  *)
+
+PROCEDURE TimeToBigTime(     Year,
+                             Month,
+                             Day,
+                             Hour,
+                             Minute,
+                             Second      : CARDINAL;
+                         VAR BigTime     : ABigTime   );
+
+
+(* TimeInfoToBigTime
+
+    Same as Time To Big Time, but using ATimeInfo rather than the
+    discreet fields.
+*)
+PROCEDURE TimeInfoToBigTime(     TimeInfo    : ATimeInfo;
+                             VAR BigTime     : ABigTime   );
+
+
+
+
+
+
+
+
+
+
+
+  (* BigTimeToTime - Convert out of BigTime units.
+
+     Preconditions  - BigTime is from a prior call to TimeToBigTime.
+
+     Postconditions - Year, Month, Day, Hour, Minute, Second are returned.
+  *)
+
+
+PROCEDURE BigTimeToTime(     BigTime : ABigTime;
+                         VAR Year,
+                             Month,
+                             Day,
+                             Hour,
+                             Minute,
+                             Second  : CARDINAL );
+
+
+
+
+
+(* BigTimeToTimeInfo
+
+    Same as Big Time To Time, but using ATimeInfo rather than the
+    discreet fields.
+*)
+PROCEDURE BigTimeToTimeInfo(     BigTime     : ABigTime;
+                             VAR TimeInfo    : ATimeInfo   );
+
+
+
+
+
+
+
+(* Compare Big Times.
+
+    Preconditions  - BigTime is from a prior call to TimeToBigTime.
+
+    Returns <0 if A < B
+            =0 if A = B
+            >0 if A > B
+*)
+PROCEDURE CompareBigTimes(  A, B : ABigTime ) : INTEGER;
+
+
+
+
+
+
+
+END BigTimeU.
+

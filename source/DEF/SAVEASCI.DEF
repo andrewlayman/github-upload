@@ -1,0 +1,37 @@
+DEFINITION MODULE SaveAscii;
+
+
+(* MODIFICATION HISTORY:
+
+        30-Mar-90  RSC   Made Timeu to Timei/TimeForm conversions.
+
+*)
+
+
+FROM FileSystem    IMPORT File;
+
+FROM Timei         IMPORT ADurationUnit;
+
+
+
+PROCEDURE SaveBoolean( VAR F : File;
+                           Type : CARDINAL;
+                           B : BOOLEAN );
+
+PROCEDURE SaveCardinal( VAR F : File;
+                            Type : CARDINAL;
+                            N : CARDINAL );
+
+
+PROCEDURE SaveReal    ( VAR F : File;
+                            Type : CARDINAL;
+                            R : REAL;
+                            Decimals : CARDINAL;
+                            Width : INTEGER );
+
+PROCEDURE SaveTimeUnit( VAR F : File;
+                            Type : CARDINAL;
+                            T : ADurationUnit  );
+
+END SaveAscii.
+

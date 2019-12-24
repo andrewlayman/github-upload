@@ -1,0 +1,141 @@
+(*----------------------------------------------------------------------------
+    MODIFICATION HISTORY
+   13-Jun-89 WKH    Added MoveLightRegion routine to move a lights region
+   18-Dec-89 LAA    Added procedure QueryLightXY to return the coordinates of
+                    a specific light (for mouse support).
+----------------------------------------------------------------------------*)
+DEFINITION MODULE Lights;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+    
+    
+
+TYPE
+    ALightRegion;
+    ALight;                        
+
+VAR
+    ActiveLightRegion       : ALightRegion;
+                     
+
+(*----------------------------------------------------------------------------
+    CreateLightRegion --
+    
+    Create a new light region at the specified screen coordinates.  Takes a
+    rug of the current screen contents, and then erases the light region in
+    preparation for new lights being installed and displayed.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateLightRegion(    ULX         : ascreenx;
+                                ULY         : ascreeny;
+                                LRX         : ascreenx;
+                                LRY         : ascreeny;
+                            VAR LightRegion : ALightRegion);
+                                                           
+                                                           
+
+(*----------------------------------------------------------------------------
+    DisposeLightRegion --
+    
+    Release the specified light region, and restore the previous screen 
+    contents of the space this screen had occupied.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DisposeLightRegion(VAR LightRegion : ALightRegion);
+
+
+
+(*----------------------------------------------------------------------------
+    InstallLight --
+    
+    Install a light of the specified priority (determining display position)
+    in the given light region.  A handle is returned by which this light is
+    refered to.  The minsize determines initial display size, the maxsize
+    indicates where to truncate a displayed value, rather than expand the
+    size of the light.  Allocation of the light is done here.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InstallLight(    LightRegion      : ALightRegion;
+                           Priority         : CARDINAL;
+                           MinSize          : CARDINAL;
+                           MaxSize          : CARDINAL;
+                       VAR Light            : ALight);
+                                                     
+ 
+
+
+(*----------------------------------------------------------------------------
+    RemoveLight --
+    
+    Remove the light from the specified light region, and release it's 
+    storage.                  
+----------------------------------------------------------------------------*)
+
+PROCEDURE RemoveLight(VAR Light             : ALight);
+
+
+
+(*----------------------------------------------------------------------------
+    DisplayLight --
+    
+    Give the light a new value, and cause it to be displayed on the screen if
+    it has sufficiently high priority, relative to other lights.  If it isn't 
+    displayed, it value is still retained, and could be displayed at a later
+    time.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DisplayLight(    Light            : ALight;
+                       VAR Value            : ARRAY OF CHAR;
+                           Attribute        : avidmode);
+
+
+
+(*----------------------------------------------------------------------------
+    ShowLights --
+    
+    Display the light region specified in its screen coordinates.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ShowLights(    LightRegion        : ALightRegion);
+
+(*----------------------------------------------------------------------------
+    EnableLights --
+
+    Turn on (if TRUE) the currently active light region, or turn it off in
+    the On parameter is FALSE.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EnableLights(    On               : BOOLEAN);
+
+(*----------------------------------------------------------------------------
+    MoveLightRegion --
+    
+    Move an existing light region to the specified screen coordinates. 
+----------------------------------------------------------------------------*)
+
+PROCEDURE MoveLightRegion(    ULX         : ascreenx;
+                              ULY         : ascreeny;
+                              LRX         : ascreenx;
+                              LRY         : ascreeny;
+                          VAR LightRegion : ALightRegion);
+           
+
+
+(*  QueryLightXY --
+        Determine the four coordinate values for a specific light.  Returns
+        FALSE if the light does not exist in the specified light region.
+    Preconditions:
+        The region for this light must have been created and not yet disposed.
+    Postconditions:
+        XY coordinates of the light are returned.
+*)
+
+PROCEDURE QueryLightXY(     Light           : ALight;
+                        VAR Ulx             : ascreenx;
+                        VAR Uly             : ascreeny;
+                        VAR Lrx             : ascreenx;
+                        VAR Lry             : ascreeny ): BOOLEAN;
+
+END Lights.
+

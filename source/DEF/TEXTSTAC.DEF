@@ -1,0 +1,17 @@
+    (*  ---------------- Module TextStack ------------ *)
+
+DEFINITION MODULE TextStack;
+
+
+PROCEDURE PushText(    Name : ARRAY OF CHAR;
+                       Level   : CARDINAL );
+
+PROCEDURE PopText( VAR Name : ARRAY OF CHAR;
+                   VAR Level : CARDINAL ) : BOOLEAN;
+
+
+PROCEDURE FlushTextStack;
+
+
+END TextStack.
+

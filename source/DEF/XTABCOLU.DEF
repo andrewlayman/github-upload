@@ -1,0 +1,154 @@
+DEFINITION MODULE XTabColumns;
+
+    (*  MODIFICATION HISTORY
+
+        21-Mar-89 RSC   Created from the old ColumnNames module, to support
+                        the new Assignments Report.
+         6-Nov-90 AJL  Import column numbers from XTabColNumbers.
+        10-Jun-91 PFG   Added GetXTabColumnName to get the latest cross tab
+                        column name and format it for use in a data column
+                        field of a form.
+    *)
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM XTabColNumbers         IMPORT
+    (* CONST *)                 XTabLastColumn;
+
+
+
+
+
+TYPE
+    AColumnNameSet   = SET OF [1..XTabLastColumn];
+
+
+
+
+
+
+
+    (*  XTabColumnsTreeExists --
+
+        Query whether or not the cross tab columns tree already exists.
+
+        Preconditons:
+            None.
+
+        Postconditions:
+            TRUE will be returned iff the cross tab columns tree exists.
+    *)
+
+PROCEDURE XTabColumnsTreeExists(): BOOLEAN;
+
+
+
+
+    (*  CreateXTabColumnsTree --  
+
+            Create the tree of tasl column names for use by 
+            PickXTabColumns and SearchForXTabColumns.
+
+        Preconditions:
+            None.
+
+        Postconditions:
+            If the use count is zero, and if heap space is available, the 
+            column name tree will be created, and TRUE returned.  If the use
+            count is > 0, it will just be incremented.  Otherwise,  FALSE will 
+            be returned, and the tree won't have been created.  
+    *)
+
+PROCEDURE CreateXTabColumnsTree( DontUse : AColumnNameSet ) : BOOLEAN;
+
+
+
+
+
+    (*  DisposeXTabColumnsTree --
+
+            Get rid of the column name tree made by CreateXTabColumnsTree.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateXTabColumnsTree.
+
+        Postconditions:
+            If the use count is 1, the column name tree and all it's node 
+            will be discarded.  Otherwise, the use count will be decremented.
+    *)
+
+PROCEDURE DisposeXTabColumnsTree();
+
+
+
+
+    (*  GetXTabColumnName --
+
+        Get the latest column name for the column ID passed.  Format it as
+        needed for the data column fields on forms and return that string.
+
+        Preconditons:
+            A valid column ID must be passed in ColumnID.
+
+        Postconditions:
+            The string is returned in String.
+    *)
+
+PROCEDURE GetXTabColumnName(    ColumnID    : CARDINAL;
+                                VAR String      : ARRAY OF CHAR);
+
+
+
+    (*  PickXTabColumn --
+
+            Display the scrolling list of column names at the indicated
+            coordinates, and allow the user to select one from it.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateXTabColumnsTree, and not discarded by DisposeXTabColumnsTree.
+
+        Postconditions:
+            If the user selects a new column name, the ColumnId and 
+            ColumnName will be changed to that for the new column, and TRUE 
+            will be returned.  If no column name is selected, FALSE will be 
+            returned.
+    *)
+
+PROCEDURE PickXTabColumn(    Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                         VAR ColumnId       : CARDINAL;
+                         VAR ColumnName     : ARRAY OF CHAR) 
+                                                            : BOOLEAN;
+
+
+
+
+    (*  SearchForXTabColumn --
+
+            Find the ColumnId in the cross tab column tree for the provided 
+            column name (an LString).
+
+        Preconditions:
+            The cross tab column tree must have been created by a call to
+            CreateXTabColumnsTree, and not discarded by DisposeXTabColumnsTree.
+
+        Postconditions:
+            If the column name can be found in the tree, it's name and id
+            will be returned.  If the column name can't be found, NIL will 
+            be returned.  The search ignores case.
+    *)
+
+PROCEDURE SearchForXTabColumn(VAR ColumnName : ARRAY OF CHAR;
+                              VAR ColumnId   : CARDINAL     )
+                                                             : BOOLEAN;
+
+END XTabColumns.
+
+
+
+

@@ -1,0 +1,50 @@
+DEFINITION MODULE RsrcEdit;
+
+
+(*
+    MODIFICATION HISTORY:
+
+    16-Jun-89 RSC  Removed ResourceOutline from here.  Look in TLRsrcEdit.
+                   Added "AResourceEditLink".
+
+*)
+
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM RsrcMod                IMPORT
+    (* TYPE *)                  AResourcePointer;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+
+TYPE
+    AResourceFormLink = RECORD
+        Resource  : AResourcePointer;
+        Code      : ACode;
+    END;
+
+
+    AResourceListLink = RECORD
+        Node            : ATreeNode;
+        AllowSelection  : BOOLEAN;
+        ReturnValue     : BOOLEAN;
+    END;
+
+
+
+PROCEDURE EditResources;
+
+PROCEDURE SelectResource (VAR Node: ATreeNode): BOOLEAN;
+
+PROCEDURE DoResourceForm ( Resource : AResourcePointer ): ACode;
+
+
+END RsrcEdit.
+
+

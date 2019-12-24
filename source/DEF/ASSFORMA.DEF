@@ -1,0 +1,149 @@
+DEFINITION MODULE AssFormat;
+
+  (*
+    Ass Format - Format Assignment Information
+
+        This module is intended to do for Assignments what Captions does for
+        tasks.  That is, given a column ID, return information about an
+        assignment.
+
+        At this time, only the information about an assignment COLUMN is
+        returned, not information about a specific assignment.
+
+
+        MODIFICATION History - 
+
+        17-Feb-89 RSC First version - information only.
+        17-Mar-89 RSC Full featured version for Ken's reports.
+                      (This was NOT on my quarterly objectives!)
+         1-Sep-89 EGK Added FormatType parameter to FormatAssValue.
+  *)
+
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  ATaskPtr;
+
+FROM Assignments            IMPORT
+    (* TYPE *)                  AnAssignmentRecord;
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnInfoChoice, AColumnDataRecord;
+
+
+
+
+
+
+TYPE
+
+(*
+    Get Ass Value
+
+        Preconditions
+                        > Assignment is the assignment record.
+
+                        > Task       is the assignment's task's pointer.
+
+                        > ColumnID   is the column to return information about.
+
+        Postconditions
+                        > If TRUE, Value contains the desired information.
+
+                        > If FALSE, The column data is not applicable.
+*)
+    AGetAssValueProc = PROCEDURE (VAR AnAssignmentRecord,
+                                      ATaskPtr,
+                                      CARDINAL,  (* ColumnID *)
+                                  VAR AColumnDataRecord)
+                                                              : BOOLEAN;
+
+
+
+(*
+    Format Ass Value
+
+        Preconditions
+                        > ColumnID     is the column to return information about.
+
+                        > Width        is how wide the data is.
+
+                        > LineType     is wether you want PLAN or BASELINE info.
+
+                        > MinDecimals  is the min decimals to use for REALs.
+
+                        > MaxDecimals  is the max decimals to use for REALs.
+
+                        > RightJust    is wether to right justify the string.
+
+        Postconditions
+                        > Value contains the desired string.
+
+*)
+    AFormatAssValueProc  = PROCEDURE(    CARDINAL,           (* ColumnID *)
+                                         CARDINAL,           (* Width *)
+                                         CARDINAL,           (* MinDecimals *)
+                                         CARDINAL,           (* MaxDecimals *)
+                                         BOOLEAN,            (* Right Just *)
+                                         CARDINAL,           (* FormatType *)
+                                     VAR AColumnDataRecord); (* Value *)
+
+(*
+    Get Ass String
+
+        Preconditions
+                        > Assignment is the assignment record.
+
+                        > Task       is the assignment's task's pointer.
+
+                        > ColumnID  is the column to return information about.
+
+                        > Width     is how wide the data is.
+
+        Postconditions
+                        > If TRUE, Value contains the desired string.
+
+                        > If FALSE, The column data is not applicable.
+*)
+    AGetAssStringProc    = PROCEDURE(VAR AnAssignmentRecord,
+                                         ATaskPtr,
+                                         CARDINAL,           (* Column *)
+                                         CARDINAL,           (* Width *)
+                                     VAR ARRAY OF CHAR)      (* Value *)
+                                                              : BOOLEAN;
+
+
+
+(*
+    Get Ass Info
+
+        Preconditions
+                        > ColumnID   is the column to return information about.
+
+                        > InfoChoice is the kind of information you are
+                          interested in.  See Captions.Def for the choices.
+
+        Postconditions
+                        > If TRUE, InfoValue contains the desired information.
+
+                        > If FALSE, The column does not exist.  This allows
+                          looking for information on ALL columns.
+*)
+    AGetAssInfoProc      = PROCEDURE(     CARDINAL,           (* ColumnID   *)
+                                          AColumnInfoChoice,  (* InfoChoice *)
+                                          CARDINAL,           (* Width *)
+                                      VAR AColumnDataRecord)  (* InfoValue *)
+                                    : BOOLEAN;
+
+
+
+VAR
+    GetAssInfo     : AGetAssInfoProc;
+    GetAssValue    : AGetAssValueProc;
+    FormatAssValue : AFormatAssValueProc;
+    GetAssString   : AGetAssStringProc;
+
+
+
+
+END AssFormat.
+

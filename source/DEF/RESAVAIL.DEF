@@ -1,0 +1,451 @@
+DEFINITION MODULE ResAvailableResources;         
+
+    (* This module provides procedures to query and update
+       the resource availability structures. 
+
+       MODIFICATION HISTORY:
+
+       Feb. 15, 89  JES -Created.
+
+       Jul  18, 90  JES - added procedure "CheckResourceOnDate" and
+                           added argument "AllowVacations" to various
+                           procedures to support multiple calendars.
+       Sep 06, 90   JES -added parameter "AllowOverbookings" to
+                          FirstDateHaveResourceAmount
+       Nov 8,  90   JES -added procedure FindFirstDateLevelIsAboveZero, to
+                         support contouring for effort-driven split tasks.
+                         Changed FirstDateHaveResourceAmount to
+                         FindFirstDateHaveResourceAmount, and added
+                         parameters StartSearchAt, EndSearchAt, FoundADate,
+                         and DateFound.
+       Dec 20, 90   JES -added procedure FindLatestDateHaveResourceAmount.
+       Dec 21, 90   JES -moved procedure AllResourcesAreAvailable into
+                        here from ResStart, so could be called also from
+                        ResLates. Also removed obsolete procedure
+                        ResourceIsOverbooked and MaxEndDateForResourceAmount.
+       Dec 28, 90   JES -Added procedure AllTaskResourcesAreAvailable -
+                        just like AllResourcesAreAvailable but operates
+                        on a task instead of an assignment array.
+       Jan  3, 91  JES -Added procedures ScheduleLateResource and
+                        FreeLateResource, analogs of ScheduleResource and
+                        FreeResource that reference the LateResidueAvailProfile
+                        instead of the ResidueAvailProfile of the resource.
+   Jan 14, 91   JES-Added parameter DoWeUseLateAvailabilities to some
+                        procedures.
+   Feb 19, 91   JES-Added procedures AllResourcesOnVacationOrAvailable and
+                     FindFirstDateResOnVacationOrAvailable.                           
+   Apr 26, 91   JES-Removed unused procedure FindFirstDateLevelIsAboveZero.
+   June 18, 91  JES-Added FindFirstDateResourceNotOnVacation.
+   Feb  6, 92   JES-Added FindLatestViolationOrNonVacation (to change
+                      duration-driven tasks so they can't start on a date
+                      when all resources are on vacation - used in
+                      FindLatestStartDate).                      
+                   -In descriptions of some procedures, removed condition that
+                      resource be levellable, since in these procedures all
+                      that is actually required is an availability table
+                      (i.e., the resource could be employable and not
+                      levellable).
+
+     *)
+FROM Allocs                 IMPORT
+    (* TYPE *)                  ATaskPtr;
+
+FROM Assignments            IMPORT
+    (* TYPE *)                  AnAssignmentArray;
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM ResCal                 IMPORT
+    (* TYPE *)                  AnAvailabilityCell, AnAvailabilityCellPointer;
+    
+FROM RsrcMod                IMPORT
+    (* TYPE *)                  AResourcePointer;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADuration;
+
+
+
+
+(*------CheckResourceOnDate-----------------------------------------
+        
+        Finds the amount available on given date, and whether or not
+        given date is a vacation.
+
+       If DoWeUseLateAvailabilities is TRUE, the procedure references
+       the LateAvailProfile of each resource; otherwise it references
+       the regular AvailProfile.
+
+    Preconditions - 
+        Resource must be valid and have an availability table.
+
+
+    Postconditions - 
+        No effects.
+
+*)
+
+
+PROCEDURE CheckResourceOnDate (Resource                  : AResourcePointer;
+                               Date                      : ADate;
+                               DoWeUseLateAvailabilities : BOOLEAN;
+                           VAR AmountAvail    : LONGINT;
+                           VAR DateIsVacation : BOOLEAN);
+
+
+
+(*------AmountAvailableOnDate----------------------------------------
+
+        Returns exact amount of Resource that is available on Date.
+
+       If DoWeUseLateAvailabilities is TRUE, the procedure references
+       the LateAvailProfile of each resource; otherwise it references
+       the regular AvailProfile.
+
+    Preconditions - 
+        Resource must be valid and levellable and have an availability table.
+
+
+    Postconditions - 
+        No effects.
+
+*)
+
+PROCEDURE AmountAvailableOnDate (Resource : AResourcePointer;
+                                 Date     : ADate;
+                                 DoWeUseLateAvailabilities : BOOLEAN) : LONGINT;
+
+
+
+
+
+
+
+(*------HaveResourceAmountOnDate----------------------------------------
+
+        Returns TRUE if at least Amount of Resource is available on Date;        
+        otherwise returns FALSE. If AllowVacations is FALSE, resource
+        must also not be on vacation in order to return TRUE.
+
+       If DoWeUseLateAvailabilities is TRUE, the procedure references
+       the LateAvailProfile of each resource; otherwise it references
+       the regular AvailProfile.
+
+    Preconditions - 
+        Resource must be valid and have an availability table.
+
+    Postconditions - 
+        No effects.
+
+*)
+
+PROCEDURE HaveResourceAmountOnDate (Resource      : AResourcePointer;
+                                    Amount        : LONGINT;
+                                    Date          : ADate;
+                                    DoWeAllowVacations        : BOOLEAN;
+                                    DoWeUseLateAvailabilities : BOOLEAN) : BOOLEAN;
+
+
+(*-------FindFirstDateHaveResourceAmount----------------------------------
+
+        Returns, via DateFound, the first date on or after StartSearchDate 
+        and on or before EndSearchDatefor which 
+        Amount of Resource is available.
+        If never available within that interval, 
+        sets FoundADate to FALSE. Otherwise, returns the date in
+        FirstDate and sets FoundADate to TRUE.
+
+        Additional requirement on the date returned: if DoWeAllowVacations is
+        FALSE, the date cannot be vacation time.
+
+        If DoWeUseLateAvailabilities is TRUE, the procedure references
+        the LateAvailProfile of each resource; otherwise it references
+        the regular AvailProfile.
+
+    Preconditions  - 
+        Resource must be valid and have an availability table.
+
+
+    Postconditions - 
+        No effects.
+    
+*)
+
+PROCEDURE FindFirstDateHaveResourceAmount (Resource         : AResourcePointer;
+                                           Amount           : LONGINT;
+                                           StartSearchDate  : ADate;
+                                           EndSearchDate    : ADate;
+                                           DoWeAllowVacations        : BOOLEAN;
+                                           DoWeAllowOverbookings     : BOOLEAN;
+                                           DoWeUseLateAvailabilities : BOOLEAN;
+                                       VAR FoundADate       : BOOLEAN;
+                                       VAR DateFound        : ADate);
+
+(*-------FindFirstDateResOnVacationOrAvailable  -----------------------------
+
+        Returns, via DateFound, the first date on or after StartSearchDate 
+        and on or before EndSearchDate for which either
+        Amount of Resource is available or
+        Resource is on vacation.
+        If there is no such date within that interval, 
+        sets FoundADate to FALSE. Otherwise, returns the date in
+        FirstDate and sets FoundADate to TRUE.
+
+        If DoWeUseLateAvailabilities is TRUE, the procedure references
+        the LateAvailProfile of each resource; otherwise it references
+        the regular AvailProfile.
+
+    Preconditions  - 
+        Resource must be valid and have an availability table.
+
+
+    Postconditions - 
+        No effects.
+    
+*)
+
+PROCEDURE FindFirstDateResOnVacationOrAvailable (Resource         : AResourcePointer;
+                                                 Amount           : LONGINT;
+                                                 StartSearchDate  : ADate;
+                                                 EndSearchDate    : ADate;
+                                                 DoWeUseLateAvailabilities : BOOLEAN;
+                                             VAR FoundADate       : BOOLEAN;
+                                             VAR DateFound        : ADate);
+
+
+
+
+(*-------FindLatestDateHaveResourceAmount----------------------------------
+
+        Returns, via DateFound, the first date on or before "OnOrBefore"
+        such that Amount of Resource is available.
+        The procedure searches backwards beginning at OnOrBefore.
+        If no such date is found,
+        sets FoundADate to FALSE. Otherwise, returns the date in
+        FirstDate and sets FoundADate to TRUE.
+
+       If DoWeUseLateAvailabilities is TRUE, the procedure references
+       the LateAvailProfile of each resource; otherwise it references
+       the regular AvailProfile.
+
+       Additional requirement on the date returned: if DoWeAllowVacations is
+       FALSE, the date cannot be vacation time. 
+
+    Preconditions  - 
+        Resource must be valid and have an availability table.
+
+
+    Postconditions - 
+        No effects.
+    
+*)
+
+PROCEDURE FindLatestDateHaveResourceAmount (Resource         : AResourcePointer;
+                                            Amount           : LONGINT;
+                                            OnOrBefore       : ADate;
+                                            DoWeAllowVacations        : BOOLEAN;
+                                            DoWeAllowOverbookings     : BOOLEAN;
+                                            DoWeUseLateAvailabilities : BOOLEAN;
+                                        VAR FoundADate       : BOOLEAN;
+                                        VAR DateFound        : ADate);
+
+
+(*------FindLatestViolationOrNonVacation------------------------------
+
+
+   Given an "OnOrBefore" date, find the latest date on or before that
+   date such that either (a) there is a violation, or (b) there is no
+   violation and the the resource is not on vacation - whichever comes
+   first (i.e., in travelling backwards in time - that is, whichever
+   is latest). If case (a) comes first, sets DateIsViolation to TRUE,
+   DateFound to the violation date, and WeFoundDate to TRUE. If case
+   (b) comes first, sets DateIsViolation to FALSE, DateFound to the
+   date, and WeFoundDate to TRUE. If we reach the end of the line before
+   either thing happens, set WeFoundDate to FALSE. 
+
+   This procedure is useful in finding a latest start date such that
+   at least one resource is not on vacation (see ResLates).
+
+ Preconditions -
+        Resource must be valid and employable and have an availability table.
+
+ Postconditions -
+        No effects.
+
+*)
+
+PROCEDURE FindLatestViolationOrNonVacation (Resource         : AResourcePointer;
+                                            Amount           : LONGINT;
+                                            OnOrBefore       : ADate;
+                                            DoWeAllowOverbookings     : BOOLEAN;
+                                            DoWeUseLateAvailabilities : BOOLEAN;
+                                        VAR DateFound        : ADate;
+                                        VAR WeFoundDate      : BOOLEAN;
+                                        VAR DateIsViolation  : BOOLEAN);        
+
+
+
+(*-------FreeResource--------------------------------------------------
+
+    Function -
+        Augment Resource's availability values by Amount in the interval
+        [StartDate, EndDate).  That is, the period beginning
+        with StartDate and up to, but not including, EndDate.
+
+    Preconditions - 
+        Resource must be valid and have an availability table.
+         
+        To maintain integrity of availability
+        table for Resource, Resource must previously have been
+        scheduled by Amount in the given interval (i.e., ScheduleResource
+        must have been called with same Amount, StartDate, and Duration).
+
+    Postconditions - 
+        Availability values for Resource will be increased by Amount    
+        in the closed interval [StartDate, StartDate + Duration - 1].
+
+---------------------------------------------------------------------*)
+
+PROCEDURE FreeResource  (Resource  : AResourcePointer;
+                         Amount    : CARDINAL;
+                         StartDate : ADate;
+                         EndDate   : ADate);
+
+
+(* ------------ FreeLateResource ------------------------------
+
+   Just like FreeResource, but references the resource's 
+   LateResidueAvailProfile instead of its ResidueAvailProfile.
+*)
+
+
+PROCEDURE FreeLateResource  (Resource  : AResourcePointer;
+                             Amount    : CARDINAL;
+                             StartDate : ADate;
+                             EndDate   : ADate);
+
+
+
+
+(*-------ScheduleResource----------------------------------------------
+
+    Function -
+        Reduce Resource's availability values by Amount in the interval
+        [StartDate, EndDate).  That is, the period beginning
+        with StartDate and up to, but not including, EndDate.
+    Preconditions - 
+        Resource must be valid and have an availability table.
+        
+    Postconditions - 
+        Availability values for Resource will be reduced by Amount    
+        in the closed interval [StartDate, StartDate + Duration - 1].
+        Note that this procedure allows the values to become negative
+        (i.e., it will cause the table to reflect any overbooking of
+        the resource).
+
+
+---------------------------------------------------------------------*)
+
+PROCEDURE ScheduleResource (Resource  : AResourcePointer;
+                            Amount    : CARDINAL;
+                            StartDate : ADate;
+                            EndDate   : ADate);
+
+
+(* ------- ScheduleLateResource ------------------------------------
+
+   Just like ScheduleResource, but references the resource's LateResidue
+   AvailProfile instead of its ResidueAvailProfile.
+*)
+
+PROCEDURE ScheduleLateResource (Resource  : AResourcePointer;
+                                Amount    : CARDINAL;
+                                StartDate : ADate;
+                                EndDate   : ADate);
+
+
+
+(*------AllResourcesAreAvailable-----------------------------------
+
+    Returns TRUE if all resources required by Task are available
+    in the required amounts on Date, else returns FALSE.
+
+    If DoWeUseLateAvailabilities is TRUE, the procedure references
+    the LateAvailProfile of each resource; otherwise it references
+    the regular AvailProfile.
+
+    Preconditions -
+        A valid Task.
+
+    Postconditions -
+        No effects.
+*)
+
+
+
+PROCEDURE AllResourcesAreAvailable(Assignments       : AnAssignmentArray;
+                                   NumAssignments    : CARDINAL;
+                                   Date              : ADate;
+                                   DoWeAllowVacations        : BOOLEAN;
+                                   DoWeAllowOverbookings     : BOOLEAN;
+                                   DoWeUseLateAvailabilities : BOOLEAN) : BOOLEAN;
+
+
+(*------AllResourcesOnVacationOrAvailable-----------------------------------
+
+    Returns TRUE if, for each resource required by Task, the
+    resource is either on vacation or available in the required
+    amount on Date.
+
+    If DoWeUseLateAvailabilities is TRUE, the procedure references
+    the LateAvailProfile of each resource; otherwise it references
+    the regular AvailProfile.
+
+    Preconditions -
+        A valid Task.
+
+    Postconditions -
+        No effects.
+*)
+
+
+
+PROCEDURE AllResourcesOnVacationOrAvailable(Assignments       : AnAssignmentArray;
+                                            NumAssignments    : CARDINAL;
+                                            Date              : ADate;
+                                            DoWeUseLateAvailabilities : BOOLEAN) : BOOLEAN;
+
+
+
+
+
+(* --- AllTaskResourcesAreAvailable -----------------
+
+   Just like AllResourcesAreAvailable, but operates on a task instead
+   of an assignment array, and locks and unlocks the task's assignment
+   array instead of taking it as a parameter. 
+
+   If DoWeUseLateAvailabilities is TRUE, the procedure references
+   the LateAvailProfile of each resource; otherwise it references
+   the regular AvailProfile.
+
+*)
+
+PROCEDURE AllTaskResourcesAreAvailable(Task              : ATaskPtr;
+                                       Date              : ADate;
+                                       DoWeAllowVacations        : BOOLEAN;
+                                       DoWeAllowOverbookings     : BOOLEAN;
+                                       DoWeUseLateAvailabilities : BOOLEAN) : BOOLEAN;
+
+
+PROCEDURE FindFirstDateResourceNotOnVacation (Resource        : AResourcePointer;
+                                              StartSearchDate : ADate;
+                                              EndSearchDate   : ADate;
+                                          VAR DateFound       : ADate;
+                                          VAR FoundADate      : BOOLEAN);
+
+END ResAvailableResources.
+
+
+

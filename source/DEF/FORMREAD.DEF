@@ -1,0 +1,41 @@
+DEFINITION MODULE FormRead;
+
+  (* ***********************************************************
+
+             Form  Read  -  Form file Read routines.
+
+
+    ************************************************************ *)
+
+    (* MODIFICATION HISTORY:
+
+       Aug. 27, 1985   AJL  -  Moved definitions of record structure
+                               to FormCon and FormRec.
+       Mar. 19, 1987   AJL  - Removed HoldFormRecord and UnHoldFormRecord.
+       25-Jan-88 LAA        - Exported FormFileShared for support of network
+                              version.
+    *)
+
+
+FROM FormRec    IMPORT AFormRecord;
+
+
+
+
+    (* GetFormByNumber -- Get the identified form into buffer "TheForm". *)
+
+PROCEDURE GetFormRecordByNumber(    FormID     : CARDINAL;
+                                VAR FormRecord : AFormRecord): BOOLEAN;
+
+
+
+    (* CloseForms -- Close the forms file.  This allows for a switch to
+                     a new forms file if SetFormFileName is used to
+                     change the file's name. *)
+
+PROCEDURE CloseForms;
+
+
+
+END FormRead.
+

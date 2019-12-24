@@ -1,0 +1,72 @@
+DEFINITION MODULE CommStatic;
+
+
+(* Comm Static - Define the CommForm's communication area.
+
+    Modification History:
+
+        4-Apr-89  RSC  First Version.
+        09-May-89 LAA  Changed ACommFormContext, to make the device name
+                       40 characters, and to remove the path and file name
+                       fields which belong in the TLGS Setup Record.
+        12-Jun-89 MWP  Changed ACommFormContext.DOSDevice to ACommFormContext.
+                       DOSDev to remove conflict with AMethod(DOSDevice).
+        12-Jun-89 MWP  Added NullDevice support.
+        01-Sep-89 MWP  Added support for disk file output.
+        22-Sep-89 KKC  Change device name to have 255 characters.
+*)
+
+
+FROM Codes      IMPORT
+    (* TYPE *)      ACode;
+
+
+
+
+
+TYPE
+    AMethod             = (Parallel, Serial, DOSDevice, NullDevice, DiskFile);
+    ABaudRate           = (B300, B600, B1200, B2400, B4800, B9600);
+    ADataBits           = (D7, D8);
+    AStopBits           = (S1, S2);
+    AParity             = (None, Odd, Even);
+    AProtocol           = (Auto, ClearToSend, XONXOFF);
+    ADOSDevice          = (PRN, LPT1, LPT2, COM1, COM2, COM3, AUX);
+
+CONST
+(*
+    HighestMethod       = DOSDevice;
+*)
+    HighestMethod       = DiskFile;                               (* 1-Sep-89 MWP *)
+    HighestBaudRate     = B9600;
+    HighestDataBits     = D8;
+    HighestStopBits     = S2;
+    HighestParity       = Even;
+    HighestProtocol     = XONXOFF;
+    HighestDOSDevice    = AUX;
+
+
+TYPE
+    ACommFormContext    =  RECORD
+        FormCode            : ACode;                    (* From TLComm.Mod *)
+        DeviceName          : ARRAY [0..255] OF CHAR;    (* Device's full name *)
+        Method              : AMethod;
+        ParallelPortNumber  : CARDINAL;
+        SerialPortNumber    : CARDINAL;
+        BaudRate            : ABaudRate;
+        DataBits            : ADataBits;
+        StopBits            : AStopBits;
+        Parity              : AParity;
+        TimeOut             : CARDINAL;
+        Protocol            : AProtocol;
+        DOSDev              : ADOSDevice;
+        FileName            : ARRAY [0..129] OF CHAR;             (* 1-Sep-89 MWP *)
+    END;
+
+
+
+
+
+
+END CommStatic.
+

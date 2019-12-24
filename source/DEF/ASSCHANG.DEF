@@ -1,0 +1,357 @@
+DEFINITION MODULE AssChange;
+
+
+    (*
+        Ass Change - Edit an assignment record
+
+            This module provides the ability to make changes to an assignment
+            record by changing "columns" of data.  It deals with the same
+            columns as are output by the "Captions" module.  For this reason,
+            this module and its cousins are sometimes refered to as
+            "AntiCaptions".
+
+
+        Terminology:
+
+            A Column HEADING is the formal name a column goes by.  This is the
+            name found in a Lotus, DBase, or CSV file.  This heading is
+            translated into a ColumnID, a "magic number" used to identify the
+            column.  Note that some exporters, notably DBase, may translate
+            the official formal name into a new name that is more compatible
+            with the external program.  It is the importer's job to translate
+            those names BACK into the "official" formal name.
+
+
+        Procedure Overview:
+
+            GetAssColumnID()    Given a column's formal name, return the
+                                internal Column ID.
+
+            BeginAssEdit()      Start the editing of an assignment.
+
+            DigestAssString()   Change a text string into an internal format.
+
+            ChangeAssColumn()   Change the value of a column.
+
+            EndAssEdit()        End the editing of an assignment, and commit
+                                the changes if there were no serious errors.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module does not use Undo.  It is the job of clients to
+            back out records deemed not valid.
+
+
+        Related Modules:
+
+            AssAcquire   is used to find the assignment record to be edited.
+            TaskEdit     edits task records.
+            EdgeEdit     edits edge records.
+            RsrcEdit     edits resource records.
+
+
+        Modification History:
+
+
+         9-Feb-89  RSC  First version.
+        27-Jul-89  MWP  Added WHatsBeenSeen set to EditContext to allow
+                        tracking of critical data that has been imported.
+         9-Aug-89  MWP  Allow importing of baseline data.
+        10-Sep-89  MWP  Create default baseline assignment record, which
+                        is used for keeping track of incoming baseline data.
+        11-Sep-89  MWP  Changed method for editing baseline assignment data.
+                        Created DefaultBsLnRecord var.
+         3-Oct-89  MWP  Created vars to hold assignment info during import
+                        for journal messages.
+        30-Mar-90  RSC  Made Timeu to Timei conversions.
+    *)
+
+FROM Allocs         IMPORT
+                            TskNmLen;
+
+FROM Assignments    IMPORT
+    (* TYPE *)              AnAssignmentRecord;
+
+FROM Captions       IMPORT
+    (* TYPE *)              AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)              AnErrorHandlerProc;
+
+FROM ImPorTable     IMPORT
+    (* TYPE *)              AImportTable, AnAskAlterBaselineProc;
+
+FROM IntFileIO      IMPORT
+                            AnIntDataRecord;
+
+FROM RealFormat     IMPORT
+    (* TYPE *)              AnAmountFormat;
+
+FROM RsrcMod        IMPORT
+                            ResourceNameLength;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)              ADDRESS;
+
+FROM Timei          IMPORT
+    (* TYPE *)              ADurationUnit;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)              ATreeNode;
+
+
+
+
+
+(* INTERNAL USE (EDITING SUBSYSTEM) ONLY *)
+
+TYPE
+    AWhatsBeenSeenItem = (Actual,                                (* 27-Jul-89 MWP *)
+                          YTG
+                         );
+
+    AWhatsBeenSeenSet = SET OF AWhatsBeenSeenItem;
+
+    AnAssEditContext = RECORD
+        ErrorHandler      : AnErrorHandlerProc;
+        HandlersContext   : ADDRESS;
+        YTGValue          : REAL;
+        ActualValue       : REAL;
+        AssYTGTimeSeen    : BOOLEAN;
+        AssActualTimeSeen : BOOLEAN;
+        TimeUnits         : ADurationUnit;
+        WhatsBeenSeen     : AWhatsBeenSeenSet;
+
+        BsLn_YTGValue          : REAL;                              (* 9-Aug-89 MWP *)
+        BsLn_ActualValue       : REAL;
+        BsLn_AssYTGTimeSeen    : BOOLEAN;
+        BsLn_AssActualTimeSeen : BOOLEAN;
+        BsLn_TimeUnits         : ADurationUnit;
+        BsLn_WhatsBeenSeen     : AWhatsBeenSeenSet;
+    END;
+
+VAR
+    DefaultBsLnAssignmentRecord : AnAssignmentRecord;  (* For setting defaults *)
+    TaskName                    : ARRAY[0..TskNmLen] OF CHAR;
+    ResourceNm                  : ARRAY[0..ResourceNameLength] OF CHAR;
+
+
+(*
+    Get Ass Column ID
+
+        Preconditions
+                        > "ColumnName" is an LString containing the FORMAL
+                          NAME of the assignment column.
+                          The caller must resolve any differences between
+                          the name read in from a file and the "official"
+                          formal name.  For example, DBase translates some
+                          charactors.
+
+        Postconditions
+                        > Returns TRUE if the ColumnName is a known assignment
+                          column name, or FALSE if it is unknown.
+
+                        > ColumnID is the internal number to use for
+                          changing the data, if TRUE is returned.
+*)
+PROCEDURE GetAssColumnID( VAR ColumnName       : ARRAY OF CHAR;
+                          VAR ColumnID         : CARDINAL ) : BOOLEAN;
+
+
+
+
+
+
+
+(*
+    Begin Ass Edit
+
+        Preconditions
+                        > No assignment is currently being edited (close off
+                          an edit with EndAssEdit)
+
+                        > TaskNode is the TreeNode for the assignment's task.
+                          AssignmentEntry identifies the (existing) record.
+
+                        > ErrorHandler is the procedure to be called when an
+                          edit error occurs.
+
+        Postconditions
+                        > Assignment is ready to be edited.
+*)
+PROCEDURE BeginAssEdit(     TaskNode           : ATreeNode;
+                            AssignmentEntry    : CARDINAL;
+                            BaseLineEntry      : CARDINAL;             (* 9-Aug-89 MWP *)
+                            LAlterBaselineProc : AnAskAlterBaselineProc;
+                            LImportTable       : ADDRESS;
+                            ErrorHandler       : AnErrorHandlerProc;
+                            HandlersContext    : ADDRESS          );
+
+
+
+
+
+
+
+
+
+(*
+    Digest Ass String
+
+        Convert a text string into the internal data record needed by
+        "ChangeAssColumn".
+
+        Preconditions
+                        > "ColumnID" is a valid column id.
+
+                        > "TextString" is the string to be digested into
+                          "ColumnData".  It is not modified (VAR only for
+                          efficiency).
+
+                        > "Amount Format" is the real number format to use
+                          in analizing REAL numbers.  It is not altered.
+                          VAR is just for efficiency.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty text string.
+                          This is not allowed for all columns.
+
+        Postconditions
+                        > "ColumnData" is the data to be applied to the
+                          assignment.
+
+                        > The text is checked within the context of the
+                          column in question, and the "ColumnData" record
+                          is filled in appropriately.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error that is fixable can be fixed,
+                          at the descresion of the error handler.  A fix that
+                          means "Ignore" will return ColumnData filled out as
+                          if an empty string was passed.
+
+                        > Returns TRUE if there were no formatting errors,
+                          FALSE if there were, and were not fixed.
+*)
+PROCEDURE   DigestAssString(     ColumnID     : CARDINAL;
+                              VAR TextString   : ARRAY OF CHAR;
+                              VAR AmountFormat : AnAmountFormat;
+                              VAR ColumnData   : AColumnDataRecord;
+                                  LErrorHandler    : AnErrorHandlerProc;
+                                  LHandlersContext : ADDRESS          ) : BOOLEAN;
+
+
+PROCEDURE   DigestIntAssString(     ColumnID         : CARDINAL;
+                                    Type             : CARDINAL;
+                                VAR Data             : AnIntDataRecord;
+                                VAR AmountFormat     : AnAmountFormat;
+                                VAR ColumnData       : AColumnDataRecord ;
+                                    LErrorHandler    : AnErrorHandlerProc;
+                                    LHandlersContext : ADDRESS  ) : BOOLEAN;
+
+
+
+
+(*
+    Change Ass Column
+
+        Preconditions
+                        > An assignment is being edited (BeginAssEdit has been
+                          called).
+
+                        > "ColumnID" is a valid column id.
+
+                        > "ColumnData" is the data to be applied to the
+                          assignment.
+
+                        > Some columns may allow a "Null" value.  This is
+                          handled here by an empty "DataFields" inside
+                          "ColumnData".  This is not allowed for all columns.
+
+        Postconditions
+                        > The data is checked within the context of the
+                          column in question, and the changes are applied,
+                          except as noted below.
+
+                        > If any errors are encountered, the ErrorHandler is
+                          called.  Any error above "NoError" will cause FALSE
+                          to be returned.
+
+                        > If TRUE is returned, it is implied that no errors
+                          have yet been detected.  A call to EndAssEdit MIGHT
+                          succeed, unless other errors are encountered.
+
+                        > If FALSE is returned, no further edits will
+                          be accepted (further calls to "ChangeAssColumn"
+                          will return FALSE).  The changes should be ABORTED
+                          by the caller.
+*)
+PROCEDURE ChangeAssColumn(     ColumnID    : CARDINAL;
+                           VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+    End Ass Edit
+
+        Preconditions
+                        > An assignment is being edited (BeginAssEdit has been
+                          called).
+
+        Postconditions
+                        > Any changes made to the assignment after BeginAssEdit
+                          have been applied to the assignment, or else the
+                          ErrorHandler is called for each exception found.
+
+                        > If any errors were found that were not fixable, or
+                          where the error handler decided not to request
+                          fixing, FALSE is returned.  Otherwise, TRUE is
+                          returned.
+*)
+PROCEDURE EndAssEdit ( VAR TaskNode            : ATreeNode;
+                           PImportContext      : ADDRESS
+                     ) : BOOLEAN;
+
+
+
+
+
+(*
+    Change Ass Record
+
+        This procedure is here for internal use only, and is not intended for use
+        by client modules.  For a full explanation of the parameters, see the MOD.
+*)
+PROCEDURE ChangeAssRecord(     ColumnID          : CARDINAL;
+                           VAR Assignment        : AnAssignmentRecord;
+                           VAR ColumnData        : AColumnDataRecord;
+                           VAR Context           : AnAssEditContext
+                          ) : BOOLEAN;
+
+
+
+END AssChange.
+
+

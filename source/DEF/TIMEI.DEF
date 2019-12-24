@@ -1,0 +1,141 @@
+DEFINITION MODULE Timei;
+
+(*  =========================================================================
+    Last Edit : November 7, 1990 4:30PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Converts units of time from different formats
+
+    MODIFICATION HISTORY:
+
+        17-Oct-90 PFG   Added AbsKDate and AbsKDay so that the originals
+                        (KDay and KDate) could handle fiscal years.  Also
+                        removed CompressTime since it was circumventing the
+                        calendar year to fiscal year (and back) conversions.
+         7-Nov-90 PFG   Added AbsTimeUtoT and TtoAbsTimeU.
+        14-May-91 AJL   Added Fiscal conversions.
+        13-Sep-91 AJL   Add AbsDaysInMonth.
+    =========================================================================
+*)
+
+
+FROM Clock                  IMPORT
+    (* TYPE  *)                 ASystemTime;
+
+TYPE
+    ADurationUnit       =   (Minutes,Hours,Days,Weeks,Months,Years);
+    ASetOfADurationUnit =   SET OF ADurationUnit;
+    ADate               =   CARDINAL;
+    ADurationCounter    =   CARDINAL;
+    ADuration           =   CARDINAL;
+
+    ATimeInfo           =   RECORD
+        tiYear      :   CARDINAL;
+        tiMonth     :   CARDINAL;
+        tiDay       :   CARDINAL;
+        tiHour      :   CARDINAL;
+        tiMinute    :   CARDINAL;
+        tiSecond    :   CARDINAL;
+    END;
+
+CONST
+
+    Jan                 =   0;
+    Dec                 =   11;
+    Sun                 =   0;
+    Sat                 =   6;
+    MaxDate             =   0ffffH;
+    MinDate             =   0;
+    MaxDuration         =   0ffffH;
+    NoDuration          =   0;
+    OneUnitOfDuration   =   1;
+    ZeroUnitOfDuration  =   0;
+
+VAR
+    Today               :   ADate;
+
+
+PROCEDURE TtoTimeU(TimeInfo: ATimeInfo; VAR TimeU:ADate)
+                  : BOOLEAN;
+
+PROCEDURE TtoAbsTimeU (TimeInfo : ATimeInfo;
+                       VAR TimeU : ADate ) : BOOLEAN;
+
+PROCEDURE TimeUtoT (TimeU:ADate; VAR TimeInfo : ATimeInfo );
+
+PROCEDURE AbsTimeUtoT (TimeU:ADate; VAR TimeInfo : ATimeInfo );
+
+    (* DaysInMonth -- Returns the number of days in the month.
+                      Year is fiscal. *)
+
+PROCEDURE DaysInMonth (Year,Month:CARDINAL) : CARDINAL;
+
+    (* AbsDaysInMonth -- Like DaysInMonth, but Year is always calendar
+       year. *)
+
+PROCEDURE AbsDaysInMonth(Year,Month:CARDINAL):CARDINAL;
+
+     (*  FindToday returns the current value of the current date and
+         time, based on the TimeTable and the computer's time of day
+         clock. *)
+
+PROCEDURE FindToday (): ADate;
+
+
+    (* KDAY -- Convert a year/month/day triplet to a serial date.
+               Years are Gregorian, months 0..11, days 1..31.
+               Mar. 1, 1980 is day 1.    Valid dates are in range
+               of March 1, 1980 .. Dec. 31, 1999.   *)
+
+    (* 15-Oct-90 PFG   The KDay/KDate procedures were changed to adjust
+                       for fiscal years.  The CARDINAL version of a date
+                       always reflects the true calendar year.  The "Abs"
+                       versions of these procedures were added for cases
+                       such as BigTimes where calendar dates were always
+                       needed.  *)
+
+PROCEDURE KDay(year,month,day:CARDINAL) : ADurationCounter;
+
+PROCEDURE AbsKDay(year,month,day:CARDINAL) : ADurationCounter;
+
+PROCEDURE KDate(k: ADurationCounter; VAR Year, Month, Day: CARDINAL);
+
+PROCEDURE AbsKDate(k: ADurationCounter; VAR Year, Month, Day: CARDINAL);
+
+
+    (*  DAYOFWEEK -- Computes the day of the week (Sun..Sat) given
+                     a year, month, and day.  Works FOR 1980..1999.
+                     Years are 1980..1999, Month is 0..11, day is
+                     1..31.  *)
+
+PROCEDURE DayOfWeek (year,month,day:CARDINAL):CARDINAL ;
+
+
+PROCEDURE SystemTimeToTime( SystemTime : ASystemTime; 
+                            VAR TimeInfo : ATimeInfo );
+
+PROCEDURE TimeToSystemTime(       TimeInfo : ATimeInfo;
+                            VAR SystemTime : ASystemTime );
+
+PROCEDURE DurationToReal( Duration : ADuration ) : REAL;
+
+PROCEDURE RealToDuration( r : REAL ) : ADuration;
+
+PROCEDURE DurationCounterToReal( DurationCounter : ADurationCounter ) : REAL;
+
+PROCEDURE RealToDurationCounter( r : REAL ) : ADurationCounter;
+
+PROCEDURE DateToReal( Date : ADate ) : REAL;
+
+PROCEDURE RealToDate( r : REAL ) : ADate;
+
+PROCEDURE CalendarYearToFiscalYear(    Month : CARDINAL;
+                                   VAR Year  : CARDINAL);  (* 22-Oct-90 PFG *)
+
+PROCEDURE FiscalYearToCalendarYear(     Month : CARDINAL;
+                                    VAR Year  : CARDINAL); (* 22-Oct-90 PFG *)
+
+END Timei.
+
+

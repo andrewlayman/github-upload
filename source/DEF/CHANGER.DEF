@@ -1,0 +1,137 @@
+DEFINITION MODULE Changer;
+
+(*  =========================================================================
+    Last Edit : November 5, 1990 2:34PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+
+    MODIFICATION HISTORY:
+
+          9/ 3/87 - RSC - Made simple version of form.
+          3/ 7/89 - EGK - Added "TotalUnits" to AnAssignmentField.
+          4/18/89 - EGK - Added "AddTaskCopy" procedure.
+          5/01/89 - RSC - Removed "ResourceIsOnTaskForm" proc.  This is now
+                          a notice.
+          5-24-89 - AJL - Added "UsesCostTracking" boolean.
+          6-04-89   EGK   Changed ResourceIsUsed() to take a node instead
+                          of a resource pointer.
+         14-Aug-89  EGK   Moved ResourceIsUsed to a new module, "RsrcUsed".
+         30-Mar-90  RSC   Made Timeu to Timei conversions.
+          6-Aug-90  RSC   Added new assignment form fields.
+          5-Nov-90  PFG   Added OvertimeUnits, ActualOvertimeUnits and
+                          YetToGoOvertimeUnits.
+    =========================================================================
+*)
+
+FROM Codes                  IMPORT ACode;
+
+FROM Allocs                 IMPORT ATaskPtr;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+CONST
+      (* 6-Aug-90 RSC *)
+
+    MaxAssignmentFields = 22;
+
+
+
+
+TYPE
+  (* For calling the task form overlay, we need a context area. *)
+
+    ATaskFormContext = RECORD
+        TaskNode : ATreeNode;
+        Code     : ACode;
+    END;
+
+
+
+ (* For the generic mapping/check procs, we need to relate field # to type.
+    These are not in any particular order.  'NoField' can go anywhere
+ *)
+    AnAssignmentField = ( ResourceNameField, (* The name of resource  *)
+                          BillableField,     (* The "Billable?" field *)
+                          NumberField,       (* With [nnn] field      *)
+                          PercentageField,   (* at [nnn] percent      *)
+                          TotalQuantity,
+                          TotalBucks,
+                          TotalAsTime,
+                          TotalUnits,
+                          ActualUnitsField,  (* Days, Hours, etc.     *)
+                          ActualQuantityField,
+                          ActualBucksField,
+                          YetToGoQuantityField,
+                          YetToGoBucksField,
+                          YetToGoUnitsField,
+                          UnitOfMeasureField,
+                          ModeIndicator1,
+                          ModeIndicator2,
+                          ModeIndicator3,
+                          OvertimeField,
+                          ActualOvertimeField,
+                          YetToGoOvertimeField,
+                          YetToGoOvertimeUnits,
+                          ExtraCostsField,
+                          OvertimeUnits,            (* 5-Nov-90 PFG *)
+                          ActualOvertimeUnits,      (* 5-Nov-90 PFG *)
+                          NoField );          (* Position empty *)
+
+    AnAssignmentFieldSet = SET OF AnAssignmentField;
+
+    AFormMappingRecord = RECORD
+        FieldCount      : CARDINAL;  (* # of fields on form *)
+        RedisplayMask   : AnAssignmentFieldSet; (* Redisplay these fields each time *)
+        AllocateChars   : AnAssignmentFieldSet; (* Allocate these CharValue s *)
+        FieldTable      : ARRAY [0..MaxAssignmentFields] OF AnAssignmentField;
+    END;
+
+    AnAssignmentForm  = (ResourceForm, UnitCostForm, FixedCostForm);
+
+VAR
+    FormMappingRecords : ARRAY AnAssignmentForm OF AFormMappingRecord;
+
+
+    AdvancedTaskForm     : BOOLEAN;   (* or the small task form? *)
+    UsesCostTracking     : BOOLEAN;   (* Does the user want cost tracking? *)
+
+
+
+
+PROCEDURE AddNewTask (ModelTask : ATreeNode ) : ATreeNode;
+
+
+    (* AddTaskCopy -- Make a copy of the model task, including
+                      child tasks and internal dependencies between
+                      them, and add it in the task tree after the
+                      model task.  Return the copy if successful,
+                      or NIL if not.    *)
+
+PROCEDURE AddTaskCopy ( ModelTask   : ATreeNode ) : ATreeNode;
+
+
+PROCEDURE ChangeTask (Task: ATreeNode) : BOOLEAN;
+
+    (*  ChangeEdge -- Change the edge connecting BugTaskA and
+                      BugTaskB. *)
+PROCEDURE ChangeEdge;
+
+PROCEDURE DeleteTask(VAR Task:ATreeNode);
+
+PROCEDURE JoinTasks(First, Second : ATreeNode);
+
+PROCEDURE UnjoinTasks(First, Second : ATreeNode);
+
+PROCEDURE InitializeChanger();
+
+
+END Changer.
+

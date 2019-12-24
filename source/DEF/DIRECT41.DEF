@@ -1,0 +1,155 @@
+(*----------------------------------------------------------------------------
+    MODIFICATION HISTORY 
+
+    12-Apr-89 WKH   Changed definition of AQualificationProcedure to take
+                    AFileNameRecord instead of a series of strings that
+                    were part of AFileNameRecord anyway.
+    09-May-89 WKH   Added DontAllowZero
+    30-Jan-91 AJL   Documented what DontAllowZero does.
+
+----------------------------------------------------------------------------*)
+DEFINITION MODULE Direct411;
+
+FROM Directory              IMPORT
+        (* TYPE *)              AFileNameRecord, AFileAttributeSet;
+
+FROM Kbio                   IMPORT
+        (* TYPE *)              ascreeny;
+
+
+
+
+TYPE
+
+
+    AQualificationProcedure =
+        PROCEDURE ( AFileNameRecord ) : BOOLEAN;
+
+
+
+
+
+    AnAssistanceFunction = (DirectoryAssistance, AccessForm, ExportForm );
+
+   (* This is the interface between these routines and TLDir411.  This
+      interface is not intended to be used by anyone but this module!
+   *)
+    ATLDir411Interface = RECORD
+
+         FileNameIn,
+         FileNameOut     : AFileNameRecord;
+
+         Qualification   : AQualificationProcedure;
+
+         FirstY,
+         LastY           : ascreeny;
+
+         Title           : ARRAY [0..79] OF CHAR;
+         CursorName      : ARRAY [0..8] OF CHAR;
+
+         AllowWildcards,
+         GiveAssistance  : BOOLEAN;
+
+         WhichFunction   : AnAssistanceFunction;
+
+         ProcedureReturn : BOOLEAN;
+    END;
+
+
+
+  (* DontAllowZero - Disallow a zero length schedule from being selected
+     4/11/89 WKH
+  *)
+
+
+PROCEDURE DontAllowZero ( FileNameRecord : AFileNameRecord ) : BOOLEAN;
+
+
+PROCEDURE AlwaysApprove ( FileNameRecord : AFileNameRecord ) : BOOLEAN;
+
+    (*****************************************************************)
+    (*                                                               *)
+    (*    Direct411.                                                 *)
+    (*                                                               *)
+    (*    Give directory assistance by putting a menu of project     *)
+    (*    names on the screen and allowing the user to select one.   *)
+    (*    The project name chosen is returned in FileName.           *)
+    (*    The FileName passed on input is the first one displayed.   *)
+    (*        The Qualification Procedure will be called for         *)
+    (*    each matching name.  Only approved names will be placed    *)
+    (*    on the list.                                               *)
+    (*                                                               *)
+    (*****************************************************************)
+
+    (*  Input: FirstRow, LastRow : Rows to use for display.
+               Title             : Caption for box, and for Help.
+               Template          : Device:\Directory\filename.ext mask.
+               FileName          : Name to highlight if on list.
+               Qualifies         : Check for approved files.
+
+        Output:Template          : The actual file name and extension,
+                                   preceded by the device and directory.
+               FileName          : The time of last update to the file.
+                                   DD-MMM-YY HH:MMam
+
+         Returns TRUE iff a file name was chosen.
+
+        CAUTION:  Both Template and FileName are both input and output!
+
+    *)
+
+PROCEDURE GiveDirectoryAssistance ( FirstRow,
+                                    LastRow       : ascreeny;
+                                    VAR Title     : ARRAY OF CHAR;
+                                    VAR Template,
+                                        FileName  : ARRAY OF CHAR;
+                                        Qualifies : AQualificationProcedure
+                                  ):BOOLEAN;
+
+
+
+
+  (* Get Input File - get a filename from the customer.
+
+      Preconditions  - PathIn          default path for customer
+                       FileNameIn      default filename, incl. wildcards.
+                       AllowWildcards  do you allow wild file names?
+                       GiveDirectoryAssistance
+                                       offer directory assistance?
+        
+      Postconditions - PathOut         entered/chosen path
+                       FileNameOut        "       "   filename, possibly
+                                            with wildcards if allowed.
+                       RETURN          FALSE iff <ESC> hit.
+  *)
+PROCEDURE GetInputFile( VAR PathIn, 
+                            FileNameIn, 
+                            PathOut, 
+                            FileNameOut    : ARRAY OF CHAR;
+                            AllowWildcards,
+                            GiveAssistance : BOOLEAN  ) : BOOLEAN;
+
+
+
+
+
+
+
+  (* Get Output File - get a filename from the customer suitable for output.
+
+      Preconditions  - PathIn          default path for customer
+                       FileNameIn      default filename, incl. wildcards.
+                       GiveAssistance  offer directory assistance?
+        
+      Postconditions - PathOut         entered/chosen path
+                       FileNameOut        "       "   filename
+                       RETURN          FALSE iff <ESC> hit.
+  *)
+PROCEDURE GetOutputFile( VAR PathIn, 
+                            NameIn, 
+                            PathOut, 
+                            NameOut          : ARRAY OF CHAR;
+                            GiveAssistanceIn : BOOLEAN   ) : BOOLEAN;
+
+END Direct411.
+

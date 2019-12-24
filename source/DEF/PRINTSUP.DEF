@@ -1,0 +1,119 @@
+DEFINITION MODULE PrintSupport;
+    (* MODIFICATION HISTORY:
+
+        Apr 19, 1989    KKC - New procedure: CreateReportHeaderNotes;
+        May 4, 1989     KKC - Move CreateReportHeaderNotes to PrintCaption.
+        Jun 8, 1989     KKC - Add new function GetCurrentPrintRow.
+    *)
+
+
+
+TYPE
+    APageCaptionProcedure = PROCEDURE;
+
+VAR
+    Stopped    : BOOLEAN;    (* Report was cancelled. *)
+
+
+
+
+    (*  RowsLeft  --  Tells how many rows are left on the current
+                      page.    Not valid until StartReport is
+                      called. *)
+
+PROCEDURE  RowsLeft():CARDINAL;
+
+(*
+    
+    GetCurrentPrintRow  --  Tells the number of rows printed on current page.
+
+*)
+
+PROCEDURE GetCurrentPrintRow():CARDINAL;
+
+    (*  PageWidth  -- Tells the current page width.  Not valid
+                      until StartReport is called. *)
+
+PROCEDURE PageWidth():CARDINAL;
+
+
+
+    (*  PageTop --  Advance printing to a new page.  *)
+
+PROCEDURE PageTop;
+
+
+
+    (*  StartPage  -- Call this at the start of each printed page, in
+                      order to skip the top margin. *)
+
+PROCEDURE StartPage;
+
+    (*  StartReport -- Call this once at the start of a report.
+                       A FALSE return indicates that an error occurred. *)
+
+PROCEDURE StartReport():BOOLEAN;
+
+
+    (*  EndReport  -- Call this when the report is done. *)
+
+PROCEDURE EndReport;
+
+
+    (*  StopTest  --  Allow the user to cancel or resume the
+                      report.   TRUE means Cancel. *)
+
+PROCEDURE StopTest():BOOLEAN;
+
+
+    (*  PrintLine -- Print an LString to the print device.
+                     Advances printing to the next line.
+                     If Stopped is returned as TRUE, the operator
+                     has cancelled the printing.
+                     PrintMode controls printer font. *)
+
+PROCEDURE PrintLine(VAR Line:ARRAY OF CHAR;
+                    PrintMode : CARDINAL );
+
+    (*  PrintText -- As PrintLine, but no linefeed is generated
+                     after printing.  *)
+
+PROCEDURE PrintText(VAR Line:ARRAY OF CHAR;
+                    PrintMode : CARDINAL );
+
+
+    (*  ProgressMessage -- Display a message to the user reporting on progress. *)
+
+PROCEDURE ProgressMessage(VAR s:ARRAY OF CHAR);
+
+    (*  AllowUnlimitedPageLength -- Allow very long pages, regardless
+                                    of margins setting.   If calling,
+                                    do so after StartReport. *)
+
+PROCEDURE AllowUnlimitedPageLength(Ok:BOOLEAN);
+
+    (*  AllowLeftMargin -- Allow lefts margin.  Passing "FALSE" disables
+                           left margin.   Make any call after StartReport. *)
+
+PROCEDURE AllowLeftMargin(Ok:BOOLEAN);
+
+    (* SetPageCaptionProcedures --
+
+       If set to something, these procedures will be called at the
+       top and end of each printed page.
+       FootLines sets the distance from the bottom of the page at
+       which AtEndOfPage is called. *)
+
+PROCEDURE SetPageCaptionProcedures( AtTopOfPage,
+                                    AtEndOfPage  : APageCaptionProcedure;
+                                    FootLines    : CARDINAL );
+
+
+    (* CheckForTranslation --     Calls the translation overlay if we're
+                                  using a custom disk file format.        *)
+
+PROCEDURE CheckForTranslation();
+
+
+END PrintSupport.
+

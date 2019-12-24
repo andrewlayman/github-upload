@@ -1,0 +1,36 @@
+DEFINITION MODULE ColData;
+
+(*  =========================================================================
+    Last Edit : September 26, 1990 5:33PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Initializes Text for storing user-modified column headings.
+
+    MODIFICATION HISTORY:
+
+    5-Sep-90 PFG    First version.
+    26-Sep-90 PFG   Added more column types.
+    =========================================================================
+*)
+
+FROM Text           IMPORT
+(* TYPE  *)             AText;
+
+
+TYPE
+    AColumnType = (
+                   TaskColumnInfo,      (*  Task (aka Gantt) columns  *)
+                   XTabColumnInfo,      (*  Cross Tab columns  *)
+                   RsrcColumnInfo,      (*  Resource columns  *)
+                   AssgColumnInfo,      (*  Assignment columns  *)
+                   NotEditableColumn    (*  Columns that can't be edited (such as BENDCOLs)  *)
+                  );
+
+VAR
+    ColumnTable     :   ARRAY AColumnType OF AText;
+
+
+END ColData.
+
+

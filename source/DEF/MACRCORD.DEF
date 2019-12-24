@@ -1,0 +1,26 @@
+DEFINITION MODULE MacRcord;
+
+EXPORT QUALIFIED DoRecording, StopRecording;
+
+
+
+(*------------------------------------------------------------------------
+
+Calls up the macro form, and, if the form is accepted, then proceeds to
+put up the recording light, set the state to recording, and create a buffer
+for the macro.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE DoRecording():BOOLEAN;
+
+
+(*------------------------------------------------------------------------
+
+Removes the record light, saves the macro, and pops the buffer off the stack.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE StopRecording;
+
+END MacRcord.

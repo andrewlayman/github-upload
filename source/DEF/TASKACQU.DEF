@@ -1,0 +1,270 @@
+DEFINITION MODULE TaskAcquire;
+
+
+
+    (*
+        Task Acquire - Acquire a task record
+
+            This module, given "columns" of information, attempts to find
+            an existing task record or create a new record with appropriate
+            defaults.
+
+
+        Terminology:
+
+            For this module, we view the Task Tree as if it were a giant TABLE
+            of records, where each TASK is a ROW in the table.  Each FIELD in
+            a task record is a COLUMN in the table.
+
+
+        Procedure Overview:
+
+            AnalyzeTaskColumn()
+
+                    Look at each column being read in from a file to see if
+                    we have the columns needed to determine if the record
+                    exists.
+
+            AnalyzeTaskResult()
+
+                    This inquires as to what was found out from
+                    "AnalyzeTaskColumn".  Its use is optional, used mainly to
+                    override decisions about using existing tasks and
+                    parentage.
+
+            AcquireTask()
+
+                    Once "AnalyzeTaskColumn" is called for each available
+                    column, this is used to actually create or find a task.
+
+            ResetDefaultTaskColumns()
+
+                    Resets the user-defined default columns.  When a record
+                    is created, SYSTEM defaults are applied, then any user-
+                    defined columns are applied.
+
+            DefaultTaskColumn()
+
+                    Set a default task column.  The next time a task record
+                    is created, all default columns are applied first, and
+                    then the task is ready for changes.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module uses Undo to add and change records.  It does not begin
+            or end the undo transaction.  The intent is that clients will:
+
+                Begin Undo Transaction
+                    Call TaskAquire to get    the task
+                    Call TaskChange to change the task
+                End Undo Transaction.
+
+
+        Modification History:
+
+
+         15-Feb-89  RSC  First version.
+          6-Sep-89  MWP  Added proc to test whether a column is needed
+                         for editing. Does not grab the column value.
+
+
+    *)
+
+FROM Allocs         IMPORT
+                        TskNmLen;
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+
+TYPE
+    (*
+        ATaskAction - Identify what is to be done or what can be done.
+
+            When returned from "AnalyzeTaskResult", it tells what can be done
+            about the task.
+
+                CreateTask   OFF  means an existing task was identified.
+                CreateTask   ON   means no task was found, or WBS not present.
+
+                HookToParent OFF  means no parent identifier was found.
+                HookToParent ON   means a parent task was found.
+
+                IF (CreateTask AND HookToParent) then a parent was found,
+                but the task is new.
+
+
+            When passed to "AcquireTask",
+
+                CreateATask  OFF  means go ahead and get the existing task,
+                                        if there is one (else create).
+                CreateATask  ON   means create a new task anyway.
+
+                HookToParent OFF  means do not hook it to a parent.
+                HookToParent ON   means if possible, hook to a parent.
+                                        This ONLY applies to NEW Tasks.
+
+                CreateATask OFF and HookToParent ON provide a default action
+                of "do whatever is possible".
+
+    *)
+    ATaskAction       = ( CreateATask, HookToParent );
+
+    ATaskActionSet    = SET OF ATaskAction;
+
+CONST
+    DefaultTaskAction = ATaskActionSet{ HookToParent };
+
+
+
+
+(*
+    Analyze Task Column
+
+        Preconditions
+                        > ColumnID is within range for a task column.
+                        > ColumnData contains the data to be changed.
+
+        Postconditions
+                        > The data has been analized for usability in
+                          defining a task record to edit.
+*)
+PROCEDURE AnalyzeTaskColumn(     ColumnID    : CARDINAL;
+                             VAR ColumnData  : AColumnDataRecord );
+
+
+
+
+
+
+
+(*
+    Analyze Task Result
+
+        Preconditions
+                        > All columns have been passed through
+                          "AnalyzeTaskColumn".  If only some columns
+                          have been examined, it may be possible to
+                          tell if, say, parentage is available, but
+                          finding existing tasks is not.  So, while
+                          it is not strictly a precondition that all
+                          columns have bee seen, you may get a
+                          misleading result.
+
+        Postconditions
+                        > IntendedAction tells you what AcquireTask
+                          would do if passed "DefaultTaskAction".
+
+                          This step is optional, and is intended for
+                          clients like the outline importer who want
+                          to do their own parental management.
+*)
+PROCEDURE AnalyzeTaskResult( VAR IntendedAction : ATaskActionSet );
+
+
+PROCEDURE IsControllingColumn ( ColumnID    : CARDINAL ) : BOOLEAN;  (* 6-Sep-89 MWP *)
+
+
+(*
+    Acquire Task
+
+        Preconditions
+                        > All columns have been passed through
+                          "AnalyzeTaskColumn"
+
+                        > DesiredTaskAction describes the policy to
+                          follow regarding task creation and parenting.
+
+        Postconditions
+                        > If TRUE is returned, a task node is returned.
+
+                        > If there was a system error, the ErrorHandler
+                          is called, and FALSE is returned.
+
+                        > Undo is called to notify it of the Add or Change.
+                          The client must start and end the Undo transaction.
+*)
+PROCEDURE AcquireTask( VAR TaskNode          : ATreeNode;
+                           DesiredTaskAction : ATaskActionSet;
+                           ErrorHandler      : AnErrorHandlerProc;
+                           HandlersContext   : ADDRESS          )  : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*
+    Reset Default Task Columns
+
+        Reset the default values for task columns.
+
+        Preconditions
+                        > none.
+
+        Postconditions
+                        > The next task that is created will have all of its
+                          fields set to the system defaults, not any client
+                          defaults.
+*)
+PROCEDURE ResetDefaultTaskColumns();
+
+
+
+
+
+
+(*
+    Default Task Column
+
+        Sets up defaults for task columns.  These defaults are used whenever
+        creating a new task.
+
+        Preconditions
+                        > Column ID is within range
+
+                        > ColumnData is properly formatted for the column
+                          being defined.
+
+        Postconditions
+                        > Any task that is created has values applied in this
+                          order:
+
+                                System defaults
+                                Client defaults, defined with this procedure
+                                Any edits given to TaskEdit.
+
+                        > Reset this action with "ResetDefaultTaskColumns"
+*)
+PROCEDURE DefaultTaskColumn(     ColumnID    : CARDINAL;
+                             VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+END TaskAcquire.
+

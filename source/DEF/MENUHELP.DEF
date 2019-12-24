@@ -1,0 +1,97 @@
+DEFINITION MODULE MenuHelper;
+
+(*  =========================================================================
+    Last Edit : April 15, 1991 11:01AM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        This module defines structs to aid communication between
+        Menus and RunMenus and TLMenu.
+
+
+
+    MODIFICATION HISTORY:
+
+    RSC 11-Apr-91   First version.
+
+    =========================================================================
+*)
+
+
+FROM Boxes          IMPORT
+    (* TYPE *)          ABoxType;
+
+FROM Codes          IMPORT
+    (* TYPE *)          ACode, ASetOfCodes;
+ 
+FROM Kbio           IMPORT
+    (* TYPE *)          ascreenx, ascreeny;
+
+FROM Menus          IMPORT
+    (* TYPE *)          APromptType;
+
+FROM RunMenu        IMPORT
+    (* TYPE *)          ADispatchProcedure;
+
+FROM Text           IMPORT
+    (* TYPE *)          AText;
+
+
+
+
+TYPE
+    AMenuFunction   = (DoExtraFancyMenu,    (* From RunMenu.Mod *)
+                       DoMenuWithPrompts,   (* From Menus.Mod *)
+                       DoMenuSize           (* From Menus.Mod *)
+                      );
+
+    AChoiceSequence = ARRAY [0..9] OF CARDINAL;  (* Route to a choice. *)
+
+
+    AMenuContext    = RECORD
+        CULX            : ascreenx;
+        CULY            : ascreeny;
+        CLRX            : ascreenx;
+        CLRY            : ascreeny;
+        ReturnCode      : ACode;
+        CBoxType        : ABoxType;
+        CPrefix         : ARRAY [0..39] OF CHAR;
+
+        CASE MenuFunction : AMenuFunction OF
+            DoExtraFancyMenu  : CInitialChoice  : CARDINAL;
+                                CCallDepth      : CARDINAL;
+                                CDispatch       : ADispatchProcedure;
+                                CExitCodes      : ASetOfCodes;
+                                CClass          : ARRAY [0..81] OF CHAR;
+                                CReturnString   : ARRAY [0..255] OF CHAR;
+                                CChoiceSequence : AChoiceSequence;
+          | DoMenuWithPrompts : CSelection      : CARDINAL;
+                                CPromptType     : APromptType;
+                                CPromptStartingNumber : CARDINAL;
+                                CCodeSet        : ASetOfCodes;
+                                CPromptText     : AText;
+                                CModal          : BOOLEAN;
+                                CMenustr        : ARRAY [0..255] OF CHAR;
+          | DoMenuSize        : CSize           : CARDINAL;  
+                                CUsePrompts     : BOOLEAN;
+        END;
+
+    END;
+
+    AMenuContextPtr = POINTER TO AMenuContext;
+
+
+
+
+PROCEDURE DoMenuFunction(     MenuFunction : AMenuFunction;
+                          VAR MenuContext  : AMenuContext   );
+
+
+
+
+
+END MenuHelper.
+
+
+

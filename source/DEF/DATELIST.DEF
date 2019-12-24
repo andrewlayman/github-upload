@@ -1,0 +1,372 @@
+DEFINITION MODULE DateLists;
+
+(* Data structures and procedures to manage lists of Date records.
+
+   MODIFICATION HISTORY:
+
+   20-Jun-90 RSC  First version, genericised from RateLists.
+    7-Aug-90 RSC  Added Speed parameter to CopyDateList
+   18-Sep-90 CL   Removed unused argument DataSize from
+                  procedure DateListsAreEqual.
+
+*)
+
+FROM BigTimeU  IMPORT 
+    (* TYPE *)         ABigTime;
+
+FROM FlexStor  IMPORT
+    (* TYPE *)         AnExtHandle, AnExtStoragePreference;
+
+IMPORT Filing;
+
+FROM SYSTEM    IMPORT
+    (* TYPE *)         ADDRESS, BYTE;
+
+
+
+
+
+
+
+
+
+
+TYPE
+
+    ADateListIndex = CARDINAL;     (* 0 is a sentinal value *)
+
+    ADateList      = AnExtHandle; (* Hidden type representing an array of dates. *)
+
+
+
+
+
+
+
+
+(*   GENERAL CONDITIONS:
+
+     1.   There is no entry 0.
+
+     2.   For all entries i and j, where j=i+1 and the entry j
+          and i are defined, StartDate[i] < StartDate[j] and
+          ThruDate[i] = StartDate[j+1].
+          (Entries are sorted by start date, and are contiguous.)
+
+    Note:
+
+        A Modula standard allows passing ANY structure as an ARRAY
+        OF BYTES, which allows for having generic record contents.
+
+*)
+
+    (*---------------------------------------------------------------
+
+    CreateDateList 
+
+    Purpose : Creates a DateList.
+
+    Inputs:   InitialData : First record, not including the date.
+                            (this is just the extra data)
+
+                            This is assumed to be the EXACT LENGTH of
+                            one record.
+
+    Outputs:  RETURNS : ADateList;
+
+    Preconditions : None.
+
+    Postconditions : The created Date list has a single interval, number 1,
+                     which is the half open interval [StartDate..ThruDate),
+                     and is initialized to the passed InitialData.
+
+                     ThruDate is assumed to be MAXBIGTIME, or the end of
+                     the calendar.
+
+    ------------------------------------------------------------------ *)
+
+PROCEDURE CreateDateList( InitialData : ARRAY OF BYTE;
+                          StartDate   : ABigTime ) : ADateList;
+
+
+    (*---------------------------------------------------------------
+
+    DisposeDateList 
+
+    Purpose : Discards a DateList, deallocating any storage used.
+
+    Inputs:   DateList : ADateList.
+
+    Outputs:  DateList : An invalid DateList;
+
+    Preconditions : DateList was created by CreateDateList and not disposed.
+
+    Postconditions : The DateList is no longer valid.
+
+    ------------------------------------------------------------------ *)
+
+PROCEDURE DisposeDateList(VAR DateList : ADateList);
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+    CopyDateList 
+
+    Purpose : Copies the contents of one rate list to another. 
+
+    Inputs:   Source : ADateList.
+
+    Outputs:  Target : ADateList;
+
+    Preconditions : Source was created by CreateDateList
+                    and not disposed.
+
+    Postconditions : Source is unchanged and Target = Source.
+
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE CopyDateList( VAR Target : ADateList; Source : ADateList;
+                             Speed : AnExtStoragePreference );
+
+    (*---------------------------------------------------------------
+
+    DateListsAreEqual 
+
+    Purpose : Determines whether two DateLists are equivalent.
+
+    Inputs:   A, B      : ADateList.
+
+    Outputs:  TRUE iff each component of A is equal to the corresponding
+              component of B.
+
+    Preconditions : A and B were created by CreateDateList
+                    and not disposed.
+
+                    The data portions of each record are assumed to be
+                    able to be compared byte for byte.  That is, if there
+                    are any filler bytes (for alignment), they are assumed
+                    to be initialized to a common value.
+
+    Postconditions : A and B are unaffected.
+
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE DateListsAreEqual( A, B : ADateList ) : BOOLEAN;
+
+
+
+    (*---------------------------------------------------------------
+
+    GetDateListEntry 
+
+    Purpose : Returns one of the many intervals of time during a rate list,
+              or indicates that no such interval exists.  Which interval
+              is given by N.
+
+    Inputs:   
+              RateList    : ARateList;
+              N           : The interval number.
+
+    Outputs:  
+              StartDate   : The date of the beginning of this period.
+              ThruDate    : The smallest date > StartDate that is not
+                            in this period.  I.E. the beginning (first 
+                            moment) of the next period.     
+              Data        : The data in effect during this period.
+                            This is assumed to be the EXACT LENGTH of
+                            one record.
+
+	      RETURNS     : TRUE if this is a defined interval.  Else
+                            returns FALSE.  Note: if period n is not 
+                            defined, then periods n+i are undefined, for 
+                            all i >= 0.
+
+    Preconditions : RateList was created by CreateDateList and not disposed.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE GetDateListEntry(     RateList     : ADateList;
+                                N            : ADateListIndex;
+                            VAR StartDate,
+                                ThruDate     : ABigTime;
+                            VAR Data         : ARRAY OF BYTE
+                           ) : BOOLEAN;
+
+    (*---------------------------------------------------------------
+
+    SetDateListEntryN 
+
+    Purpose : Sets the Nth entry in a rate list.
+
+    Inputs:   
+              DateList    : ADateList;
+              N           : The interval number.
+              Data        : The data in effect during this period.
+          
+    Outputs:   
+              RETURNS     : FALSE if too many intervals to record have
+                            been defined.
+
+    Preconditions : DateList was created by CreateDateList and not disposed.
+
+    Postconditions: 
+                    StartDate[N] and Rate[N] are set as passed in.
+                    ThruDate[N] = StartDate[N+1].
+    ------------------------------------------------------------------ *)
+
+PROCEDURE SetDateListEntryN( VAR DateList : ADateList;
+                                 N        : ADateListIndex;
+                                 Data     : ARRAY OF BYTE
+                           ) : BOOLEAN;
+
+
+    (*---------------------------------------------------------------
+
+    CreateDateListEntry 
+
+    Purpose : Creates a new Nth entry in a date list.
+
+    Inputs:   
+              DateList    : ADateList;
+              StartDate   : The date of the beginning of this period.
+              Data        : The data in effect during this period.
+          
+    Outputs:   
+              RETURNS     : The resulting date list index, or zero
+                            if too many entries to record have
+                            been defined.
+
+    Preconditions : DateList was created by CreateDateList and not disposed.
+
+    Postconditions: 
+		    The total number of entries is not less than it was
+                    before.
+		    There is an entry n, with StartDate = the passed 
+                    value, and same for Rate.  The next entry will
+                    start with the Thru date.  This may split previous
+                    records, or completely overlap a previous record.
+		    General conditions on DateLists still obtain.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE CreateDateListEntry( VAR DateList   : ADateList;
+                                   StartDate  : ABigTime;
+                                   Data       : ARRAY OF BYTE
+                              ) : ADateListIndex;
+
+
+    (*---------------------------------------------------------------
+
+    DisposeDateListEntry 
+
+    Purpose : Removes the new Nth entry in a date list.
+
+    Inputs:   
+              DateList    : ADateList;
+              DataSize    : Size of the data portion, not incl. Start Date.
+              N           : The interval number.
+          
+    Outputs:   
+
+    Preconditions : DateList was created by CreateDateList and not disposed.
+
+    Postconditions: 
+                    All previous intervals N+j+1, for j > 0, will now
+                    be numbered N+j.
+		    The total number of intervals will be reduced by 1,
+                    unless it was already 1.
+                    ThruDate[i] always = StartDate[i+1] for all i > 0 where
+                    i+1 is an entry.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE DisposeDateListEntry( VAR DateList : ADateList;
+                                    DataSize : CARDINAL;
+                                    N        : ADateListIndex   );
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+    LocateDateInDateList 
+
+    Purpose : Given a Date, finds the index number, N, of the half-open
+              interval [StartDate..ThruDate) containing Date.
+
+    Inputs:   DateList       : A DateList;
+              Date           : A date.
+              DataSize       : Size of the data portion, not incl. Start Date.
+
+    Outputs:  
+   	      N           :  Index to the interval containing Date.
+                         If 0, then there is no interval containing the
+                         date.  That is, the date is less than the date
+                         of the first entry.
+
+
+    Preconditions : RateList was created by CreateRateList and not disposed.
+                    Date is within the range of the calendar. 
+
+    Postconditions: N is returned as noted above. 
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE LocateDateInDateList(    DateList   : ADateList;
+                                   Date       : ABigTime;
+                                   DataSize   : CARDINAL;
+                               VAR N          : ADateListIndex);
+
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+    Number Of Dates In List
+
+    Purpose : Given a Date List, returns the number of entries in the list.
+
+    Inputs:   DateList       : A DateList;
+              DataSize       : Size of the data portion, not incl. Start Date.
+
+    Outputs:  
+   	          RETURN         : Number of entries.
+
+
+    Preconditions : DateList was created by CreateDateList and not disposed.
+
+    Postconditions: RETURN as noted above.
+
+    ------------------------------------------------------------------ *)
+PROCEDURE NumberOfDatesInList(  DateList   : ADateList;
+                                DataSize   : CARDINAL  ) : CARDINAL;
+
+
+
+
+
+PROCEDURE StoreDateList(     DateList    : ADateList;
+                             StorageProc : Filing.AStoreProc;
+                             Context     : ADDRESS );
+
+PROCEDURE LoadDateList ( VAR DateList    : ADateList;
+                             StoragePref : AnExtStoragePreference;
+                             PredictSize : Filing.APredictSizeProc;
+                             LoadProc    : Filing.ALoadProc;
+                             ReadNext    : Filing.AReadNextProc;
+                             Context     : ADDRESS
+                        ) : BOOLEAN;
+
+
+
+
+
+
+END DateLists.
+
+

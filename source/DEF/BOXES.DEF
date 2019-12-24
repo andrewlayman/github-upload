@@ -1,0 +1,166 @@
+DEFINITION MODULE Boxes;
+
+(*      MODIFICATION HISTORY:
+
+        Mar 13, 1987    EGK -Changed ABoxType from enumerated type to set,
+                             adding "ShadowBox" attribute.
+                             DrawBox draws a shadow if it is present.
+                             GetInnerBoxSize returns the box minus the shadow,
+                             GetOuterBoxSize returns the box with the shadow.
+        Feb. 21, 1988   AJL -Added Empty as a box type.  
+                            -Added Global BOOLEAN TransparentShadow;
+        Feb. 22, 1988   AJL -Removed explicit export statement.
+        Dec. 8,  1989   AJL -Added mouse point correlations.
+        Jul. 9,  1990   RSC -Added Edit and Delete button support.
+        Oct. 6   1990   AJL -Rearranged the attributes and correlation
+                             points.
+                            -Added CorrelateMouseToCode
+*)
+
+FROM Codes     IMPORT ACode;
+FROM Kbio      IMPORT ascreenx, ascreeny, avidmode;
+
+
+
+TYPE
+    ABoxAttribute = (NoBox, SingleBox, DoubleBox,     (* Box border type. *)
+                     GrowBox,                         (* Zoom open? *)
+                     ShadowBox,                       (* Shadow on box? *)
+                     Empty,                           (* Draw border only? *)
+                     HasVScroll,                      (* Add Vert. Scroll regions. *)
+                     HasHScroll,                      (* Add Horiz. Scroll regions. *)
+                     HasCancel,                       (* Add Cancel button. *)
+                     HasOk,                           (* Add Ok button. *)
+                     HasDelete,                       (* Add Delete button *)
+                     HasInsert,                       (* Add Insert Button *)
+                     HasEdit,                         (* Add Edit button *)
+                     HasMenu,                         (* Add Menu button *)
+                     HasHelp,                         (* Add Help button *)     
+                     HasExtra1 );
+
+    ABoxType = SET OF ABoxAttribute;
+
+        (* AMouseClickPoint identifies in which region of the box a
+           point is. *)
+
+    AMouseClickPoint = (OnOutside,              (* Outside of the box. *)
+                        OnBorder,               (* On the border of the box. *)
+                        OnInside,               (* Inside of the border. *)
+                        OnVScrollUp,            (* Scroll Up *)
+                        OnVScrollDown,          (* Scroll Down *)
+                        OnHScrollLeft,          (* Scroll Left *)
+                        OnHScrollRight,         (* Scroll Right *)
+                        OnCancel,               (* Cancel button *) 
+                        OnOk,                   (* Ok button. *)
+                        OnDelete,               (* Delete button *)
+                        OnInsert,               (* Insert Button *)
+                        OnEdit,                 (* Edit button *)
+                        OnMenuButton,           (* Menu button *)
+                        OnHelp,                 (* Help button *)     
+                        OnExtra1 );
+
+VAR
+    TransparentShadow   : BOOLEAN;   (* If TRUE, shadows will be drawn with
+                                        a shadow video attribute over the
+                                        original characters.  FALSE overwrites
+                                        the original characters. *) 
+
+(*----------------------------------------------------------------------------
+DrawBox:
+
+Draw a box on the screen at the given coordinates, which include borders and/or
+shadowing if appropriate.  To work with the actual usable space inside the box,
+use the routines below.
+
+----------------------------------------------------------------------------*)
+
+PROCEDURE DrawBox(ULX : ascreenx;
+                  ULY : ascreeny;
+                  LRX : ascreenx;
+                  LRY : ascreeny;
+                  BoxType : ABoxType;
+                  VAR Title   : ARRAY OF CHAR;
+                  VidMode : avidmode);
+
+
+(*----------------------------------------------------------------------------
+These two routines convert between "outer" coordinates, which include the
+contents of the box AND the borders and/or shading if they exist, and "inner" 
+coordinates, which include only the usable inside area enclosed by the box.
+----------------------------------------------------------------------------*)
+PROCEDURE GetOuterBoxSize(VAR ULX: ascreenx;
+                         VAR ULY: ascreeny;
+                         VAR LRX: ascreenx;
+                         VAR LRY: ascreeny;
+                         BoxType: ABoxType);
+
+PROCEDURE GetInnerBoxSize(VAR ULX: ascreenx;
+                         VAR ULY: ascreeny;
+                         VAR LRX: ascreenx;
+                         VAR LRY: ascreeny;
+                         BoxType: ABoxType);
+
+
+    (* ------------------------------------------------------------------
+        CorrelateMousePoint
+
+        Purpose:  Returns an indication of where on the box the mouse 
+                  was clicked.
+
+        Inputs:   ULX, ULY, LRX, LRY, BoxType -- Same as used to 
+                      originally draw the box when DrawBox was (or
+                      would be) used.
+
+                  X, Y  -- the (X,Y) coordinates of the point.
+
+        Outputs:  RETURNS -- The identifier of the part of the box,
+                      or OnOutside if not on any part.
+
+        Error Action: none
+
+
+    ---------------------------------------------------------------------- *)
+
+PROCEDURE CorrelateMousePoint(ULX: ascreenx;
+                              ULY: ascreeny;
+                              LRX: ascreenx;
+                              LRY: ascreeny;
+                              BoxType: ABoxType;
+                              X  : ascreenx;
+                              Y  : ascreeny ) : AMouseClickPoint;
+
+
+
+
+    (* ------------------------------------------------------------------
+        CorrelateMousePoint
+
+        Purpose:  Returns an indication of where on the box the mouse 
+                  was clicked.
+
+        Inputs:   ULX, ULY, LRX, LRY, BoxType -- Same as used to 
+                      originally draw the box when DrawBox was (or
+                      would be) used.
+
+                  X, Y  -- the (X,Y) coordinates of the point.
+
+        Outputs:  RETURNS -- If the mouse click was on a button
+                             with a key code equivalent, returns the
+                             key code.
+                             Else returns 0.
+
+        Error Action: none
+
+
+    ---------------------------------------------------------------------- *)
+
+PROCEDURE CorrelateMouseToCode(ULX: ascreenx;
+                               ULY: ascreeny;
+                               LRX: ascreenx;
+                               LRY: ascreeny;
+                               BoxType: ABoxType;
+                               X  : ascreenx;
+                               Y  : ascreeny ) : ACode; 
+
+END Boxes.
+

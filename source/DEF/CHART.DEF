@@ -1,0 +1,90 @@
+DEFINITION MODULE Chart;
+
+    (*  MODIFICATION HISTORY
+        18-Feb-89 LAA   Moved code for TaskStats procedure here from
+                        GanttOutlines, and made it a procedure variable.
+        30-Mar-90 RSC   Made Timeu to Timei conversions.
+    *)
+
+FROM Kbio                   IMPORT  
+    (* TYPE *)                  ascreeny, maxcol;
+
+FROM Codes                  IMPORT  
+    (* TYPE *)                  ASetOfCodes, ACode;
+
+FROM Gantt                  IMPORT  
+    (* TYPE *)                  ASlackStyle;
+
+FROM GanttOutlines          IMPORT
+    (* TYPE *)                  AGanttOutline;
+
+FROM Timei                  IMPORT  
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+TYPE
+    ATaskStatDisplayProc    = PROCEDURE(ATreeNode);
+
+    (*------------------------------------------------------------------------
+        Display a summary of the task statistics on the second and third lines 
+        of the screen.  This area is outside of the GanttOutline object's 
+        screen area.
+
+        Preconditions:
+            The tree node must be a task tree node.
+
+        Postconditions:
+            Task statistics will be displayed on the second and third lines
+            of the screen.
+    ------------------------------------------------------------------------*)
+
+
+VAR
+    DisplayTaskStats        : ATaskStatDisplayProc;
+    BugTaskA, BugTaskB      : ATreeNode;
+    BugDayA,  BugDayB       : ADate;
+
+    ChartStartDay           : ADate;
+    CursorTask              : ATreeNode;
+    CursorDay               : ADate;
+    GanttChart              : AGanttOutline;
+
+    AlternateChartQuitCode  : ACode;
+    AlternateChartActive    : BOOLEAN;
+    AlternateChartName      : ARRAY [0..15] OF CHAR;
+
+
+
+PROCEDURE ShowSched;
+
+PROCEDURE MChToday;
+
+PROCEDURE MChDay (Timeu:ADate);
+
+PROCEDURE MChTask (Task:ATreeNode);
+
+PROCEDURE MChTaskAndDay(Task:ATreeNode; Day:ADate);
+
+PROCEDURE MChCurrentTask;
+
+    (*  ChartNotifyDeleted -- Please call this routine whenever a task
+                              is deleted so that we can update our
+                              records and know that any private pointers
+                              to it are no longer valid. *)
+
+PROCEDURE ChartNotifyDeleted(Task:ATreeNode);
+
+
+    (*  ResetChart -- Set up for a blank chart. *)
+
+
+PROCEDURE ResetChart;
+
+PROCEDURE InitializeChart();
+
+END Chart.
+

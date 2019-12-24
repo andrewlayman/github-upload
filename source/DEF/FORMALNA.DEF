@@ -1,0 +1,30 @@
+DEFINITION MODULE FormalName;
+
+  (* Formal Name
+
+        Modification History:
+
+        19-Jun-89 MWP In the beginning...
+        27-Aug-89 MWP 'Cache' all formal names for rapid access by importers.
+        29-Aug-89 MWP Allow retrieval of formal name based on ID.
+        30-Aug-89 MWP Code cleanup.
+  *)
+
+
+PROCEDURE  IsFormalNameOurs ( VAR RangeName  : ARRAY OF CHAR;
+                              VAR DataType   : CARDINAL;
+                                  ReportType : CARDINAL     ) : BOOLEAN;
+
+PROCEDURE SetupFormalNameCache ( ReportType : CARDINAL ) : BOOLEAN;
+
+PROCEDURE GetFormalNameInfo (  VAR ColumnName : ARRAY OF CHAR;
+                                   ReportType : CARDINAL;
+                               VAR DataType   : CARDINAL;
+                               VAR ColumnID   : CARDINAL ) : BOOLEAN;
+
+PROCEDURE FindFormalName (     ID         : CARDINAL;               (* 29-Aug-89 MWP *)
+                               ReportType : CARDINAL;
+                           VAR ColumnName : ARRAY OF CHAR ) : BOOLEAN;
+
+END FormalName.
+

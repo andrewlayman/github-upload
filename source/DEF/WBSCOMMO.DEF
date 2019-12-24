@@ -1,0 +1,217 @@
+DEFINITION MODULE WBSCommon;
+
+
+  (*
+        MODIFICATION HISTORY:
+
+         14-Jul-89  MWP  Added modification history.
+         14-Jul-89  MWP  Added user selectable range constants.
+         17-Jul-89  MWP  Added global dictionary variable.
+         19-Jul-89  MWP  Updated documentation.
+         19-Jul-89  MWP  Added DictionaryInUse flag.
+         29-Jul-89  MWP  SetBlankHighlight, SetDuplicateHighlight, and
+                         SetBadCodeHighlight removed. New def, SetWBSHighlight,
+                         implemented.
+         29-Jul-89  MWP  CopyWBSFilterBits def removed.
+          1-Aug-89  MWP  Changed error flags to use AWBSErrorSet.
+         15-Aug-89  MWP  Use AWBSPtr as parameter.
+         27-Aug-89  MWP  Include WBSErrorsPresent VAR.
+         16-Nov-90  AJL -Enlarge the size of the Prefix.  It used to be 4,
+                         maximum.  Add a version number.
+                        -Define the WBSErrorCodingField more accurately.
+          8-Apr-91 TGS  Import from TaskColNumbers instead of MagicNumbers.
+  *)
+
+
+
+FROM  Allocs       IMPORT
+                            WBSLen,
+                            FirstOtherCodingLine;
+
+FROM Dictionary     IMPORT
+    (* TYPE *)              ADictionary;
+
+FROM TaskColNumbers IMPORT 
+                        WBSErrors;
+
+
+FROM SYSTEM        IMPORT
+    (* THINGS *)            SIZE, TSIZE, ADDRESS, ADR;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)              ATreeNode, ATreeOrder, ATree;
+
+
+CONST
+    (* Field offsets of individual segment columns within WBS form. *)
+    CharSeqColOffset        =  0;
+    StartWithColOffset      =  1;
+    SizeMinColOffset        =  2;
+    SizeMaxColOffset        =  3;
+    AlwaysShowColOffset     =  4;
+    NullColOffset           =  5;
+    FollowByColOffset       =  6;
+
+    (* Maximum number of WBS rows - 1 *)
+    MaxWbsRows              =  13;
+    MinWbsSize              =  1;
+    MaxWbsSize              =  WBSLen;
+    MaxWbsLen               =  WBSLen;
+    MaxFormEntriesPerRow    =  7;
+    MaxFormEntries          =  ( MaxWbsRows + 1 ) * MaxFormEntriesPerRow;
+    WBSModuleNumberBase     =  5400;
+
+    AllTasks                = 1;                                   (* 14-Jul-89 MWP *)
+    Family                  = 2;
+    Children                = 3;
+    SingleTask              = 4;
+
+    WBSErrorCodingField     = WBSErrors;
+
+TYPE
+
+    AShowMethod             =   (No, Yes);
+
+    AWBSColumn =  RECORD
+        SizeMin             :  CARDINAL;
+        SizeMax             :  CARDINAL;
+        CharacterSequence   :  ARRAY [0..17] OF CHAR;
+        StartWith           :  ARRAY [0..1] OF CHAR;
+        StartOffset         :  CARDINAL;
+        AlwaysShow          :  AShowMethod;
+        Null                :  ARRAY [0..1] OF CHAR;
+        FollowBy            :  ARRAY [0..4] OF CHAR;
+    END;
+
+    AWBSPtr      = POINTER TO AnWBSFormsValue;                         (* 15-Aug-89 MWP *)
+    AContextPtr  = POINTER TO AContextRecord;
+
+    AnWBSFormsValue         = RECORD
+        Version             :  CARDINAL;
+        Prefix              :  ARRAY [0..WBSLen] OF CHAR;
+        WBSColumns          :  ARRAY [0..MaxWbsRows] OF AWBSColumn;
+    END;
+
+    AWBSError            = ( BlankError,
+                             DuplicateError,
+                             ParentError,
+                             BadWBSError,
+                             MisMatchError,
+                             LevelTooDeep,
+                             LevelNotDefined,
+                             WBSTooLarge );
+
+    AWBSErrorSet          =  SET OF AWBSError;
+
+
+    AContextRecord          = RECORD
+                                 RangeChoice         : CARDINAL;
+                                 ErrorsFound         : AWBSErrorSet;   (* 1-8-89 MWP *)
+                                 ShowThese           : AWBSErrorSet;
+                              END;
+
+
+
+VAR
+    WBSDictionary            : ADictionary;                         (* 17-Jul-89 MWP *)
+    DictionaryInUse          : BOOLEAN;                             (* 19-Jul-89 MWP *)
+    WBSErrorsPresent         : BOOLEAN;
+
+        (*
+          Displays dialog box containing text in 'Prefix'. User is asked
+          to select either Proceed or Cancel.
+          Returns TRUE if a valid menu choice was selected with 'Choice'
+          containing the menu item selected, else FALSE.
+        *)
+PROCEDURE PerformConfirmationDialog ( VAR Prefix : ARRAY OF CHAR;
+                                      VAR Choice : CARDINAL ) : BOOLEAN;
+
+        (*
+           Displays MultipleChoiceBox with title 'BoxTitle' and
+           dialog text 'Text'. Choices for range selection are
+           All Tasks, This Task and Family, Children, This Task.
+           Returns TRUE if a valid menu choice was selected with 'Choice'
+           containing the menu item selected, else FALSE.
+        *)
+PROCEDURE SelectWBSRangeDialog ( VAR Text     : ARRAY OF CHAR;
+                                 VAR BoxTitle : ARRAY OF CHAR;
+                                 VAR Choice   : CARDINAL ) : BOOLEAN;
+
+        (*
+           Will define WBSFormP with values for later use with
+           WBS Manager procedures. WBSFormP is of type AnWBSFormsValue
+           defined above. If WBSFormP has previously been defined or
+           altered by user, those values will be used, else default
+           values are supplied. 'ProgramName' is the text used to
+           identify the WBSForm values. It is currently set to
+           'TLWBS'.
+        *)
+PROCEDURE SetWBSValues ( VAR ProgramName    : ARRAY OF CHAR;
+                         VAR WBSFormP       : AWBSPtr ) : BOOLEAN;  (* 15-Aug-89 MWP *)
+
+         (*
+            Store WBSFormP values in Holder for later retrieval and
+            for saving in both the data file and the config file.
+         *)
+PROCEDURE SaveWBSValues ( VAR ProgramName    : ARRAY OF CHAR;
+                          VAR WBSFormP       : AWBSPtr);            (* 15-Aug-89 MWP *)
+
+        (*
+             Initialize WBSFormP to default values. The function
+             SetWBSValues should be called to Initialize the
+             WBS form values.
+        *)
+PROCEDURE  InitializeWBSColumns ( VAR  WBSFormP : AWBSPtr );        (* 15-Aug-89 MWP *)
+
+        (*
+             Retrieve the WBS code from 'Node' and store in s.
+        *)
+PROCEDURE GetWBSCode   (     Node    : ATreeNode;
+                         VAR s       : ARRAY OF CHAR );
+
+        (*
+             Save the WBS code in s within 'Node'.
+        *)
+PROCEDURE SetWBSCode   ( VAR Node    : ATreeNode;
+                         VAR s       : ARRAY OF CHAR );
+
+
+PROCEDURE SetWBSHighlight (VAR TaskNode        : ATreeNode );      (* 29-Jul-89 MWP *)
+
+
+
+        (*
+           Turns off all Highlight3, Highlight4, and Highlight5 filters
+           from every task in the Task Tree 'Tree'.
+        *)
+PROCEDURE ClearWBSFilterBitsInTree ( VAR Tree : ATree );
+
+        (*
+           Turns off all Highlight3, Highlight4, and Highlight5 filters
+           from the task 'TaskNode'.
+        *)
+PROCEDURE ClearWBSFilterBitsInTask ( VAR TaskNode : ATreeNode;
+                                         Context  : ADDRESS );
+
+
+        (*
+            Scan the LString 'CheckString' for the presence of the WBS
+            wildcard character '?'.
+            Returns TRUE is wildcard is found, else FALSE.
+        *)
+PROCEDURE CheckForWildCardCharacter ( VAR CheckString : ARRAY OF CHAR ) : BOOLEAN;
+
+        (*
+            Display the error message
+               "Error(s) have occured generating WBS codes".
+        *)
+PROCEDURE DisplayErrorMessage ();
+
+        (*
+           Returns TRUE if the WBS filter bit, Highlights 3,
+           is set.
+        *)
+PROCEDURE ErrorsInTask ( VAR TaskNode : ATreeNode ) : BOOLEAN;
+
+END WBSCommon.
+

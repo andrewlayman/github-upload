@@ -1,0 +1,55 @@
+DEFINITION MODULE ColumnName;
+
+(*  =========================================================================
+    Last Edit : August 29, 1990 2:35PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Supports the User-defined column names form.
+
+    MODIFICATION HISTORY:
+
+    14-May-90 KKC   First version
+    22-Aug-90 PFG   Completed first version.
+
+    =========================================================================
+*)
+
+
+CONST
+
+    (*  The following must be the same as the constants used in the 
+        form builder.  *)
+
+    MaxNameLen              =   24;
+    MaxDescriptionLen       =   40;
+    MaxShortTitleLen        =   8;
+    MaxLongTitleLen         =   29;
+    MaxExportNameLen        =   10;
+
+
+TYPE
+
+    AUserDefinedColumn       =   RECORD
+        Name            :   ARRAY[0..MaxNameLen] OF CHAR;
+        Description     :   ARRAY[0..MaxDescriptionLen * 2] OF CHAR;
+        ShortTitle1     :   ARRAY[0..MaxShortTitleLen] OF CHAR;
+        ShortTitle2     :   ARRAY[0..MaxShortTitleLen] OF CHAR;
+        LongTitle1      :   ARRAY[0..MaxLongTitleLen] OF CHAR;
+        LongTitle2      :   ARRAY[0..MaxLongTitleLen] OF CHAR;
+        UsualTitleLength:   CARDINAL;
+        BeginUsingShort :   CARDINAL;
+        ExportName      :   ARRAY[0..MaxExportNameLen] OF CHAR;
+        OriginalName    :   ARRAY[0..MaxNameLen] OF CHAR;
+    END;
+
+
+
+PROCEDURE DoColumnForm( VAR UserDefinedColumn : AUserDefinedColumn;
+                        VAR Changed           : BOOLEAN
+                      );
+
+
+END ColumnName.
+
+

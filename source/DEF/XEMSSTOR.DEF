@@ -1,0 +1,36 @@
+DEFINITION MODULE XEmsStorage;
+
+(*  =========================================================================
+    Last Edit : August 18, 1989 12:48PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+
+        Implementation of the EMS driver, EmsStorage.  This is bound into
+        TLEms.
+
+
+    MODIFICATION HISTORY:
+
+         8-Aug-89  RSC  First version.
+
+    =========================================================================
+*)
+
+
+
+
+
+
+PROCEDURE XEmsStorageStartUp() : BOOLEAN;
+
+PROCEDURE XEmsStorageShutDown();
+
+
+
+
+
+
+END XEmsStorage.
+
+

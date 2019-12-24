@@ -1,0 +1,42 @@
+DEFINITION MODULE XPorTable;
+
+  (*
+        MODIFICATION HISTORY:
+
+         16-Aug-89  MWP  Created mod history.
+         16-Aug-89  MWP  Created report format to allow for the user selecting
+                         various report formats from the export form.
+         20-Aug-89  MWP  Create Pointer to driver entry type for use by Export
+                         and Import front ends.
+         30-Aug-89  MWP  Allow storing of file format information.
+  *)
+
+CONST MaxDrivers = 11;  (* A Form Limit *)
+
+TYPE
+    ADriverEntry = RECORD
+        FrontEnd       : ARRAY [0..8]  OF CHAR; (* Overlay name *)
+        FrontContext   : ARRAY [0..19] OF CHAR;
+        FileToUse      : ARRAY [0..8]  OF CHAR; (* If [0]=0C, item NOT selected *)
+        ReImportable   : BOOLEAN;                              (*  2-May-89 MWP *)
+        ReportFormat   : CARDINAL;                             (* 16-Aug-89 MWP *)
+    END;
+
+    ADriverTable = RECORD
+        Entries        : CARDINAL;
+        BackEndNumber  : CARDINAL;  (* which back end (for HOLDING) *)
+        Drivers        : ARRAY [1..MaxDrivers] OF ADriverEntry;
+        BackEnd        : ARRAY [0..8] OF CHAR;
+        BackEndContext : ARRAY [0..29] OF CHAR;
+        BackEndInit    : ARRAY [0..8] OF CHAR;  (* Name of startup overlay *)
+        FileFormat     : CARDINAL;                                (* 30-Aug-89 MWP *)
+        FileExt        : ARRAY [0..3] OF CHAR;
+        FileDir        : ARRAY [0..65] OF CHAR;
+        ReImport       : BOOLEAN;
+    END;
+
+
+    ADriverEntryPtr      = POINTER TO ADriverEntry;                 (* 20-Aug-89 MWP *)
+
+END XPorTable.
+

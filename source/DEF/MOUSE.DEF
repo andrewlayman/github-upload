@@ -1,0 +1,90 @@
+DEFINITION MODULE Mouse;
+
+(*  =========================================================================
+    Last Edit : January 8, 1990 10:12AM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Time Line Mouse Support ROOT module.
+
+    MODIFICATION HISTORY:
+
+         8-Dec-89 RSC  First version.
+
+    =========================================================================
+*)
+
+
+TYPE
+    AMouseTime      = LONGINT;      (* Eighteenths of a second *)
+
+
+
+
+VAR
+    (* Repeat Rate is "How long between MouseStillDown events?"
+    *)
+    RepeatRate      : AMouseTime;
+
+
+
+    (* Double Click Rate is "How soon after the first click is a second
+                             click deemed a double click?"
+    *)
+    DoubleClickRate : AMouseTime;
+
+
+    (* Mouse Present answers the musical question "Is there a mouse in
+                        the house?"
+
+        Preconditions
+                        None, but TLMOUSE has to have had a chance to start
+                        before you can trust the response.  In other words,
+                        before TLMOUSE starts up, we report FALSE even if
+                        there is a mouse.
+
+
+        Postconditions
+                        If a mouse is present, TRUE is returned.
+
+        Parameters
+                        RETURNS TRUE if a mouse is present and TLMOUSE
+                                is running, else FALSE.
+    *)
+    MousePresent    : PROCEDURE () : BOOLEAN;
+
+
+
+    (*
+        Cancel Double Click  - A single click has been handled AS IF it
+                               were a double click action, so don't allow a
+                               second click to be interpreted as a double
+                               click.  This applies to menus and dialog
+                               boxes, where a single click is all that is
+                               needed to select the item and exit the
+                               dialog/menu.
+
+                               This is good for only the very next click.
+                               It just prevents the "Is this click a double
+                               click?" logic from seeing the double click.
+                               If no mouse, nothing happens.
+
+        Preconditions
+                        A single click has been received and processed.
+                        This is either a MouseDown, MouseStillDown, or
+                        MouseUp.
+
+        Postconditions
+                        No mouse double click will be received until after
+                        a single click.
+
+        Parameters
+                        None.
+    *)
+    CancelDoubleClick   : PROCEDURE ();
+
+
+END Mouse.
+
+

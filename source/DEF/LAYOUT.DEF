@@ -1,0 +1,24 @@
+DEFINITION MODULE Layout;
+
+    (* MODIFICATION HISTORY:
+       10-Jun-89      WKH - Made MaxRow a variable so that Time Line can
+                            support a display that displays more than the
+                            "usual" 25 lines.
+    *)
+
+
+
+CONST
+    MaxColumn = 79;
+
+VAR
+    MenuStart,                   (*  First line used for menus.
+                                     This and next 1 are used.  *)
+    MaxRow,
+    MenuEnd,
+    GanttWStart,        (* Screen y coordinate where the gantt chart
+                           begins. *)
+    GanttWEnd    : CARDINAL;    (*  Last Gantt chart row.      *)
+
+END Layout.
+

@@ -1,0 +1,71 @@
+DEFINITION MODULE Subfiles;
+
+
+    (* Modification History
+
+         1-Jan-89   RSC     Added "TraverseSubfiles".
+
+    *)
+
+FROM FileSystem   IMPORT File;
+FROM SYSTEM       IMPORT ADDRESS;
+
+
+
+
+    (*  StartFileOutput -- Write a header to the file and reserve
+                           room for a subfile directory. *)
+
+PROCEDURE StartFileOutput     (VAR F               : File;
+                                   SubfileCount    : CARDINAL );
+
+    (*  EndFileOutput  -- Write an end of file marker. *)
+
+PROCEDURE EndFileOutput       (VAR F               : File );
+
+    (*  StartSubfileOutput -- Fill in a directory entry for the
+                              indicated subfile.  The position
+                              recorded is the current file position.
+                              Write a subfile header. *)
+
+PROCEDURE StartSubfileOutput  (VAR F               :File;
+                                   SubfileNumber   : CARDINAL;
+                                   Version         : CARDINAL);
+
+    (* EndSubfileOutput -- Write an end of subfile mark. *)
+
+PROCEDURE EndSubfileOutput  (VAR F               : File;
+                                 SubfileNumber   : CARDINAL  );
+
+    (* StartFileInput -- Check the file for valid format *)
+
+PROCEDURE StartFileInput      (VAR F               : File     ):BOOLEAN;
+
+    (* StartSubfileInput -- Position to the correct spot to begin
+                            reading subfile data. *)
+
+PROCEDURE StartSubfileInput   (VAR F               : File;
+                                   SubfileNumber   : CARDINAL;
+                               VAR Version         : CARDINAL):BOOLEAN;
+
+
+
+  (* Traverse Subfiles - For each subfile in a file of subfiles,
+                         invoke a client procedure to notify it of
+                         the subfile's existance.  The client procedure
+                         may make file accesses, as in to read the subfile.
+   *)
+TYPE
+    ASubfileTraverseProc    = PROCEDURE ( VAR File,
+                                          CARDINAL,  (* SubfileNumber *)
+                                          CARDINAL,  (* Version       *)
+                                          ADDRESS )  (* Context       *)
+                                        : BOOLEAN;   (* Continue?     *)
+
+PROCEDURE TraverseSubfiles  ( VAR F         : File;
+                                  CallMe    : ASubfileTraverseProc;
+                                  Context   : ADDRESS );
+
+
+END Subfiles.
+

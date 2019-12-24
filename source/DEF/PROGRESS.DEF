@@ -1,0 +1,57 @@
+DEFINITION MODULE Progress;
+
+(*  Implements a "count-down" thermometer with 5% precision.    *)
+
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+
+TYPE
+    AThermometer;           (* Magic type *)
+
+
+
+    (* CreateThermometer --
+
+            Put a thermometer on the screen at the given (X,Y), with
+            the given text attached.  Initial value displayed is 0.
+            The underlying screen is saved as a rug, and is restored when
+            the thermometer is discarded.
+    *)
+
+PROCEDURE CreateThermometer  ( VAR  Thermometer     : AThermometer;
+                                    X               : ascreenx;
+                                    Y               : ascreeny;
+                               VAR  Text            : ARRAY OF CHAR;
+                                    MaxValue        : CARDINAL )
+                                                                : BOOLEAN;
+
+
+
+    (* UpdateThermometer --
+
+            Record the new value attached to this thermometer.  The screen
+            (thermometer bars and tally count) are refreshed only if another
+            5% mark has been reached.
+    *)
+
+PROCEDURE UpdateThermometer  (      Thermometer     : AThermometer;
+                                    NewValue        : CARDINAL      );
+
+
+
+
+
+    (* DiscardThermometer --
+
+            Use this whenever you are finished using a thermometer.  It
+            restores the screen area which was hidden when the thermometer
+            was created.
+    *)
+
+PROCEDURE DiscardThermometer ( VAR  Thermometer     : AThermometer  );
+
+
+END Progress.
+

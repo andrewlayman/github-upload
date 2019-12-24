@@ -1,0 +1,232 @@
+DEFINITION MODULE LoadCommon;
+
+(*  =========================================================================
+    Last Edit : August 16, 1991 4:03PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Load elements common to config and schedule files.
+
+    MODIFICATION HISTORY:
+
+     RSC  9/22/87 - Moved AHeaderRecord from here to Transfer.Def
+     RSC 10/03/87 - Added 'FiscalCalendarFound' flag, because the init
+                    of the fiscal calendar was VERY slow.
+     17-Nov-87 LAA  Added GetNetLayoutsInfo.
+     22-Feb-88 RSC  Added GetSignature().
+     25-Apr-89 WKH  Export the following previously not exported proecures:
+                        - FindFilterByNumber
+                        - FindLayoutByName
+                        - FindLayoutByNumber
+                        - FindNetLayoutByName
+                        - FindNetLayoutByNumber
+     14-Jun-89 LAA  Added new procedure to load the Palettes.
+     22-Jun-89 RSC  Remove "FindTaskByNumber".  Use the procedure in TaskFind.
+     25-Sep-89 EGK  Removed "FindNetLayoutBy" procs, now available in
+                    NetLUtility.
+     26-Oct-89 RSC  Added parameter to "GetSignature" for bug # 1638.
+                    Added "SignatureError".
+    30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+    26-Oct-90 PFG   Added GetColumnNames().
+    31-Oct-90 PFG   Added ClearColumnNames().
+     9-Jan-91 AJL   Changed the procedure ReadTextLine to expect a new input
+                    format, and added the procedure ReadOldTextLine.
+    16-Aug-91 PFG   Added argument to GetFiltersInfo, GetLayoutsInfo and 
+                    GetNetLayoutsInfo to tell us whether to adjust for
+                    column numbers that changed since the last version.
+    =========================================================================
+*)
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM IlsaStatic             IMPORT
+    (* TYPE *)                  ATLGSChartType;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+
+TYPE ADuplicatesOKProc = PROCEDURE ( VAR ARRAY OF CHAR )
+                           : BOOLEAN; (* For Filters, Layouts, NetLayouts *)
+
+
+
+VAR
+    ErrorFlag           : BOOLEAN;
+    FiscalCalendarFound : BOOLEAN;
+
+
+
+PROCEDURE ReadDate(    VAR F      : File;
+                           Length : CARDINAL;
+                       VAR D      : ADate );
+
+PROCEDURE AttachNodeOnTree     (    Tree       : ATree;
+                                    Node       : ATreeNode;
+                                    Level      : CARDINAL  );
+
+PROCEDURE SkipRecordBody       (VAR F          : File;
+                                    Length     : CARDINAL  );
+
+
+
+
+
+(* Read a series of text lines.
+
+        Client has read the first line and supplies the type.
+
+        On exit, Text is filled in and the file position is set to
+        read the next record (which could theoreticy be of ANY type).
+
+*)
+PROCEDURE ReadManyTextLines(VAR F                : File;      (* in/out *)
+                                Length           : CARDINAL;  (* in     *)
+                                Type             : CARDINAL;  (* in     *)
+                            VAR Text             : AText);    (* in/out *)
+
+
+(* Read a series of OLD text lines.
+
+        Client has read the first line and supplies the type.
+
+        On exit, Text is filled in and the file position is set to
+        read the next record (which could theoreticy be of ANY type).
+
+*)
+PROCEDURE ReadManyOldTextLines(VAR F                : File;      (* in/out *)
+                                   Length           : CARDINAL;  (* in     *)
+                                   Type             : CARDINAL;  (* in     *)
+                               VAR Text             : AText);    (* in/out *)
+
+
+    (* Reads text lines (pre-5.0) in which each line of the text is
+       stored as a record containing a length byte and the characters,
+       and all lines, even blank ones are stored in sequence. *)
+
+PROCEDURE ReadOldFormatTextLine         (VAR F          : File;
+                                             Length     : CARDINAL;
+                                         VAR Text       : AText     );
+
+    (* Reads text lines (5.0 and ff) in which blank lines are not
+       stored, but each non-blank line is stored in a record containing
+       the line number (starting with 0), a length byte and the characters.
+       *)
+
+PROCEDURE ReadTextLine         (VAR F          : File;
+                                    Length     : CARDINAL;
+                                VAR Text       : AText     );
+
+PROCEDURE ReadTaskNumber       (VAR f          : File;
+                                    Length     : CARDINAL;
+                                VAR Task       : ATreeNode );
+
+PROCEDURE FindFilterByNumber   (    MatchID    : CARDINAL )     : ATreeNode;
+
+PROCEDURE FindLayoutByName     (VAR LayoutName : ARRAY OF CHAR) : ATreeNode;
+
+PROCEDURE FindLayoutByNumber   (    MatchID    : CARDINAL )     : ATreeNode;
+
+    (*  Look in Palettes for FindPaletteByName and FindPaletteByNumber. *)
+
+(*----------------------------------------------------------------------------
+    GetColumnNames --
+
+    Get any custom column names available.    
+
+    Preconditions:
+        The ColumnTable arrays must have been allocated already.
+
+    Postconditions:
+        If no column names are available, any column names that were
+        previously in memory are cleared out.
+----------------------------------------------------------------------------*)
+
+PROCEDURE GetColumnNames       (VAR F          : File      );   (* 26-Oct-90 PFG *)
+
+PROCEDURE GetCalendar          (VAR f          : File      );
+
+PROCEDURE GetTheEnvironment    (VAR f          : File      );
+
+PROCEDURE GetFiscalCalendar    (VAR f          : File      );
+
+PROCEDURE GetLayoutsInfo       (VAR f                : File;
+                                    DuplicatesOKProc : ADuplicatesOKProc;
+                                    UpdateCurrent    : BOOLEAN;
+                                    AdjustColumns    : BOOLEAN );
+
+PROCEDURE GetFiltersInfo       (VAR f                : File;
+                                    DuplicatesOKProc : ADuplicatesOKProc;
+                                    UpdateCurrent    : BOOLEAN;
+                                    AdjustColumns    : BOOLEAN );
+
+PROCEDURE GetMemosInfo         (VAR f          : File      );
+
+PROCEDURE GetNetLayoutsInfo    (VAR f                : File;
+                                    DuplicatesOKProc : ADuplicatesOKProc;
+                                    UpdateCurrent    : BOOLEAN;
+                                    AdjustColumns    : BOOLEAN );
+(*  GetPalettesInfo --
+
+    Retrieve the Palettes information from the indicated file, allowing
+    duplicates and overwriting existing Palettes as indicated.
+
+    Preconditions:
+        IlsaStatic must have been initialized, and TLStart run.
+
+    Postconditions:
+        The PaletteTrees in IlsaStatic will be updated from the file as
+        appropriate.
+*)
+
+PROCEDURE GetPalettesInfo(VAR f                : File;
+                              Kind             : ATLGSChartType;
+                              DuplicatesOKProc : ADuplicatesOKProc;
+                              UpdateCurrent    : BOOLEAN           );
+
+PROCEDURE GetHeldItems         (VAR f          : File);
+
+PROCEDURE GetSignature         (VAR f                 : File;
+   (* 26-Oct-89 RSC *)          VAR ExpectedSignature : CARDINAL ) : BOOLEAN;
+
+PROCEDURE ReadFilterName(VAR f:File; Length : CARDINAL; VAR Filter:ATreeNode);
+PROCEDURE ReadFilterNumber(VAR f:File; Length : CARDINAL; VAR Filter:ATreeNode);
+
+
+
+
+
+
+PROCEDURE SignatureError( DesiredSignature,
+                          ActualSignature   : CARDINAL );
+
+
+
+(*----------------------------------------------------------------------------
+    ClearColumnNames --
+
+    Empty out the existing arrays of custom column names.
+
+    Preconditions:
+        The ColumnTable arrays must have been allocated already.
+
+    Postconditions:
+        The arrays are set to NIL.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ClearColumnNames();
+
+END LoadCommon.
+
+

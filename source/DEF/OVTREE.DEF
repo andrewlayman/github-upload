@@ -1,0 +1,298 @@
+    (*V1=OS2 OS2 code changes.	  *)
+    (*V2=DOS Regular DOS TL code. *)
+
+DEFINITION MODULE OvTree;
+
+
+  (*    Ov Tree  - Overlay Tree Maintainer
+
+    This module exists to seperate out the overlay tree structure from either
+    Overlays.Mod or Overlay.Mod
+
+    One of the motives for this is so that this DEF can change and the only modules
+    that MUST be recompiled are Overlay.Mod (Logitek), Overlays.Mod (ours) and
+    TLMagic.Mod (testing only).  In other words, we can change this DEF and still
+    use our "Field Linking" strategy.
+
+
+
+     MODIFICATION HISTORY:
+
+        5-Jan-89    RSC     New module, built from Overlays.Mod
+        1-Mar-89    RSC     Added "ClientCopy" to "AVectorRecord".
+        6-Aug-89    WKH     Initial edits for OS/2.
+       31-Jan-91    RSC     Reworkings for two-tiered overlay system.
+       17-Apr-91    RSC     Added ability to find pushed residents.
+        1-Jul-91    RSC     Changed SetBaseLayer to get overlay descriptions
+                            passed, not just the names.  That way, I can
+                            either use names, or use pointers imbedded in
+                            the overlay descriptions.
+
+  *)
+
+FROM FlexStor       IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM RTSMain        IMPORT
+    (* TYPE *)          OverlayPtr;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATree, ATreeNode;
+
+
+
+
+
+CONST
+    CallChainSize  = 35;     (* Room for 3 names and parens *)
+
+
+TYPE
+    AProcPointer   = POINTER TO PROC;
+    ADeinstallProc = PROCEDURE (   AProcPointer, PROC, PROC  );
+    AnOverlayProc  = PROCEDURE;
+
+
+
+    (* Items for managing context areas. *)
+
+    AVectorRecordPointer = POINTER TO AVectorRecord;
+    AVectorRecord = RECORD
+                        PriorValue : PROC;
+                        NewValue   : PROC;
+                        Vector     : AProcPointer;
+                        Unset      : ADeinstallProc;
+                        PriorLink  : AVectorRecordPointer;
+                        ClientCopy : AProcPointer;          (* RSC 1-Mar-89 *)
+                    END;
+
+
+        (* A Load Option is how we should load this overlay.
+        *)
+    ALoadOption  = (LoadInMomArea, LoadInKidArea, LoadOffHeap);
+
+        (* A Residence is where the actual code resides.
+
+            InMainMemory --> Its on the heap or in a reserved layer
+                             (see ALoadOption).
+
+                             AResidenceWhere contains an address of
+                             where the overlay is.
+
+            InEms        --> Its in Expanded memory.
+
+                             AResidenceWhere contains an EMS Page(high)
+                             and byte offset(low) of the first block,
+                             AResidenceBlock.
+
+            InXms        --> Its in Extended memory
+                             AResidenceWhere contains a starting byte offset.
+                             The overlay is contiguous from that byte
+                             for <OverlaySize>.
+
+            InFlexStor   --> Its in FlexStor (probably on disk).
+                             AResidenceWhere is the headnode ExtHandle, which
+                             points to AResidenceBlock.
+
+                             This is only used for swapping out overlays,
+                             not for "resident" overlays.
+
+            Except for InFlexStor, these can be used for both swapping out
+            overlays and for cacheing "resident" overlays.  The key to
+            knowing which is which is to examine the UseCount.
+
+                IF UseCount = 0 THEN <Resident, but not in use>
+                                ELSE
+                                     IF InMainMemory THEN <Executing>
+                                                     ELSE <Swapped out>.
+        *)
+    AResidence      = (InMainMemory, InEms, InXms, InFlexStor);
+    AResidenceWhere = RECORD
+        CASE Residence : AResidence OF
+            InMainMemory    : Address           : ADDRESS;
+
+          | InEms           : EMSHandle         : CARDINAL;
+                              EMSOffset         : CARDINAL;
+
+          | InXms           : XMSStartingByte   : LONGINT;
+                              XMSLength         : CARDINAL;
+
+          | InFlexStor      : FlexStorHandle    : AnExtHandle;
+        END;
+    END;
+    AResidenceBlock = RECORD
+        Next    : AResidenceWhere;  (* Next chained block *)
+        Size    : CARDINAL;         (* Of this area *)
+    END;                            (* Following bytes are data. *)
+
+
+    AContextListEntry = POINTER TO AContextListItem;
+
+    AContextListItem  = RECORD
+        OverlayLayerAddr: ADDRESS;  (* Including layer overhead! *)
+        Context         : ADDRESS;
+        VectorListHead  : AVectorRecordPointer;
+        UseCount        : CARDINAL;
+        MainProcedure   : AnOverlayProc;
+        DeInstallProc   : AnOverlayProc;
+        TheOverlayPtr   : OverlayPtr;
+        OverlaySize     : CARDINAL;
+        WhichPathEntry  : CARDINAL;  (* Where in ProgramPath *)
+        CallChain       : ARRAY [0..CallChainSize] OF CHAR;
+        OverlayName     : ARRAY [0..13] OF CHAR;
+        LoadOption      : ALoadOption;
+        Residence       : AResidence;       (* WHERE IS IT NOW? *)
+        ResidentWhere   : AResidenceWhere;  (* IS IT (ALSO) SWAPPED? *)
+        WantsResidence,
+        IsLocked        : BOOLEAN;
+    END;
+
+
+    AnEntryProc    = PROCEDURE( AContextListEntry );
+
+VAR
+    OverlayTree         : ATree;
+
+
+
+
+
+    (* Make a copy of the given overlay file name without the decorations. *)
+
+PROCEDURE CopyAndTrimName( VAR OurName, s1 : ARRAY OF CHAR );
+
+
+
+
+
+
+
+    (* Find Node From Ovl Name -
+
+        Given the name of an overlay, find the tree node associated with that
+        overlay name.
+    *)
+PROCEDURE FindNodeFromOvlName ( VAR OverlayName : ARRAY OF CHAR ) : ATreeNode;
+
+
+
+
+
+
+
+
+  (* SetBaseLayer - Set up the base layer given the base layer's overlay
+                    pointer and the current overlay's pointer.
+
+      Preconditions  - CurrentLayer and BaseLayer are the OverlayPtr's of the
+                       layers.
+
+                       The Overlay Tree must have been initialized.
+
+      Postconditions - The overlay identified by the "CurrentLayer" is
+                       made a child of the overlay identified by the
+                       "BaseLayer".
+
+            1-Jul-91 RSC Changed from using names to using the OverlayPtr.
+  *)
+PROCEDURE SetBaseLayer( CurrentLayer, BaseLayer : OverlayPtr );
+
+
+
+    (* KickOutOverlayFamily -
+
+            Kick out the given overlay and all its kids.
+
+            Context is a procedure to deinstall vectors, of type
+            AnEntryProc.
+    *)
+PROCEDURE KickOutOverlayFamily (  VAR Node              : ATreeNode;
+                                      Context           : AnEntryProc;
+                                  VAR SwapFailure       : BOOLEAN );
+
+
+
+
+  (* AddToContextList - Add the overlay's context area into the list of
+                         such areas.
+
+       Preconditions   - Item is filled in (except for PriorEntry)
+
+       Postconditions  - The context list is one entry bigger.
+                         'GetOverlayContext' call returns the new context.
+
+                         'WhereItWent' is set to the just-added item.
+  *)
+
+PROCEDURE AddToContextList( VAR Item            : AContextListItem;
+                            VAR WhereItWent     : AContextListEntry );
+
+
+
+
+  (* RemoveFromContextList - Remove an item from the context tree.
+
+       Preconditions  - A prior 'AddToContextList' call was made
+                        sometime in the past for this entry.
+
+       Postconditions - The context list is one entry smaller.
+  *)
+PROCEDURE RemoveFromContextList( VAR Entry : AContextListEntry );
+
+
+
+TYPE
+    ASwapStackMarker    = CARDINAL;
+    AMakeRoomProc       = PROCEDURE( (* LoadOption    *) ALoadOption,
+                                     (* OverlaySize   *) CARDINAL );
+
+
+    (*  Bring overlays back from the swap stack into memory.  All overlays
+        up to the marker will be restored, and MakeRoom will be used to
+        get space for the overlay to be put into (if it's a heap overlay).
+    *)
+
+PROCEDURE PopSwapStack( SwapStackMarker : ASwapStackMarker;
+                        MakeRoom        : AMakeRoomProc   );
+
+
+    (*  Get a marker which can be used in PopSwapStack to return to the
+        same level in the swap stack.  This allows us to get a marker
+        before calling an overlay (which may push others out of memory),
+        and restore the state after the overlay is done by calling
+        PopSwapStack.
+    *)
+
+PROCEDURE GetSwapStackMarker() : ASwapStackMarker;
+
+
+    (*  Find the first Entry in the swap stack, and return Where indicating
+        the location of the pushed copy.  Return TRUE iff an entry was
+        found.
+    *)
+
+PROCEDURE FindPusher(     Entry  : AContextListEntry;
+                      VAR Where  : AResidenceWhere   ) : BOOLEAN;
+
+
+    (*  Look through the swap stack for an entry which matches the Where
+        parameter.  Return TRUE iff found.  This will probably be mostly
+        used for statistics and debugging.
+    *)
+
+PROCEDURE FindWhere(     Where   : AResidenceWhere;
+                     VAR Entry   : AContextListEntry ) : BOOLEAN;
+
+
+  (* Call this to initialize this module. *)
+
+PROCEDURE InitOvTree();
+
+
+
+
+END OvTree.
+

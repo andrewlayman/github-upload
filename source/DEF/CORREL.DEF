@@ -1,0 +1,241 @@
+DEFINITION MODULE Correl;
+
+    (* -------------------------------------------------------------------
+
+    This module maintains lists of rectangular regions and tests whether
+    points are inside the regions.
+
+    Datatypes:
+
+    ARegion : A rectangular area of the screen identified by the (x,y)
+              coordinates of the upper-left and lower-right corners, 
+              inclusive.
+
+    ARegionNumber : An identifying number that Clients can associate with
+              a region.
+
+    ACorrelationList : A ordered list of from zero to MaxRegionNumber of 
+              such regions, each with an associated region number.  The list 
+              is ordered by the sequence in which the regions were added.
+  
+    ARegionSet : a set of region numbers.
+
+
+     ------------
+
+    Error actions:  Because there may not be enough memory to allocate
+              a CorrelationList at some point, the creation procedure
+              may return NIL.  The other procedures are designed to treat
+              NIL as an empty correlation list so that the client can 
+              choose to ignore the failure, and proceed, with degraded
+              performance. 
+
+    ----------------------------------------------------------------------*)
+
+
+
+    (* MODIFICATION HISTORY
+
+       Dec. 10, 1989  AJL  -Original version.
+
+    *)
+
+
+FROM Kbio      IMPORT ascreenx, ascreeny;
+
+CONST
+    MaximumRegionNumber = 15;
+
+TYPE
+    ACorrelationList;
+    ARegionNumber = CARDINAL;    (* 0 is sentinal. *)
+    ARegionSet    = BITSET;
+
+
+    (* ------------------------------------------------------------------
+
+       CreateCorrelationList --
+
+       Purpose:  Create and initialize an empty correlation list.
+
+       Input:    none.
+
+       Output:    RETURNS -- An identifier of a correlation list.
+
+       Error Action:   RETURNS NIL if allocation fails.
+
+    -------------------------------------------------------------------- *)
+
+PROCEDURE CreateCorrelationList( ):ACorrelationList;
+
+    (* ------------------------------------------------------------------
+
+       DisposeCorrelationList --
+
+       Purpose:  Deallocate the storage used by, and make invalid,
+                 a correlation list.
+
+       Input:    CorrelationList -- A list of regions created by use
+                                    of CreateCorrelationList and SetRegion.
+
+       Preconditions:  The correlation list cannot have been disposed of and 
+                       should not be NIL.
+
+       Output:         The list is NIL.
+
+       Error Action:    If the correlation list is NIL, no action is 
+                        taken.
+
+    -------------------------------------------------------------------- *)
+
+PROCEDURE DisposeCorrelationList( VAR CorrelationList : ACorrelationList );
+
+
+    (* ------------------------------------------------------------------
+
+       SetRegion --
+
+       Purpose:  Add a new region to a list of regions.  Each is identified
+                 by an input number.
+
+       Input:    CorrelationList -- A list of regions created by use
+                                    of CreateCorrelationList and SetRegion.
+                 RegionNumber    -- Identifying number.
+                 ULX             -- Upper left X coordinate.
+                 ULY             -- Upper left Y coordinate.
+                 LRX             -- Lower right X coordinate.
+                 LRY             -- Lower right Y coordinate.
+
+       Preconditions:  The correlation list cannot have been disposed of and 
+                       should not be NIL.
+
+       Output:         The correlation list is modified to contain the 
+                       new region.
+
+       Error Action:    If the correlation list is NIL, the region is not
+                        added.
+
+    -------------------------------------------------------------------- *)
+
+PROCEDURE SetRegion( CorrelationList : ACorrelationList;
+                     RegionNumber : ARegionNumber;
+                     ULX : ascreenx;
+                     ULY : ascreeny;
+                     LRX : ascreenx;
+                     LRY : ascreeny  );
+
+    (* ------------------------------------------------------------------
+
+       QueryRegion --
+
+       Purpose:  See if a region of the given number is in the list.
+                 If so, return its dimensions.
+
+       Input:    CorrelationList -- A list of regions created by use
+                                    of CreateCorrelationList and SetRegion.
+                 RegionNumber    -- Identifying number.
+
+       Preconditions:  The correlation list cannot have been disposed of and 
+                       should not be NIL.
+
+       Output:   ULX             -- Upper left X coordinate.
+                 ULY             -- Upper left Y coordinate.
+                 LRX             -- Lower right X coordinate.
+                 LRY             -- Lower right Y coordinate.
+                 RETURNS         -- TRUE iff the list contains a region
+                                    of the given number.  
+
+       Error Action:    If the correlation list is NIL, FALSE is returned.
+
+    -------------------------------------------------------------------- *)
+
+PROCEDURE QueryRegion(     CorrelationList : ACorrelationList;
+                           RegionNumber : ARegionNumber;
+                       VAR ULX : ascreenx;
+                       VAR ULY : ascreeny;
+                       VAR LRX : ascreenx;
+                       VAR LRY : ascreeny  ) : BOOLEAN;
+
+
+    (* ------------------------------------------------------------------
+
+       CorrelatePoint --
+
+       Purpose:  Determine if a point is in any of the regions in a
+                 list, and, if so, which ones.
+
+       Input:    CorrelationList -- A list of regions created by use
+                                    of CreateCorrelationList and SetRegion.
+                 X               -- X coordinate.
+                 Y               -- Y coordinate.
+
+       Preconditions:  The correlation list cannot have been disposed of and 
+                       should not be NIL.
+
+       Output:   RETURNS   -- The region number containing the point (X,Y),
+                              or, if there are more than one such point,
+                              the one that was added to the correlation
+                              list last.
+                                  If there is no region containing the point,
+                              a zero is returned to signal this.  
+
+       Error Action:    If the correlation list is NIL, it is treated as
+                        an empty list and a zero is returned.  
+
+    -------------------------------------------------------------------- *)
+
+
+PROCEDURE CorrelatePoint (     CorrelationList : ACorrelationList;
+                               X               : ascreenx;
+                               Y               : ascreeny ) 
+                          : ARegionNumber;
+
+
+
+    (* ------------------------------------------------------------------
+
+       CorrelatePointMulti --
+
+       Purpose:  Determine if a point is in any of the regions in a
+                 list, and, if so, which ones.
+
+       Input:    CorrelationList -- A list of regions created by use
+                                    of CreateCorrelationList and SetRegion.
+                 X               -- X coordinate.
+                 Y               -- Y coordinate.
+
+       Preconditions:  The correlation list cannot have been disposed of and 
+                       should not be NIL.
+
+       Output:   RegionSet -- A set with members for each region that
+                              contains the (X,Y) point.  Only regions
+                              whose numbers are in the range [0..15]
+                              are included in the set.
+                 RETURNS   -- The region number containing the point (X,Y),
+                              or, if there are more than one such point,
+                              the one that was added to the correlation
+                              list last.
+                                  If there is no region containing the point,
+                              a zero is returned to signal this.  
+
+       Error Action:    If the correlation list is NIL, it is treated as
+                        an empty list and a zero is returned.  
+
+    -------------------------------------------------------------------- *)
+
+
+PROCEDURE CorrelatePointMulti (     CorrelationList : ACorrelationList;
+                                    X               : ascreenx;
+                                    Y               : ascreeny;
+                                VAR RegionSet : ARegionSet ) 
+                                : ARegionNumber;
+
+
+
+
+
+
+
+
+END Correl.
+

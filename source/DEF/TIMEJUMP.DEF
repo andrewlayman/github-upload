@@ -1,0 +1,50 @@
+DEFINITION MODULE TimeJump;
+
+
+(* MODIFICATION HISTORY:
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+*)
+
+
+FROM Timei    IMPORT ADuration, ADurationUnit, ADate;
+
+
+
+
+    (* FindStartDateOf -- Given an input date, find the start of the
+                          hour, day, week, month or year that includes
+                          that date. *)
+
+PROCEDURE FindStartDateOf(Date:ADate;TimeUnit:ADurationUnit):ADate;
+
+
+    (* FindNextKeyDate -- Given a date, and a time unit such as
+                          hour, day, week etc., find the next
+                          hour, day, week etc.  *)
+
+
+PROCEDURE FindNextKeyDate(Date:ADate; TimeUnit:ADurationUnit):ADate;
+
+
+    (* FindPriorKeyDate -- Given a date, and a time unit such as
+                           hour, day, week etc., find the prior
+                           hour, day, week etc.  *)
+
+
+PROCEDURE FindPriorKeyDate(Date:ADate; TimeUnit:ADurationUnit):ADate;
+
+
+
+    (* DateAsEndOfPeriod -- Format the date, but phrase it as the
+                            end of a period of time.  For example,
+                            if days end at 5pm and resume at 9am,
+                            then TimeUtoS would call 9am "9am" but
+                            we would call it "5pm."  *)
+
+PROCEDURE DateAsEndOfPeriod(      Date    : ADate;
+                              VAR S       : ARRAY OF CHAR  );
+
+
+END TimeJump.
+

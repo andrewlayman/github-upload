@@ -1,0 +1,57 @@
+DEFINITION MODULE PSortTaskList;
+
+    (* MODIFICATION HISTORY
+
+        22 Sep 89 AJL  - Created from PTaskList.
+         9 Apr 91 JES  - Made heretofore hidden procedure InsertInOrder
+                         be exported. Also made version of it that takes
+                         an already locked task, called InsertLockedTaskInOrder.
+    *)
+
+
+
+FROM Allocs        IMPORT
+    (* TYPE *)         ATaskPtr;
+
+FROM FlexStor      IMPORT
+    (* TYPE *)         AnExtHandle;
+
+
+
+
+TYPE
+        (* ---------------------------------------------------------
+
+           APTaskListCompareProc --
+
+           Preconditions:
+
+           Postconditions:
+               IFF the first Task is > the second Task, TRUE is returned.
+         ------------------------------------------------------------*)
+
+    APTaskListCompareProc      = PROCEDURE( ATaskPtr,
+                                            AnExtHandle ) : BOOLEAN;
+
+
+(* ----- Insert a task into the given list in order of the compare proc -- *)
+
+PROCEDURE InsertInOrder(List, TaskHandle: AnExtHandle; Compare:APTaskListCompareProc);
+
+
+(* ----- Insert an already locked task into the given list in order of the
+    compare proc (same as InsertInOrder but assumes task is already locked *)
+
+PROCEDURE InsertLockedTaskInOrder(List, TaskHandle: AnExtHandle; 
+                                  Task : ATaskPtr;       
+                                  Compare:APTaskListCompareProc);
+
+
+
+(* Do an insertion sort on the private task list. *)
+
+PROCEDURE InsertionSortTasks(Compare:APTaskListCompareProc) : BOOLEAN;
+
+END PSortTaskList.
+
+

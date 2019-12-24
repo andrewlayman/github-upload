@@ -1,0 +1,40 @@
+DEFINITION MODULE Buttons;
+
+
+FROM Boxes IMPORT
+    (* TYPE *)    ABoxType;
+
+FROM Kbio IMPORT 
+    (* TYPE *)    ascreenx, ascreeny;
+    
+
+
+TYPE
+    AButtonCollection;
+    AnOrientation = (Horizontal, Vertical);
+
+
+PROCEDURE CreateButtonCollection( ULX : ascreenx;
+                                  ULY : ascreeny;
+                                  LRX : ascreenx;
+                                  LRY : ascreeny;
+                                  BoxType : ABoxType;
+                                  Orientation : AnOrientation;
+                                  VAR Text       : ARRAY OF CHAR;
+                                  VAR Collection : AButtonCollection ) : BOOLEAN;
+
+
+
+
+PROCEDURE DisposeButtonCollection( VAR Collection : AButtonCollection );
+
+
+
+PROCEDURE CorrelateMouseToButton(     Collection : AButtonCollection;
+                                      X : ascreenx; 
+                                      Y : ascreeny;
+                                  VAR ButtonNumber : CARDINAL ) : BOOLEAN;
+
+
+END Buttons.
+

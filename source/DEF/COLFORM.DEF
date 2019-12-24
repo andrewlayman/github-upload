@@ -1,0 +1,89 @@
+DEFINITION MODULE ColForm;
+
+(*  =========================================================================
+    Last Edit : October 2, 1990 7:11PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Calls the column name form overlay.
+
+    MODIFICATION HISTORY:
+
+    10-Sep-90 PFG   Created to allow column name stuff to be in an overlay.
+    2-Oct-90  PFG   Added the code from the old ColumnGoToCheckProc to the 
+                    TLColName overlay, and changed the context record to 
+                    accomodate it.
+    23-Jul-91 LAA   Changed the context of AColumnContext.  This is to fix
+                    bug #4768.  You can't pass an object as context from
+                    one overlay to another, unless you're sure it's in the
+                    root.
+    =========================================================================
+*)
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnInfoChoice, AColumnDataRecord;
+
+FROM ColData                IMPORT
+    (* TYPE  *)                 AColumnType;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+CONST
+
+    (*  The following must be the same as the constants used in the 
+        form builder (COLNFORM).  *)
+
+    MaxNameLen              =   24;
+    MaxDescriptionLen       =   40;
+    MaxShortTitleLen        =   8;
+    MaxLongTitleLen         =   29;
+    MaxExportNameLen        =   10;
+
+
+TYPE
+
+    AGetColumnInfoProc = PROCEDURE(CARDINAL, 
+                                   AColumnInfoChoice, 
+                                   CARDINAL,
+                               VAR AColumnDataRecord) : BOOLEAN;
+
+
+    (*  This record serves as a context record for calling the Column Name
+        Overlay.
+
+        PhraseModNumber is the number in the phrases file where the column
+        information for this type of column starts.
+
+        PromptModNumber is the number in the phrases file where the prompt
+        lines for this type of column start.
+
+        CursorNode is the TreeNode of the column being edited.
+
+        ColumnType is the kind of column being edited:  Resource, Task, etc.
+
+        Changed is set to TRUE on return if the column name was changed.
+        Otherwise it is set to FALSE.
+    *)
+
+    AColumnContext = RECORD
+        PhraseModNumber : CARDINAL;
+        PromptModNumber : CARDINAL;
+        CursorNode      : ATreeNode;
+        ColumnType      : AColumnType;
+        Changed         : BOOLEAN;
+    END;
+    
+    AColumnContextPtr = POINTER TO AColumnContext;
+
+
+
+PROCEDURE DoColumnFormOverlay(VAR ColumnContext : AColumnContext);
+
+
+
+END ColForm.
+
+

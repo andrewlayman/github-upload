@@ -1,0 +1,52 @@
+DEFINITION MODULE ResPriority;
+
+
+
+     (* ------------------------------------------------------------
+
+        ResPriority -- Priorities between tasks.
+
+        MODIFICATION HISTORY:
+
+
+      -------------------------------------------------------------- *)
+
+
+FROM Allocs IMPORT
+    (* TYPE *)       ATaskPtr;
+
+
+FROM Timei  IMPORT
+    (* TYPE *)   ADate, ADuration;
+
+
+    (*--------------------------------------------------------------- 
+        BPreemptA
+
+                     Compares two tasks.  Returns FALSE iff B has same
+                     or lower priority than A.
+
+                     Another way of looking at this is TRUE means B
+                     can preempt A.
+    ----------------------------------------------------------------- *)
+
+PROCEDURE BPreemptA (A,B  : ATaskPtr;
+                     Date : ADate) : BOOLEAN;
+
+
+
+    (*--------------------------------------------------------------- 
+        MuchHigherPriority
+
+                     Compares two tasks.  Returns 1 if B has a much
+                     higher priority than A, -1 if B is much lower
+                     than A, and 0 if they are roughly equal.
+    ----------------------------------------------------------------- *)
+
+PROCEDURE MuchHigherPriority( A, B : ATaskPtr ) : INTEGER;
+
+
+
+END ResPriority.
+
+

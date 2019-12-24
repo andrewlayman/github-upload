@@ -1,0 +1,42 @@
+DEFINITION MODULE MacState;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+
+EXPORT QUALIFIED         AState, AStateStackPtr,    (* TYPE *)
+                         AStateStackRec,            (* TYPE *)
+                         StateStack, State,         (* VAR  *)
+                         PushState, PopState;       (* PROC *)
+
+TYPE AStateStackPtr = POINTER TO AStateStackRec;
+
+     AState         = (Neutral, Recording, Playback, MacroEdit);
+
+     AStateStackRec = RECORD
+                        tag    : CARDINAL;
+                        state  : AState;
+                        next,
+                        prev   : AStateStackPtr;
+                      END;
+
+
+VAR
+    State             : AState;
+    StateStack        : AStateStackPtr;
+
+
+PROCEDURE PushState (TheState : AState);
+
+PROCEDURE PopState;
+
+
+END MacState.
+

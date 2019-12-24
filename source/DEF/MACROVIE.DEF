@@ -1,0 +1,328 @@
+DEFINITION MODULE MacroViews;      (* Subclass of ActiveViews *)
+
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AMacroViewStatus to 16 bits.
+    *)
+
+
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+EXPORT QUALIFIED
+    (* OBJECT TYPE *)       AMacroView, 
+                            AMacroViewMethods, AMacroViewMethodsRecord,
+    (* TYPE *)              AMacroViewStatus, AMacroViewStatusSet,
+    (* PROC *)              InitAsMacroView, CreateMacroView, 
+                            CloneMacroViewMethods, ValidateMacroView,
+                            UnInitAsMacroView;
+
+
+
+TYPE
+        (*  AMacroView is a subclass of AnActiveView  *)
+
+    AMacroView             = POINTER TO AMacroViewRecord;
+
+    AMacroViewMethods      = POINTER TO AMacroViewMethodsRecord;
+
+    AMacroViewRecord       = RECORD
+                                Methods        : AMacroViewMethods;
+                              END;
+
+
+
+
+
+TYPE
+
+        (*  These types are re-definitions of types exported from ActiveViews. *)
+
+
+    AMacroViewStatus       = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                              CursorOn,
+                              MacroViewSpare5, MacroViewSpare6, 
+                              MacroViewSpare7, MacroViewSpare8, 
+                              MacroViewSpare9);
+
+    AMacroViewStatusSet    = SET OF AMacroViewStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  These are the methods for AMacroView objects.  They inherit and
+        redefine methods from ActiveViews, but do not add any new methods
+        of their own.
+    *)
+
+TYPE
+    AMacroViewMethodsRecord  = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    AMacroView,
+                                        VAR AMacroView )
+                                                         : BOOLEAN;
+          StoreOn           : PROCEDURE(    AMacroView,
+                                            AnObject    );
+
+          Discard           : PROCEDURE(VAR AMacroView );
+
+          SuperclassMethods : AnObjectMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    AMacroView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+          GetInternalXY     : PROCEDURE(    AMacroView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+          (*------------------------------------------------------------------
+            GetTitle --
+
+                In this module, GetTitle returns the name of the viewed
+                filter, NOT the title of this view's box, which may or may
+                not be displaying.
+
+            Preconditions:
+                The view must be a valid Macro view object.
+
+            Postconditions:
+                If the view object of this view is not NIL, the filter name
+                associated with this view will be returned.  Otherwise, a
+                zero-length string will be returned.
+          ------------------------------------------------------------------*)
+
+          GetTitle          : PROCEDURE(    AMacroView,
+                                        VAR ARRAY OF CHAR);
+
+          SetObject         : PROCEDURE(    AMacroView,
+                                            ATreeNode   );
+
+          GetObject         : PROCEDURE(    AMacroView )
+                                                         : ATreeNode;
+
+          Move              : PROCEDURE(    AMacroView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+          Display           : PROCEDURE(    AMacroView );
+
+          GetHelp           : PROCEDURE(    AMacroView );
+
+          HideView          : PROCEDURE(    AMacroView );
+
+          RevealView        : PROCEDURE(    AMacroView );
+
+          NotifyOfChange    : PROCEDURE(    AMacroView );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    AMacroView,
+                                            AnEvent     );
+
+          GetRecordedEvent  : PROCEDURE(    AMacroView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    AMacroView,
+                                            AnEvent,
+                                        VAR AnEvent     );
+
+          GetCursor         : PROCEDURE(    AMacroView )   
+                                                         : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    AMacroView,   
+                                            BOOLEAN     );
+
+          SetCursorMode     : PROCEDURE(    AMacroView,
+                                            avidmode    );
+
+
+          ActiveViewTag     : CARDINAL;
+
+
+          MacroViewTag     : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsMacroView --
+
+    Initialize the indicated object as a filter view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid filter view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsMacroView(    MacroView   : AMacroView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateMacroView --
+
+    Allocate storage for, and initialize the indicated object as a filter 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid filter view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateMacroView( VAR MacroView   : AMacroView;
+                                SuperView    : AnActiveView;
+                                Ulx          : ascreenx;
+                                Uly          : ascreeny;
+                                Lrx          : ascreenx;
+                                Lry          : ascreeny;
+                                Box          : ABoxType;
+                                VideoMode    : avidmode;
+                                HelpKey      : CARDINAL)
+                                                        : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsMacroView --
+
+    UnInitialize the indicated object as a filter view.
+
+    Preconditions:
+        The object will be a valid filter view object.
+
+    Postconditions:
+        The filter view will no longer be a valid filter view object, and any
+        side-effects of InitAsMacroView will be undone.  This procedure does
+        not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsMacroView(    MacroView : AMacroView);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneMacroViewMethods --
+
+    Make a copy of the filter view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The filter view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneMacroViewMethods(    MethodObject : AMacroViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateMacroView --
+
+    Determine that the indicated object is in fact a valid filter view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid filter view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateMacroView(    MacroView : AMacroView);
+
+
+
+END MacroViews.
+

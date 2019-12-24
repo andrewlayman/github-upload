@@ -1,0 +1,37 @@
+DEFINITION MODULE IlsaSupport;
+
+(*  =========================================================================
+    Last Edit : August 23, 1989 7:17PM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Support routines for IlsaStatic
+
+    MODIFICATION HISTORY:
+        23-Aug-89 WKH   Initial Version
+
+    =========================================================================
+*)
+
+    (*  =====================================================================
+        
+        TLGSConfigIsCool - Determine if a graphics device has been configured
+
+            Preconditions :
+                None
+
+            Postconditions :
+                None
+
+            Parameters :
+                Input:
+
+                Output:
+
+        =====================================================================
+    *)
+PROCEDURE TLGSConfigIsCool() : BOOLEAN;
+
+END IlsaSupport.
+
+

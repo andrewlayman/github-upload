@@ -1,0 +1,99 @@
+DEFINITION MODULE OvSize;
+
+
+    (* OvSize - This module aids in determining the size of an overlay.
+                the job is complicated by the fact that we want memory to
+                be split up into chunks of 4kb.
+
+                RSC 9/15/88
+    *)
+
+
+
+TYPE
+
+    (* This is the format of an overlay's first several bytes.  This is
+       right out of Logitek's OVERLAY module, and so I kept the case of
+       the words intact.  Sorry.
+    *)
+    AnOverlayHeader = RECORD
+        signature        : CARDINAL;
+        fileLengthLow    : CARDINAL;
+        fileLengthHigh   : CARDINAL;
+        relocationCount  : CARDINAL;
+        headerSize       : CARDINAL;
+        minMemory        : CARDINAL;
+        maxMemory        : CARDINAL;
+        stackDisp        : CARDINAL;
+        stackSP          : CARDINAL;
+        checksum         : CARDINAL;
+        entryOffset      : CARDINAL;
+        entryBase        : CARDINAL;
+        relocationOffset : CARDINAL;
+        overlayNumber    : CARDINAL;
+    END;
+
+
+
+
+
+
+  (* Read the overlay's header record.  This includes much of the
+     Size information needed.
+
+     Preconditions  : An overlay was opened successfully.
+     Postconditions : Overlay Header is read in and returned, or else
+                      FALSE is returned.
+  *)
+PROCEDURE ReadOverlayHeader( VAR OverlayHeader : AnOverlayHeader ) : BOOLEAN;
+
+
+
+ (* Close any opened overlay. *)
+
+PROCEDURE CloseOverlay();
+
+
+
+ (* Open Overlay:
+
+        Open the overlay file.  The passed string can be an LString that
+        needs expanding, like "DK:..\Z".  The file need not exist here.
+
+        Also, if the overlay was just opened, a caching action takes place.
+        This way, OVERLAYS can find the overlay and set up space for it, and
+        OVERLAYS can read the overlay into memory, but the overlay is only
+        opened once.
+
+     Preconditions  : LString is the file name.
+     Postconditions : Handle  is the returned handle.
+                      RETURN  is TRUE iff file opened.
+ *)
+PROCEDURE OpenOverlay( VAR LString : ARRAY OF CHAR;
+                       VAR Handle  : CARDINAL   ) : BOOLEAN;
+
+
+
+
+PROCEDURE DetermineOverlaySize() : CARDINAL;
+
+
+
+
+
+ (* Determine Space Needed:
+
+        Decide how much space we ACTUALLY want to allocate.  What we want here
+        is to allocate in chunks equivelent to our standard "PageSize" of 4096
+        bytes, with the added overhead that DOSAlloc will add (1 paragraph).
+
+        Preconditions: DesiredSizeInPara is a VERY ACCURATE count of paragraphs
+                                         needed by the overlay.
+        Postconditions: RETURNs the size, rounded up to the nearest magical
+                                boundary.
+ *)
+PROCEDURE DetermineSpaceNeeded( DesiredSizeInPara : CARDINAL ) : CARDINAL;
+
+
+END OvSize.
+

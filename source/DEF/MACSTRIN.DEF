@@ -1,0 +1,50 @@
+DEFINITION MODULE MacStrings;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+
+EXPORT QUALIFIED MacMessagePtr, MacMenuPtr,
+                 AMacMenuRecord, AMacMessageRecord,
+                 ReadMacString, DoMessage;
+
+TYPE
+    AMacMenuPtr    = POINTER TO AMacMenuRecord;
+
+    AMacMenuRecord = RECORD
+                       Title   : ARRAY [0..30] OF CHAR;
+                       Message : ARRAY [0..255] OF CHAR;
+                       Prefix  : ARRAY [0..30] OF CHAR;
+                       Choices : ARRAY [0..255] OF CHAR;
+                       Macros  : ARRAY [0..255] OF CHAR;
+                     END;
+
+    AMacMessagePtr    = POINTER TO AMacMessageRecord;
+
+    AMacMessageRecord = RECORD
+                          Title   : ARRAY [0..30] OF CHAR;
+                          Message : ARRAY [0..255] OF CHAR;
+                        END;
+
+
+
+VAR
+    MacMessagePtr : AMacMessagePtr;
+    MacMenuPtr    : AMacMenuPtr;
+
+
+PROCEDURE ReadMacString (VAR str    : ARRAY OF CHAR;
+                         terminator : CARDINAL);
+
+PROCEDURE DoMessage;
+
+
+END MacStrings.
+

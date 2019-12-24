@@ -1,0 +1,33 @@
+DEFINITION MODULE GanttTimescale;
+
+    (*  MODIFICATION HISTORY:
+
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+
+    *)
+
+FROM Timei              IMPORT 
+     (* TYPE *)             ADate;
+     
+FROM TreeObjects        IMPORT
+    (* TYPE *)              ATreeNode;
+
+
+
+VAR
+    StartDateToUse,
+    EndDateToUse           : ADate;
+
+    StartingDateSelected,
+    EndingDateSelected     : BOOLEAN;
+
+PROCEDURE GanttTimescaling;
+
+PROCEDURE GetDurationBarDates(TaskTreeNode       : ATreeNode;
+			   VAR x1Plan,  x2Plan,
+			       x1Actual,x2Actual,
+			       slack : ADate);
+    
+END GanttTimescale.
+

@@ -1,0 +1,39 @@
+DEFINITION MODULE MacLoadTools;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+
+FROM FileSystem    IMPORT File;
+
+FROM MacHeader     IMPORT AMacroHeaderType;
+
+FROM TreeObjects   IMPORT ATree;
+
+EXPORT QUALIFIED   PickMacroFile,(* ReadHeaderRecord,*)
+                   LoadMacros;
+
+TYPE MacPointer;(* = POINTER TO ARRAY [0..4096] OF CARDINAL;*)
+
+PROCEDURE PickMacroFile (VAR template : ARRAY OF CHAR):BOOLEAN;
+
+(*
+PROCEDURE ReadHeaderRecord (VAR file   : File;
+                            VAR record : AMacroHeaderType):BOOLEAN;
+*)
+
+
+PROCEDURE LoadMacros ( MacroFile       : ARRAY OF CHAR;
+                       VAR AMacroTree  : ATree;
+                       AutoReplace     : BOOLEAN):BOOLEAN;
+
+
+END MacLoadTools.
+

@@ -1,0 +1,11 @@
+DEFINITION MODULE PertTimescale;
+
+    (*  MODIFICATION HISTORY
+         3-Oct-89  CMH  Removed AddTimescalingVert from the DEF.
+         8-Nov-89  CMH  Added a return value to AddTimescaling.
+    *)
+
+PROCEDURE AddTimescaling(Pass : CARDINAL) : CARDINAL;
+
+END PertTimescale.
+

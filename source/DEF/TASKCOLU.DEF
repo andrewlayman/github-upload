@@ -1,0 +1,246 @@
+DEFINITION MODULE TaskColumns;
+
+    (*  MODIFICATION HISTORY
+        16-Mar-89 LAA   Created from the old ColumnNames module, to support
+                        the new Assignments Report.
+        04-Aug-89 EGK   Added new procedures for manipulating a "percent
+                        columns" tree, which is just like a task columns
+                        tree but filtered to include only those columns
+                        that express a percentage quantity.
+        10-Jun-91 PFG   Added GetTaskColumnName to get the latest task
+                        column name and format it for use in a data column
+                        field of a form.
+    *)
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+
+
+
+    (*  TaskColumnsTreeExists --
+
+        Query whether or not the task columns tree already exists.
+
+        Preconditons:
+            None.
+
+        Postconditions:
+            TRUE will be returned iff the task columns tree exists.
+    *)
+
+PROCEDURE TaskColumnsTreeExists(): BOOLEAN;
+
+
+
+
+    (*  CreateTaskColumnsTree --  
+
+            Create the tree of task column names for use by 
+            PickTaskColumns and SearchForTaskColumns.
+
+        Preconditions:
+            None.
+
+        Postconditions:
+            If the use count is zero, and if heap space is available, the 
+            column name tree will be created, and TRUE returned.  If the use
+            count is > 0, it will just be incremented.  Otherwise,  FALSE will 
+            be returned, and the tree won't have been created.  
+    *)
+
+PROCEDURE CreateTaskColumnsTree() : BOOLEAN;
+
+
+
+
+
+    (*  DisposeTaskColumnsTree --
+
+            Get rid of the column name tree made by CreateTaskColumnsTree.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateTaskColumnsTree.
+
+        Postconditions:
+            If the use count is 1, the column name tree and all it's node 
+            will be discarded.  Otherwise, the use count will be decremented.
+    *)
+
+PROCEDURE DisposeTaskColumnsTree();
+
+
+
+
+    (*  PickTaskColumn --
+
+            Display the scrolling list of column names at the indicated
+            coordinates, and allow the user to select one from it.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateTaskColumnsTree, and not discarded by DisposeTaskColumnsTree.
+
+        Postconditions:
+            If the user selects a new column name, the ColumnId and 
+            ColumnName will be changed to that for the new column, and TRUE 
+            will be returned.  If no column name is selected, FALSE will be 
+            returned.
+    *)
+
+PROCEDURE PickTaskColumn(    Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                         VAR ColumnId       : CARDINAL;
+                         VAR ColumnName     : ARRAY OF CHAR) 
+                                                            : BOOLEAN;
+
+
+
+
+    (*  SearchForTaskColumn --
+
+            Find the ColumnId in the task column tree for the provided column
+            name (an LString).
+
+        Preconditions:
+            The task column tree must have been created by a call to
+            CreateTaskColumnsTree, and not discarded by DisposeTaskColumnsTree.
+
+        Postconditions:
+            If the column name can be found in the tree, it's name and id
+            will be returned.  If the column name can't be found, NIL will 
+            be returned.  The search ignores case.
+    *)
+
+PROCEDURE SearchForTaskColumn(VAR ColumnName : ARRAY OF CHAR;
+                              VAR ColumnId   : CARDINAL     )
+                                                             : BOOLEAN;
+
+
+
+
+    (*  GetTaskColumnName --
+
+        Get the latest column name for the column ID passed.  Format it as
+        needed for the data column fields on forms and return that string.
+
+        Preconditons:
+            A valid column ID must be passed in ColumnID.
+
+        Postconditions:
+            The string is returned in String.
+    *)
+
+PROCEDURE GetTaskColumnName(    ColumnID    : CARDINAL;
+                                VAR String      : ARRAY OF CHAR);
+
+
+    (*  PctColumnsTreeExists --
+
+        Query whether or not the percent columns tree already exists.
+
+        Preconditons:
+            None.
+
+        Postconditions:
+            TRUE will be returned iff the percent columns tree exists.
+    *)
+
+PROCEDURE PctColumnsTreeExists(): BOOLEAN;
+
+
+
+
+    (*  CreatePctColumnsTree --  
+
+            Create the tree of task column names for use by 
+            PickPctColumns and SearchForPctColumns.
+
+        Preconditions:
+            None.
+
+        Postconditions:
+            If the use count is zero, and if heap space is available, the 
+            column name tree will be created, and TRUE returned.  If the use
+            count is > 0, it will just be incremented.  Otherwise,  FALSE will 
+            be returned, and the tree won't have been created.  
+    *)
+
+PROCEDURE CreatePctColumnsTree() : BOOLEAN;
+
+
+
+
+
+    (*  DisposePctColumnsTree --
+
+            Get rid of the column name tree made by CreatePctColumnsTree.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreatePctColumnsTree.
+
+        Postconditions:
+            If the use count is 1, the column name tree and all it's node 
+            will be discarded.  Otherwise, the use count will be decremented.
+    *)
+
+PROCEDURE DisposePctColumnsTree();
+
+
+
+
+    (*  PickPctColumn --
+
+            Display the scrolling list of column names at the indicated
+            coordinates, and allow the user to select one from it.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreatePctColumnsTree, and not discarded by DisposePctColumnsTree.
+
+        Postconditions:
+            If the user selects a new column name, the ColumnId and 
+            ColumnName will be changed to that for the new column, and TRUE 
+            will be returned.  If no column name is selected, FALSE will be 
+            returned.
+    *)
+
+PROCEDURE PickPctColumn(    Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                         VAR ColumnId       : CARDINAL;
+                         VAR ColumnName     : ARRAY OF CHAR) 
+                                                            : BOOLEAN;
+
+
+
+
+    (*  SearchForPctColumn --
+
+            Find the ColumnId in the percent column tree for the provided column
+            name (an LString).
+
+        Preconditions:
+            The percent column tree must have been created by a call to
+            CreatePctColumnsTree, and not discarded by DisposePctColumnsTree.
+
+        Postconditions:
+            If the column name can be found in the tree, it's name and id
+            will be returned.  If the column name can't be found, NIL will 
+            be returned.  The search ignores case.
+    *)
+
+PROCEDURE SearchForPctColumn(VAR ColumnName : ARRAY OF CHAR;
+                              VAR ColumnId   : CARDINAL     )
+                                                             : BOOLEAN;
+
+END TaskColumns.
+
+
+
+

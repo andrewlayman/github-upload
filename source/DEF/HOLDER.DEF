@@ -1,0 +1,77 @@
+DEFINITION MODULE Holder;
+
+    (* Holder -- A module for recording the addresses and sizes of
+                 other things, associating symbolic names and
+                 categories with those items.
+
+                 Symbolic names may be up to 10 characters long.
+
+    *)
+
+
+FROM SYSTEM IMPORT ADDRESS;
+
+
+TYPE
+    AHoldType = (HoldInConfig,        (* Save this in config file. *)
+                 HoldInDataFile,      (* Save this in data file. *)
+                 HoldTransiently,     (* Discard on File Clear. *)
+                 HeapNoOwner,         (* Discard data record, too. *)
+                 HoldsProc,           (* Contains a proc in Where *)
+                 HoldsEventProc,      (* Special class of procs. *)
+                 HoldsDriver,         (* Device driver. *)
+                 HoldsNumber,         (* Contains a number in Size *)
+                 HoldsAddress,        (* Holds an address *)
+                 ErrorIfDuplicate,    (* Error if attempt to overwrite. *)
+                 AllowDuplicates,     (* HoldThis won't overwrite. *)
+                 CheckSumStorage,     (* Protect against changes. *)
+                 HoldInFlexStor,      (* Stored in virtual memory *)
+                 HoldsLString  );     (* Address points to an LString *)
+
+    AHoldTypeSet = SET OF AHoldType;
+
+    (* HoldThis -- Record the Where address and size, tagging them
+                   with both a Name and a Class.  This does not
+                   actually store the data from "Where," but merely
+                   records the address and size of it. *)
+
+PROCEDURE HoldThis(     Name       : ARRAY OF CHAR;
+                        Class      : CARDINAL;
+                        Category   : AHoldTypeSet;
+                        Where      : ADDRESS;
+                        Size       : CARDINAL  );
+
+    (* LocateHeldItem -- Given a Name, return the Category, address
+                         and size of the held item.  Returns value
+                         of TRUE iff item found. *)
+
+PROCEDURE LocateHeldItem (     Name     : ARRAY OF CHAR;
+                               Class      : CARDINAL;
+                           VAR Category : AHoldTypeSet;
+                           VAR Where    : ADDRESS;
+                           VAR Size     : CARDINAL  ) : BOOLEAN;
+
+
+    (* ForAllHeldItems -- Call the DoThis procedure once for every
+                          item held. *)
+
+TYPE
+    AHolderDoThisProc = PROCEDURE (    ARRAY OF CHAR,    (* Name *)
+                                       CARDINAL,         (* Class *)
+                                       AHoldTypeSet,     (* Category *)
+                                       ADDRESS,          (* Where    *)
+                                       CARDINAL  );      (* Size     *)
+
+PROCEDURE ForAllHeldItems ( DoThis : AHolderDoThisProc );
+
+
+    (* DeleteHeldItem -- Delete the first held item with the Name.
+                         If HeapNoOwner is in the category for the
+                         item, then Size bytes beginning at Where will
+                         also be deallocated from the heap. *)
+
+
+PROCEDURE DeleteHeldItem(Name : ARRAY OF CHAR; Class : CARDINAL);
+
+END Holder.
+

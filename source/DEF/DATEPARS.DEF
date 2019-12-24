@@ -1,0 +1,39 @@
+DEFINITION MODULE DateParser;
+
+
+(* MODIFICATION HISTORY:
+
+
+    30-Mar-90 RSC  Made Timeu to Timei conversions.
+*)
+
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+
+
+(*----------------------------------------------------------------------------
+    ParseDate --
+
+    Parse the given date string, converting to internal format.
+
+    Preconditions:
+        The string must be a valid LString.
+
+    Postconditions:
+        If the string can be successfully converted to an internal date,
+        TRUE will be returned.  Otherwise, FALSE will be returned.
+----------------------------------------------------------------------------*)
+
+
+
+PROCEDURE ParseDate (VAR S      : ARRAY OF CHAR;
+                     VAR Date   : ADate         )
+                                                 : BOOLEAN;
+
+
+END DateParser.
+
+
+

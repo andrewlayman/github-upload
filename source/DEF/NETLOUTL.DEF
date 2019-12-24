@@ -1,0 +1,341 @@
+DEFINITION MODULE NetLOutlines;        (*  a subclass of OutlineViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched ANetLOutlineStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+TYPE
+
+        (*  ANetLOutline is a subclass of AnOutlineView  *)
+
+    ANetLOutline            = POINTER TO ANetLOutlineRecord;
+
+    ANetLOutlineMethods     = POINTER TO ANetLOutlineMethodsRecord;
+
+    ANetLOutlineRecord      = RECORD
+                                Methods     : ANetLOutlineMethods;
+                              END;
+
+
+
+
+
+    (*  These types are re-definitions of types exported from OutlineViews. *)
+
+
+    ANetLOutlineStatus      = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               NetLOutlineSpare5, NetLOutlineSpare6, 
+                               NetLOutlineSpare7, NetLOutlineSpare8, 
+                               NetLOutlineSpare9);
+
+    ANetLOutlineStatusSet   = SET OF ANetLOutlineStatus;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+
+    These are the methods for ANetLOutline objects.  They inherit and
+    redefine methods from OutlineViews, but do not add any new methods
+    of their own.
+
+----------------------------------------------------------------------------*)
+
+
+    ANetLOutlineMethodsRecord    = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    ANetLOutline,
+                                        VAR ANetLOutline )
+                                                          : BOOLEAN;
+          StoreOn           : PROCEDURE(    ANetLOutline,
+                                            AnObject     );
+
+          Discard           : PROCEDURE(VAR ANetLOutline);
+
+          SuperclassMethods : AnOutlineViewMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    ANetLOutline,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny     );
+
+          GetInternalXY     : PROCEDURE(    ANetLOutline,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny     );
+
+          GetTitle          : PROCEDURE(    ANetLOutline,
+                                        VAR ARRAY OF CHAR);
+
+          SetObject         : PROCEDURE(    ANetLOutline,
+                                            ATree        );
+
+          GetObject         : PROCEDURE(    ANetLOutline )
+                                                          : ATree;
+
+          Move              : PROCEDURE(    ANetLOutline,    
+                                            ascreenx,        
+                                            ascreeny     );
+
+          Display           : PROCEDURE(    ANetLOutline );
+
+          GetHelp           : PROCEDURE(    ANetLOutline );
+
+          HideView          : PROCEDURE(    ANetLOutline );
+
+          RevealView        : PROCEDURE(    ANetLOutline );
+
+          NotifyOfChange    : PROCEDURE(    ANetLOutline );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    ANetLOutline,
+                                            AnEvent      );
+
+          GetRecordedEvent  : PROCEDURE(    ANetLOutline,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    ANetLOutline,
+                                            AnEvent,
+                                        VAR AnEvent      );
+
+          GetCursor         : PROCEDURE(    ANetLOutline )   
+                                                          : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    ANetLOutline,   
+                                            BOOLEAN      );
+
+          SetCursorMode     : PROCEDURE(    ANetLOutline,
+                                            avidmode     );
+
+
+          ActiveViewTag     : CARDINAL;
+
+          SetFirst          : PROCEDURE(    ANetLOutline,
+                                            ATreeNode    );
+
+          GetFirst          : PROCEDURE(    ANetLOutline )
+                                                          : ATreeNode;
+
+          GetLast           : PROCEDURE(    ANetLOutline )
+                                                          : ATreeNode;
+
+          SetCursorNode     : PROCEDURE(    ANetLOutline,
+                                            ATreeNode    );
+
+          GetCursorNode     : PROCEDURE(    ANetLOutline )
+                                                          : ATreeNode;
+
+          Synchronize       : PROCEDURE(    ANetLOutline );
+
+          ForceToPosition   : PROCEDURE(    ANetLOutline,
+                                            ATreeNode,
+                                            CARDINAL     );
+
+          InquirePosition   : PROCEDURE(    ANetLOutline,
+                                            ATreeNode    )
+                                                          : CARDINAL;
+
+          NotifyNodeDeleted : PROCEDURE(    ANetLOutline,
+                                            ATreeNode    );
+
+          ListViewTag       : CARDINAL;
+
+          ResetMatching     : PROCEDURE(    ANetLOutline );
+
+          GetMatchCount     : PROCEDURE(    ANetLOutline )
+                                                          : CARDINAL;
+
+          FindChar          : PROCEDURE(    ANetLOutline,
+                                            CHAR         )
+                                                          : BOOLEAN;
+
+          OutlineViewTag    : CARDINAL;
+
+          NetLOutlineTag    : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsNetLOutline --
+
+    Initialize the indicated object as a filter outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid filter outline view object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsNetLOutline(    NetLOutline   : ANetLOutline;
+                                SuperView     : AnActiveView;
+                                Ulx           : ascreenx;
+                                Uly           : ascreeny;
+                                Lrx           : ascreenx;
+                                Lry           : ascreeny;
+                                Box           : ABoxType;
+                                VideoMode     : avidmode;
+                            VAR Title         : ARRAY OF CHAR;
+                                HelpKey       : CARDINAL;
+                                TakeRug       : BOOLEAN       );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateNetLOutline --
+
+    Allocate storage for, and initialize the indicated object as a filter 
+    outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid filter outline view object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateNetLOutline(VAR NetLOutline   : ANetLOutline;
+                                SuperView     : AnActiveView;
+                                Ulx           : ascreenx;
+                                Uly           : ascreeny;
+                                Lrx           : ascreenx;
+                                Lry           : ascreeny;
+                                Box           : ABoxType;
+                                VideoMode     : avidmode;
+                            VAR Title         : ARRAY OF CHAR;
+                                HelpKey       : CARDINAL;
+                                TakeRug       : BOOLEAN      ) 
+                                                              : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsNetLOutline --
+
+    UnInitialize the indicated object as a filter outline view.
+
+    Preconditions:
+        The object will be a valid filter outline view object. 
+
+    Postconditions:
+        The outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsNetLOutline(    NetLOutline : ANetLOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneNetLOutlineMethods --
+
+    Make a copy of the filter outline view methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The taks outline view methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneNetLOutlineMethods(    MethodObject : ANetLOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateNetLOutline --
+
+    Determine that the indicated object is in fact a valid outline view 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid filter outline view object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateNetLOutline(    NetLOutline : ANetLOutline);
+
+
+
+END NetLOutlines.
+

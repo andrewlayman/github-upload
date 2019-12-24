@@ -1,0 +1,16 @@
+    (* --------- MODULE KbState
+
+                 Checks Keyboard status flags.
+
+    ------------ *)
+
+DEFINITION MODULE KbState;
+
+
+
+PROCEDURE ScrollMode():BOOLEAN;
+
+PROCEDURE ShowKbLights();
+
+END KbState.
+

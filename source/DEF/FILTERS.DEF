@@ -1,0 +1,63 @@
+DEFINITION MODULE Filters;
+
+    (* MODIFICATION HISTORY
+
+        7-Jun-89  AJL  Added some documentation to the FiltersOn variable.
+        19-Jun-89 AJL   Removed FiltersOn boolean, replaced by 
+                        SetRevealFilterDisabled, and QueryRevealFilterOn.
+        16-Aug-89 EGK   Moved CleanFilterSet from here to FilterUtility. 
+        19-Sep-89 RSC   Removed TaskFwd and TaskBack.
+    *)
+
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM FilterRc               IMPORT
+    (* TYPE *)                  AFilterRecordPointer;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+        (* FILTER -- runs through all the tasks and decides which ones
+                    are in or out. *)
+
+
+PROCEDURE Filter;
+
+
+PROCEDURE AdjacentTask( Task : ATreeNode ) : ATreeNode;
+
+PROCEDURE ResetFilters;
+
+PROCEDURE ShowFilterLight;
+
+
+    (* -----------------------------------------------------------------
+       QueryRevealFilterOn
+
+       Preconditions: None.
+
+       Postconditions: If there is a currently active Reveal Filter for
+                       tasks, returns TRUE, else FALSE.
+    --------------------------------------------------------------------*)
+
+
+PROCEDURE QueryRevealFilterOn():BOOLEAN;
+
+    (* -----------------------------------------------------------------
+       SetRevealFilterDisabled
+
+       Preconditions: None.
+
+       Postconditions: There will not be a currently active Reveal Filter 
+                       for tasks.
+    --------------------------------------------------------------------*)
+
+
+PROCEDURE SetRevealFilterDisabled();
+
+
+END Filters.
+

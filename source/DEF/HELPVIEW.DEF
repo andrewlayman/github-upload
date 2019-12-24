@@ -1,0 +1,308 @@
+DEFINITION MODULE HelpViews;              (* Subclass of ActiveViews *)
+
+    (*  HelpViews provides an object which is a view of a help index item.
+        The item is displayed using indentation to reflect depth in the help
+        index, and "+" and "-" symbols to indicate whether it summarizes
+        other help items.  The entry is displayed in reverse video if the
+        cursor is on it.
+    *)
+
+    (*  MODIFICATION HISTORY:
+
+        14-Dec-89 KKC       Patched AHelpViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+TYPE
+        (*  AHelpView is a subclass of AnActiveView  *)
+
+    AHelpView               = POINTER TO AHelpViewRecord;
+
+    AHelpViewMethods        = POINTER TO AHelpViewMethodsRecord;
+
+    AHelpViewRecord         = RECORD
+                                Methods        : AHelpViewMethods;
+                              END;
+
+
+
+
+
+TYPE
+
+        (*  These types are re-definitions of types exported from ActiveViews. *)
+
+
+    AHelpViewStatus         = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               HelpViewSpare5, HelpViewSpare6, 
+                               HelpViewSpare7, HelpViewSpare8, 
+                               HelpViewSpare9);
+
+    AHelpViewStatusSet      = SET OF AHelpViewStatus;
+
+
+
+
+
+
+
+
+
+
+    (*  These are the methods for AHelpView objects.  They inherit and
+        redefine methods from ActiveViews, but do not add any new methods
+        of their own.
+    *)
+
+TYPE
+    AHelpViewMethodsRecord  = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    AHelpView,
+                                        VAR AHelpView )
+                                                       : BOOLEAN;
+          StoreOn           : PROCEDURE(    AHelpView,
+                                            AnObject  );
+
+          Discard           : PROCEDURE(VAR AHelpView );
+
+          SuperclassMethods : AnObjectMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    AHelpView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+          GetInternalXY     : PROCEDURE(    AHelpView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+          (*------------------------------------------------------------------
+            GetTitle --
+
+                In this module, GetTitle returns the name of the viewed
+                filter, NOT the title of this view's box, which may or may
+                not be displaying.
+
+            Preconditions:
+                The view must be a valid Help view object.
+
+            Postconditions:
+                If the view object of this view is not NIL, the filter name
+                associated with this view will be returned.  Otherwise, a
+                zero-length string will be returned.
+          ------------------------------------------------------------------*)
+
+          GetTitle          : PROCEDURE(    AHelpView,
+                                        VAR ARRAY OF CHAR);
+
+          SetObject         : PROCEDURE(    AHelpView,
+                                            ATreeNode );
+
+          GetObject         : PROCEDURE(    AHelpView )
+                                                       : ATreeNode;
+
+          Move              : PROCEDURE(    AHelpView,    
+                                            ascreenx,        
+                                            ascreeny  );
+
+          Display           : PROCEDURE(    AHelpView );
+
+          GetHelp           : PROCEDURE(    AHelpView );
+
+          HideView          : PROCEDURE(    AHelpView );
+
+          RevealView        : PROCEDURE(    AHelpView );
+
+          NotifyOfChange    : PROCEDURE(    AHelpView );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    AHelpView,
+                                            AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    AHelpView,
+                                            AnEvent,
+                                        VAR AnEvent   );
+
+          GetCursor         : PROCEDURE(    AHelpView )   
+                                                       : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    AHelpView,   
+                                            BOOLEAN   );
+
+          SetCursorMode     : PROCEDURE(    AHelpView,
+                                            avidmode  );
+
+
+          ActiveViewTag     : CARDINAL;
+
+
+          HelpViewTag       : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsHelpView --
+
+    Initialize the indicated object as a help view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid help view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsHelpView(      HelpView     : AHelpView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateHelpView --
+
+    Allocate storage for, and initialize the indicated object as a help 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid help view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateHelpView(  VAR HelpView     : AHelpView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL)
+                                                       : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsHelpView --
+
+    UnInitialize the indicated object as a help view.
+
+    Preconditions:
+        The object will be a valid help view object.
+
+    Postconditions:
+        The help view will no longer be a valid help view object, and any
+        side-effects of InitAsHelpView will be undone.  This procedure does
+        not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsHelpView(    HelpView : AHelpView);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneHelpViewMethods --
+
+    Make a copy of the help view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The help view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneHelpViewMethods(    MethodObject : AHelpViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateHelpView --
+
+    Determine that the indicated object is in fact a valid help view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid help view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateHelpView(    HelpView : AHelpView);
+
+
+
+END HelpViews.
+

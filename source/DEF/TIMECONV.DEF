@@ -1,0 +1,84 @@
+DEFINITION MODULE TimeConversions;
+
+(*  Provides a mechanism for converting an internal date which was stored
+    using an old calendar into the current format (as defined by the Timeu
+    globals).
+
+    MODIFICATION HISTORY:
+
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+*)
+
+
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADurationUnit, ADuration;
+
+
+PROCEDURE BeforeCalendarChange();
+
+(*  Store whatever information is pertinent to the current calendar
+    (presumably before changing it).
+*)
+
+
+PROCEDURE AfterCalendarChange();
+
+(*  Sets up some internal data structures to aid in the
+    conversion process.  This must be called AFTER the calendar has been
+    changed.
+*)
+
+
+
+PROCEDURE ToNewDate    ( VAR OldDate   : ADate );
+
+(*  Return the converted value of the given date which is compatible with
+    the current calendar.
+
+    Preconditions:      BeforeCalendarChange and AfterCalendarChange must have been
+                        called (in that order).  The given date
+                        must have been valid at that time.
+
+    Postconditions:     The old date will be converted to the new calendar.
+*)
+
+
+PROCEDURE ToNewDuration ( VAR Dur           : ADuration;
+                          VAR Scale         : ADurationUnit;
+                              SaveUnits     : BOOLEAN   );
+
+(*  Convert a duration from one calendar system to another.
+
+    Preconditions:      BeforeCalendarChange (and AfterCalendarChange) must have been
+                        called.  The given duration must have been valid
+                        at that time.
+
+    Postconditions:     The duration will be converted to the new calendar
+                        (changing the scale, if necessary).
+                        Iff SaveUnits is TRUE, then the external value of the
+                        duration (e.g., "3 weeks") will be preserved, even if
+                        the definition of the unit has changed.
+*)
+
+
+PROCEDURE ToNewScale    ( VAR Dur           : ADuration;
+                          VAR Scale         : ADurationUnit;
+                              SaveUnits     : BOOLEAN   );
+
+
+(*  Convert a layout scale from one calendar system to another.
+
+    Preconditions:      BeforeCalendarChange (and AfterCalendarChange) must have been
+                        called.  The given scale must have been valid
+                        at that time.
+
+    Postconditions:     The scale will be converted to the new calendar.
+                        Iff SaveUnits is TRUE, then the external value of the
+                        duration (e.g., "3 weeks") will be preserved, even if
+                        the definition of the unit has changed.
+*)
+
+END TimeConversions.
+

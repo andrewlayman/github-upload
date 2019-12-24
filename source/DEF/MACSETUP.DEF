@@ -1,0 +1,35 @@
+DEFINITION MODULE MacSetUp;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+(*  MODIFICATION HISTORY  *)
+(*  27-Jun-90   TGS Got rid of MacHaltKey -- not used.  *)
+
+
+FROM Codes  IMPORT ACode;
+
+
+EXPORT QUALIFIED MenuKey, StartRecordKey, StopRecordKey, StepMode,
+                 PlayBackSpeed, APlayBackSpeed, ListKey, MacInsertKey;
+
+TYPE APlayBackSpeed = (Fast, MedFast, Medium, MedSlow, Slow);
+
+VAR
+    MenuKey,
+    ListKey,
+    MacInsertKey,
+(*  MacHaltKey,  *)
+    StartRecordKey,
+    StopRecordKey     : ACode;
+
+    StepMode          : BOOLEAN;
+
+    PlayBackSpeed     : APlayBackSpeed;
+
+END MacSetUp.

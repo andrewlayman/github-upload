@@ -1,0 +1,62 @@
+DEFINITION MODULE MacStack;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+(* Modification history:
+           11/5/88 Changed PushMacro to a TreeNode from a MacroRecordPointer;
+*)
+
+
+FROM TreeObjects    IMPORT ATreeNode;
+
+EXPORT QUALIFIED         PopMacro, PushMacro, MacStack, AMacStackPtr,
+                         GetACardinal, GetName;
+
+
+
+TYPE
+     AMacStackPtr = POINTER TO AMacStackRec;
+
+     AMacStackRec = RECORD
+                      tag    : CARDINAL;
+                      macro  : (*AMacroRecordPointer;*)  ATreeNode;
+                      pos    : CARDINAL;
+                      next,
+                      prev   : AMacStackPtr;
+                    END;
+
+VAR
+    MacStack          : AMacStackPtr;
+                                       (*was AMacroRecordPointer*)
+
+PROCEDURE PushMacro (VAR TheMacro     : ATreeNode);
+
+PROCEDURE PopMacro;
+
+
+(*------------------------------------------------------------------------
+
+Reads a cardinal from the top macro on MacStack; from ExtStorage.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE GetACardinal (VAR Card   : CARDINAL);
+
+
+(*------------------------------------------------------------------------
+
+Reads a macro name inside a macro.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE GetName (C        : CARDINAL;
+                   VAR name : ARRAY OF CHAR);
+END MacStack.
+

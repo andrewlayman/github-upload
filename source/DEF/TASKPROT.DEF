@@ -1,0 +1,216 @@
+DEFINITION MODULE TaskProtection;
+
+(*
+    Task Protection:  Determine what fields are enterable, and which of those
+                      are numeric.
+
+    Modification History:
+
+    19-Apr-89  RSC  First Version.  Based on code from TLSpread and TLChange.
+     5-May-89  RSC  Added the "SmallProtection" list for TLChange to import.
+    26-May-89  RSC  Added the "AReasonWhyProtected", for better diagnostics.
+     6-Aug-90  RSC  Added the new "Split/Delay" field to the task form, and
+                    ajusted protections for Split/Delay and for the new
+                    task type (in addition to Duration and Effort Driven),
+                    Assignment Driven.
+    17-Sep-90 PFG   Changed FixedStartColumn to UserEnteredStartColumn.
+    19-Sep-90 PFG   Added RED to RecalcFields and DurationMethodColumn to
+                    RecalcColumns as per Andrew.
+     6-Nov-90 RSC   Swapped positions of Vacations and StartStatus fields.
+                    Again (earlier changes were lost I guess).
+     8-Apr-91 TGS   Import Task numbers from TaskColNumbers instead of MagicNum.
+*)
+
+FROM Allocs     IMPORT
+    (* TYPE *)      AFixType, AStartStatus, ADurationMethod;
+
+FROM MagicNum   IMPORT
+    (* CONST *)     IsStringValue,          IsRealValue,
+                    IsIntValue,             IsCardValue,
+                    IsDuration,             IsSlack,
+                    IsCurrency,             IsEffort,
+                    IsTruncatedString;
+
+FROM TaskColNumbers IMPORT
+    (* CONST *)     TaskNameColumn,         NotesColumn,
+                    UserEnteredStartColumn, EarlyStartColumn,
+                    EarlyEndColumn,         DurationColumn,
+                    DurationHours,          DurationDays,
+                    DurationWeeks,          DurationMonths,
+                    TotalEffort,            EffortHours,
+                    EffortDays,             EffortWeeks,
+                    EffortMonths,           AUXColumn,
+                    WBSColumn,              OBSColumn,
+                    TaskTypeColumn,         StartStatusColumn,
+                    DurationMethodColumn,   PercentAchieved,
+                    PriorityColumn,         Summarizes,
+                    SortSequenceNumber,
+                    ResourceColumn,         CostColumn,
+                    CostAmount,             ResourceAmount,
+
+                    HighestRootColumn;
+
+FROM TreeObjects IMPORT
+    (* CONST *)     ATreeNode;
+
+
+
+
+
+
+
+CONST
+       (*  Indices into the task form.
+           These are used by TLChange.
+       *)
+
+    FNM    =  0;      (*  Name            *)
+    FAU    =  1;      (*  Keyword (AUX)   *)
+    NT1    =  2;      (*  Notes 1         *)
+    FFX    =  3;      (*  Fixation        *)
+    RED    =  4;      (*  Resource/Effort Driven *)
+    FDN    =  5;      (*  Duration number *)
+    FDU    =  6;      (*  Duration units  *)
+    FEN    =  7;      (*  Effort   number *)
+    FEU    =  8;      (*  Effort   units  *)
+    SPD    =  9;      (*  Split / Delay   *)    (* 6-Aug-90 RSC *)
+    FSS    = 10;      (*  Start Status    *)    (* 6-Nov-90 RSC *)
+    FSD    = 11;      (*  Start date      *)
+    FED    = 12;      (*  End Date        *)
+    PCP    = 13;      (*  Percent Complete*)
+    EVD    = 14;      (*  Earned Value $  *)
+    BAS    = 15;      (*  BaseLine        *)
+    CMP    = 16;      (*  Completed       *)
+    CPP    = 17;      (*  Completed %     *)
+    YTG    = 18;      (*  Yet To Go       *)
+    YGP    = 19;      (*  Yet To Go %     *)
+    FWB    = 20;      (*  WBS Code        *)
+    FOB    = 21;      (*  OBS Code        *)
+    PRI    = 22;      (*  Priority        *)
+    SUM    = 23;      (*  Summary         *)
+    RCF    = 24;      (*  First resource conflict flag field. *)
+
+
+
+TYPE
+    ATaskFormField       = SET OF [FNM..RCF];
+
+    AColumnSet           = SET OF [TaskNameColumn..HighestRootColumn];
+    AFieldKindSet        = SET OF [IsStringValue..IsTruncatedString];
+
+    (* RSC 26-May-89 *)
+    AReasonWhyProtected  = ( RNotProtected,  (* It is enterable. *)
+                             RNotPossible,   (* It can never be edited. *)
+                             RSummaryTask,   (* It is a summary task. *)
+                             RLinkedTask,    (* It is a linked task. *)
+                             RNoAssignments, (* Needs assignments. *)
+                             RNoFSD          (* Fixation, StartStatus, or DurMethod *)
+                           );
+
+VAR
+    (* This is the list of columns that MIGHT be editable. *)
+
+    EditableColumns      : AColumnSet;
+
+    (* These columns are numeric. *)
+
+    NumericFields        : AFieldKindSet;
+
+    (* If this field or column changes, the task
+       and schedule need to be recalcd.
+    *)
+
+    RecalcFields        : ATaskFormField;
+    RecalcColumns       : AColumnSet;
+
+
+    (* If this field or column changes,
+       the schedule needs to be sorted.
+    *)
+
+    SortFields          : ATaskFormField;
+    SortColumns         : AColumnSet;
+
+
+    (* If this field changes,
+       the task form needs to be redisplayed.
+    *)
+
+    RecalcRedisplay     : ATaskFormField;
+ 
+
+    (* Small task form fields that are always protected.
+    *)
+    SmallProtection     : ATaskFormField;
+
+
+    (* If the task is a rollup task, these fields CANNOT be changed.
+    *)
+
+    RollupProtection    : ATaskFormField;
+
+    RollupProtectionCol : AColumnSet;
+
+
+
+
+
+
+
+
+
+(* Get Protection - Get field protection values for Start Date, End Date,
+                    Duration Number and Duration Units.
+
+     Preconditions  - Fixation           is the task's AFixType.
+                      StartStatus        is the task's AStartStatus.
+                      DurationMethod     is the task's ADurationMethod.
+                      TaskFormProtection is the existing protection.  May have
+                                            been set by "SetStaticProtection".
+     Postconditions - StartProtection, EndProtection, and DurationProtection
+                      are set to what they SHOULD be.  (TRUE = PROTECT).
+*)
+
+PROCEDURE GetProtection( VAR StartProtection,
+                             EndProtection,
+                             EffortProtection,
+                             DurationProtection : BOOLEAN;
+                             TaskFormProtection : ATaskFormField; 
+                             Fixation           : AFixType;
+                             StartStatus        : AStartStatus;
+                             DurationMethod     : ADurationMethod );
+
+
+
+
+
+
+ (* Set Static Protection - Setup the protection bitsets that are fairly
+                            static.
+
+      Preconditions  - AdvancedTaskForm   is it non-moron-mode?
+                       ThisIsASummaryTask is it summary or detail?
+                       RollupTask         is the SUMMARIZES field filled in?
+
+      Postconditions - TaskFormProtection are set up for subsequent
+                       testing by GetProtection or whomever.
+  *)
+PROCEDURE SetStaticProtection(     AdvancedTaskForm,
+                                   ThisIsASummaryTask,
+                                   RollupTask          : BOOLEAN;
+                               VAR TaskFormProtection  : ATaskFormField );
+
+
+
+(* Column Is Protected.
+
+        Given a column, is the column "protected"?  If so, why?
+*)
+PROCEDURE ColumnIsProtected(     TaskNode     : ATreeNode;
+                                 ColumnID     : CARDINAL
+                           ) : AReasonWhyProtected;
+
+
+END TaskProtection.
+
+

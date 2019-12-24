@@ -1,0 +1,45 @@
+DEFINITION MODULE WBSDialog;
+
+  (*    WBS Dialog - Routines used by most WBS manager functions to display
+                     information to the user.
+
+        MODIFICATION HISTORY:
+
+         17-Jul-89  MWP  In the beginning...
+         29-Jul-89  MWP  Changed VerifyError to the more generic WBSError.
+          2-Oct-89  MWP  Added procedure to display progress messages.
+  *)
+
+FROM WBSCommon      IMPORT
+                            AWBSError, AWBSErrorSet;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)              ATree, ATreeNode;
+
+
+        (*  Display an error message indicated by AWBSErrorSet
+            in the Aux 20 coding field of TaskNode. *)
+
+PROCEDURE WBSError ( VAR TaskNode    : ATreeNode;                  (* 29-Jul-89 MWP *)
+                         ErrChoice   : AWBSError;
+                         ShowErrors  : AWBSErrorSet;
+                     VAR LogErrors   : AWBSErrorSet );
+
+        (* Display an error menu prompting the user to allow
+           renumbering of the WBS code, do not renumber, or
+           renumber all remaining. If renumber all remaining
+           is chosen, RenumberAll is set TRUE.
+           The return value is TRUE to renumber, FALSE to
+           not renumber. *)
+
+PROCEDURE ErrorDialog ( VAR TaskNode    : ATreeNode;
+                            ErrChoice   : AWBSError;
+                            ShowErrors  : AWBSErrorSet;
+                        VAR LogErrors   : AWBSErrorSet;
+                        VAR RenumberAll : BOOLEAN ) : BOOLEAN;
+
+PROCEDURE ProgressMessage (     PrefixPhrase : CARDINAL;
+                            VAR Suffix       : ARRAY OF CHAR );
+
+END WBSDialog.
+

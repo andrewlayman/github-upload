@@ -1,0 +1,320 @@
+DEFINITION MODULE Registry;
+
+
+    (*  Registry - Allow registry of add in products.
+
+        Idea:           AJL 4/27/89
+        Code:           RSC 8/16/89
+        Radical Change: WKH 6/07/89
+
+        This allows loaded overlays to steal this vector and answer the question,
+
+        "Is this copy of Time Line allowed to run this product?"
+
+
+        DISCUSSION of radical change: (* WKH 07-Jun-89 *)
+        The initial scope of work designed for this module has been greatly
+        enhanced.  Instead of just being able to tell if we have permission to
+        run, we now perform a number of functions.  Basically, there will be
+        four parmaters passed to the GetRegistryInfo procedure:
+            1) User Name
+            2) Product Name
+            3) Info Requested
+            4) Info return record
+
+        Note that not all of these parameters are relavent for all info
+        requests.
+        
+        Regarding the info returned, there is a field in the record which 
+        tells you what data type the returned info is.  Use that as a key to 
+        which field the data is in.  Also, ONLY THE QProductType REQUEST IS 
+        HANDLED BY THIS MODULE!!!!  While all requests are defined here, all 
+        other request code is relgated to an overlay so that this seldomly 
+        used code won't be part of Time Line's root.  Only the product type
+        info is needed by Time Line.
+
+        For all requests, the UserName parmeter is mandatory!  If the username
+        is unknown(when TL first starts up, or a single user version where
+        the username doesn't really matter), or if you wish to refer to the
+        "super user"(explained below) a 0 length string should be
+        used.  However, there is an exported variable from the Schedule
+        module called UserName than can be used.
+
+        Generally, there are two classes of serial numbers in TL.
+            - The "super user" serial number
+            - The "normal user" serial number(only on LAN's)
+
+        The super user refers to the user that actually installed TL.  For
+        single user systems, this will simply be "the" user.  For LAN's,
+        the super user is the user in the LAN master file that installed
+        TL initially.  In other words, the super user is the user in the
+        LAN master file that has the serial number that matches the
+        serial number etched into TIMELINE.EXE
+
+        The normal user is simply all other users in the LAN master file.
+
+        Following is a list of the info requests possible, the
+        required paramaters, and the info returned.  
+
+            QProductSerial - Returns the full serial number
+                Required Input Parameters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the StringValue field
+                      of the data record contains the serial number.
+
+
+
+            QProductType - Returns the Product Type
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the CardinalValue field
+                      of the data record contains the product type
+
+                FALSE is returned if no product type could be found.
+
+            QCapacity - Returns the Product Capacity(number of tasks allowed)
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the CardinalValue field
+                      of the data record contains the capacity.  0 means
+                      unlimited capacity, otherwise limited and CardinalValue
+                      contains the maximum # of tasks allowed.
+
+            QProductEquivalence - Returns the Product Equivalence
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the StringValue field
+                      of the data record contains the product equivalence.
+                      Currently, the format of the product equivalence
+                      string, for TL, is as follows:
+                        xxv
+                        |||
+                        ||+-->Major Version Number
+                        |+--->Product Code Minor
+                        +---->Product Code Major
+
+                      The Product Code Major & Minor fields are combined to
+                      form one distinct designation.  For example, Time Line
+                      version 4 on DOS will be 00.  Time Line version 4 OS/2
+                      MIGHT be 01, Artemis DOS 03, Artemis OS/2 04, etc..
+
+                      This method of combining the numbers provides for a
+                      possible number of 100 different products from a
+                      particular product group.  Much more flexible than if
+                      the Major code designated OS platform and the Minor
+                      code designated product code.
+
+                      Note that since there is a possiblity that different
+                      product groups may have intersecting sets of product
+                      codes, one must check the combination of product group
+                      number and product code to arrive at the correct
+                      product designation.
+
+            QProductGroup - Returns the Product Group
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the StringValue field
+                      of the data record contains the product group code.
+
+            QProductMajorRelease - Returns the Major release number
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the CardinalValue field
+                      of the data record contains the major relase number.
+
+            QProductSubRelease - Returns the sub release number
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the CardinalValue field
+                      of the data record contains the sub relase number.
+
+            QProductSequence - Returns the product sequenc number
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the CardinalValue field
+                      of the data record contains the sequence number.
+
+            QProductCountry - Returns the country of this product
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the StringValue field
+                      of the data record contains the country information.
+
+            QProductSecretInfo - Returns our "secret information byte"
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+
+                Returns:
+                    - FALSE if UserName not found.
+                    - TRUE if UserName found, and the CardinalValue field
+                      of the data record contains the secret number.
+
+
+            QProductPermission - See if this user has permission to run a
+                                 particular product.
+                Required Input Paramaters:
+                    - UserName
+                    - ProductName
+                    - StringValue field of DataRecord needs to be set to
+                      the product code.  This product code is just a series
+                      of numeric digits.  It is whatever manufacturing 
+                      decides is the product code.
+
+                Returns:
+                    - FALSE if UserName is not authorized.
+                    - TRUE if UserName is authorized.
+
+        MODIFICATION HISTORY:
+
+        07-May-89 WKH   Added support to check product code
+        07-Jun-89 WKH   Added support for super flexibility
+        25-Jun-89 WKH   Moved SuperUserName, UserName, UserSerialNumber, and 
+                        ProductName to here from Schedule.DEF
+        25-Jun-89 WKH   Removed SuperUserName
+        26-Jun-89 WKH   Add handle for username semaphore file
+        27-Jun-89 WKH   Redefine product type constants(order them)
+        05-Jul-89 WKH   Moved declaration of SempahoreFile from here into 
+                        the mod file.  Also declare new procedures 
+                        LockUser and UnLockUser to setup SemaphoreFile.
+    *)
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnDataRecord;
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM Kbio                   IMPORT
+    (* CONST *)                 VersionStringLength;
+
+FROM Locks                  IMPORT
+    (* TYPE *)                  AFileLockResult;
+
+CONST
+    (* Registry Request Codes *)
+    QProductSerial          = 0;
+    QProductType            = 1;
+
+        (* NOTE!!!  This must be ordered in ascending order in terms of *)
+        (*          product privelege level                             *)
+        TLTrial        = 0;
+        TLEducational  = 1;
+        TLNotForResale = 2;
+        TLRetail       = 3;
+        TLAlpha        = 4;
+        TLBeta         = 5;
+        TLProgrammer   = 6;
+    QCapacity               = 2;
+    QProductEquivalence     = 3;
+    QProductGroup           = 4;
+    QProductMajorRelease    = 5;
+    QProductSubRelease      = 6;
+    QProductSequence        = 7;
+    QProductCountry         = 8;
+    QProductSecretInfo      = 9;
+    QProductPermission      = 10;
+
+TYPE
+    ARegistryDataRecord = AColumnDataRecord;
+
+    ARegistryProc       = PROCEDURE( VAR ARRAY OF CHAR, (* User Name       *)
+                                     VAR ARRAY OF CHAR, (* Product Name    *)
+                                         CARDINAL,      (* Info Request    *)
+                                     VAR ARegistryDataRecord (* Info found *)
+                                   ) : BOOLEAN;
+
+VAR
+    GetRegistryInfo         : ARegistryProc;
+    UserName                : ARRAY [0..31] OF CHAR;
+    UserSerialNumber        : ARRAY [0..VersionStringLength] OF CHAR;
+    ProductName             : ARRAY [0..8]  OF CHAR;
+
+
+    (*  =====================================================================
+        LockUser - Lock a user name so that it can't be used on other 
+                   terminals on a network.
+
+            Preconditions :
+                None
+
+            Postconditions :
+                The user specified will be locked and FullLock will be 
+                returned.  If the other values of type AFileLockResult is
+                returned, then the username wasn't locked.  The return values
+                will indicate the nature of why the lock wasn't successful.
+                
+            Parameters :
+                Input:
+                    UserName           - The Name of the user to lock
+                    SempaphoreFileName - The full drive, path, & name of the
+                                         file to use as the semaphore file.
+                Output:
+                    None
+        =====================================================================
+    *)
+        
+PROCEDURE LockUser(VAR UserName          : ARRAY OF CHAR;
+                   VAR SemaphoreFileName : ARRAY OF CHAR) : AFileLockResult;
+
+
+    (*  =====================================================================
+        UnLockUser - UnLock the currently locked username so that it can be 
+                     used on another terminals on a network.                             
+
+            Preconditions :
+                LockUser should be called prior to this.  However, if LockUser
+                hasn't been called, this routine is a NO-OP.
+
+            Postconditions :
+                The currently locked username is unlocked
+                
+            Parameters :
+                Input:
+                    None
+
+                Output:
+                    None
+        =====================================================================
+    *)
+        
+PROCEDURE UnLockUser();                   
+
+END Registry.
+

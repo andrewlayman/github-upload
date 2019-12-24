@@ -1,0 +1,83 @@
+DEFINITION MODULE NetLList;
+
+    (*  MODIFICATION HISTORY --
+        21-Sep-89 LAA   Removed all reference to Animation.
+        30-Mar-90 RSC   Removed Timeu.
+    *)
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM Gantt                  IMPORT 
+    (* TYPE *)                  ASlackStyle;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    DoNetLayoutForm --
+
+    Bring up the layout form to allow editing of a layout record.
+
+    Preconditions:
+        The layout parameter must be a valid layout node.
+
+    Postconditions:
+        The layout record will be changed as directed by the user, unless the
+        form is left with ESC.  The code will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DoNetLayoutForm(    Layout        : ATreeNode)
+                                                        : ACode;
+
+(*----------------------------------------------------------------------------
+    ChooseNetLayout --
+
+        Allow the user to choose which layout, regular or enlarged he wants
+        to set, and display a list of all layouts for him to choose from.
+
+    Preconditions:
+        NetLayouts must have been initialized in the root.
+
+    Postconditions:
+        A new layout may be selected, or any layout on the list may be edited,
+        deleted, or new ones created.  Once the list is up, all features
+        which apply to scrolling lists are in effect.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ChooseNetLayout();
+
+
+
+
+(*----------------------------------------------------------------------------
+    SelectNetLayout --
+
+    Display a list of the named layouts, defaulting the cursor position to
+    the layout passed as parameter, and allow the user to select one.
+
+    Preconditions:
+        The layout passed in must be a valid layout, or it may be NIL.
+
+    Postconditions:
+        The layout parameter will be changed to reflect the user's choice,
+        if a selection is made.  If the user exits with ESC, the initial
+        value of the layout parameter will be preserved.  Within this call,
+        it is possible to add, delete, copy and edit named layouts.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SelectNetLayoutAt(VAR Layout             : ATreeNode;
+                            VAR Title              : ARRAY OF CHAR;
+                                ULX, ULY, LRX, LRY : CARDINAL) : ACode;
+
+
+
+END NetLList.
+

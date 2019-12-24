@@ -1,0 +1,74 @@
+DEFINITION MODULE ImportSelect;
+
+(*  =========================================================================
+    Last Edit : July 22, 1991 1:54PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Load a Time Line schedule.        
+
+    MODIFICATION HISTORY:
+
+    22-Jul-91 PFG   Added "DisplayErrors" parameter to ALoadingProc
+                    so that importer can do the error reporting itself 
+                    when needed.
+    =========================================================================
+*)
+
+
+
+FROM FileSystem IMPORT File;
+
+FROM Direct411   IMPORT AQualificationProcedure;
+
+
+TYPE
+        (* It is the responsibility of this procedure to open and
+           close its files, and to set ChartState correctly. *)
+
+    ALoadingProc =
+             PROCEDURE  (VAR ARRAY OF CHAR,    (* Disk:Directory    *)
+                         VAR ARRAY OF CHAR,    (* File name         *)
+                         VAR ARRAY OF CHAR,    (* Extension         *)
+                         VAR BOOLEAN           (* DisplayErrors     *)
+                        ) : BOOLEAN;           (* TRUE == Success   *)
+
+
+
+  (* Try to Erase Schedule -
+
+                If the current schedule needs erasing, this procedure trys
+                to do so.  It does this by:
+
+                        1) seeing if there is a current schedule
+                        2) getting permission from the user to erase
+                        3) eraseing.
+  *)
+PROCEDURE TryToEraseSchedule() : BOOLEAN;
+
+
+
+
+    (* LoadAFile -- Displays the instructions line at the message area
+                    of the screen and offers a picklist box of files
+                    whose names match the template FileName.  If a
+                    file is selected, the LoadingProc will be called
+                    to actually load the file.  If MustErase is set,
+                    old tasks will be erased prior to calling LoadingProc.
+
+                    Qualifies can be used to restrict the files displayed
+                    to a subset of those that would be referenced by
+                    the filename template.
+
+                    Return value of TRUE indicates success. *)
+
+
+PROCEDURE LoadAFile(VAR Instructions:ARRAY OF CHAR;
+                    VAR BoxTitle    :ARRAY OF CHAR;
+                    VAR FileName    :ARRAY OF CHAR;
+                    MustErase       : BOOLEAN;
+                        Qualifies   : AQualificationProcedure;
+                    LoadingProc     : ALoadingProc):BOOLEAN;
+
+END ImportSelect.
+

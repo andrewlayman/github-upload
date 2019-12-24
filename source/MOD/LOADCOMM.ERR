@@ -1,0 +1,67 @@
+LOGITECH MODULA-2 Compiler, DOS, Rel. 3.40, Mar 90
+Copyright (C) 1983, 1989 Logitech, Inc.
+Copyright (C) 1990 MultiScope, Inc.
+
+   source file> loadcomm.mod
+
+Syntax And Declaration Analysis
+   Allocs   in file: S:\SYM\Allocs.SYM
+   AsOf     in file: S:\SYM\AsOf.SYM
+   BigTimeU in file: S:\SYM\BigTimeU.SYM
+   CalUtili in file: S:\SYM\CalUtili.SYM
+   Changer  in file: S:\SYM\Changer.SYM
+   Chart    in file: S:\SYM\Chart.SYM
+   ChartCon in file: S:\SYM\ChartCon.SYM
+   ChartFor in file: S:\SYM\ChartFor.SYM
+   ColData  in file: S:\SYM\ColData.SYM
+   Dialog   in file: S:\SYM\Dialog.SYM
+   FileAux  in file: S:\SYM\FileAux.SYM
+   FileSyst in file: S:\SYM\FileSyst.SYM
+   FilterRc in file: S:\SYM\FilterRc.SYM
+   Filters  in file: S:\SYM\Filters.SYM
+   FilterUt in file: S:\SYM\FilterUt.SYM
+   FlexStor in file: S:\SYM\FlexStor.SYM
+   Gantt    in file: S:\SYM\Gantt.SYM
+   Holder   in file: S:\SYM\Holder.SYM
+   IlsaStat in file: S:\SYM\IlsaStat.SYM
+   LStrings in file: S:\SYM\LStrings.SYM
+   Memos    in file: S:\SYM\Memos.SYM
+   MsgFile  in file: S:\SYM\MsgFile.SYM
+   NetLayou in file: S:\SYM\NetLayou.SYM
+   NetLUtil in file: S:\SYM\NetLUtil.SYM
+   NetworkD in file: S:\SYM\NetworkD.SYM
+   Objects  in file: S:\SYM\Objects.SYM
+   OBigTime in file: S:\SYM\OBigTime.SYM
+   Palettes in file: S:\SYM\Palettes.SYM
+   Planner  in file: S:\SYM\Planner.SYM
+   RecordIO in file: S:\SYM\RecordIO.SYM
+   Schedule in file: S:\SYM\Schedule.SYM
+   Sorter   in file: S:\SYM\Sorter.SYM
+   Space    in file: S:\SYM\Space.SYM
+   Subfiles in file: S:\SYM\Subfiles.SYM
+   TaskFind in file: S:\SYM\TaskFind.SYM
+   Text     in file: S:\SYM\Text.SYM
+   TimeForm in file: S:\SYM\TimeForm.SYM
+   Timei    in file: S:\SYM\Timei.SYM
+   Timeu    in file: S:\SYM\Timeu.SYM
+   Transfer in file: S:\SYM\Transfer.SYM
+   TreeObje in file: S:\SYM\TreeObje.SYM
+   Undo     in file: S:\SYM\Undo.SYM
+   LoadComm in file: S:\SYM\LoadComm.SYM
+Block Analysis
+Code Generation
+Termination
+   The interactive setting of the options was: S- /R- /T- /A- /O+ /D /F- 
+   code for 80x87 Emulator generated
+   code for 8086/8088 generated
+   Codesize:  11593 bytes   Datasize:      4 bytes
+End Compilation
+
+LOGITECH MODULA-2 Compiler, DOS, Rel. 3.40, Mar 90
+Copyright (C) 1983, 1989 Logitech, Inc.
+Copyright (C) 1990 MultiScope, Inc.
+
+   source file> *.MOD /b
+ ---- no compilation
+Termination
+End Compilation

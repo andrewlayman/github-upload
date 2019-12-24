@@ -1,0 +1,671 @@
+DEFINITION MODULE LinkedListObjects;        (* A subclass of Objects *)
+
+    (*  This module defines objects which are linked lists, and the nodes
+        within linked lists.
+    *)
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+
+
+TYPE
+        (*  ALinkedList is a subclass of Objects.AnObject  *)
+
+    ALinkedList             = POINTER TO ALinkedListRecord;
+
+
+
+        (*  ALinkedListNode is a subclass of Objects.AnObject  *)
+
+    ALinkedListNode         = POINTER TO ALinkedListNodeRecord;
+
+
+
+
+        (*  ALinkedListMethods and ALinkedListNodeMethods are subclasses of 
+            Objects.AMethodObject.
+        *)
+
+    ALinkedListMethods      = POINTER TO ALinkedListMethodsRecord;
+
+    ALinkedListNodeMethods  = POINTER TO ALinkedListNodeMethodsRecord;
+
+
+
+
+    ALinkedListRecord       = RECORD
+                                Methods     : ALinkedListMethods;
+                              END;
+
+    ALinkedListNodeRecord   = RECORD
+                                Methods     : ALinkedListNodeMethods;
+                              END;
+
+
+
+
+
+
+
+    (*  A procedure of this type is passed to AListForAllProc procedures.
+        The ADDRESS is that of a context area which is shared by the caller
+        and the called procedure.  This circumvents the need for global
+        variables by which the two procedures may communicate.
+    *)
+
+TYPE
+    AListNodeProcessingProc = PROCEDURE(VAR ALinkedListNode,
+                                            ADDRESS        );  (* Context *)
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we an pass objects of types ALinkedList or 
+        ALinkedListNode to them.
+    *)
+
+TYPE
+    AListCloneProc          = PROCEDURE(    ALinkedList,
+                                        VAR ALinkedList)
+                                                        : BOOLEAN;
+
+    AListStoreOnProc        = PROCEDURE(    ALinkedList,
+                                            AnObject    );
+
+    AListDiscardProc        = PROCEDURE(VAR ALinkedList);
+
+    AListNodeCloneProc      = PROCEDURE(    ALinkedListNode,
+                                        VAR ALinkedListNode)
+                                                            : BOOLEAN;
+
+    AListNodeStoreOnProc    = PROCEDURE(    ALinkedListNode,
+                                            AnObject    );
+
+    AListNodeDiscardProc    = PROCEDURE(VAR ALinkedListNode);
+
+
+
+
+
+
+
+
+    (*  Here are the methods that are specific to Linked List Objects.  *)
+
+
+(*----------------------------------------------------------------------------
+    AListAddProc --
+
+    Add the list node as the first (last) node in the given list.
+
+    Preconditions:
+        The node object, and the list must both be valid objects of their 
+        respective types.
+
+    Postconditions:
+        The list node will be the first (last) node of the list.  
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListAddProc            = PROCEDURE(    ALinkedList,
+                                            ALinkedListNode);
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListGetProc --
+
+    Get the first (last) node in the indicated list.
+
+    Preconditions:
+        The object must be a valid list object.
+
+    Postconditions:
+        If there are any nodes in the list, the first (last) one will be 
+        returned.  Otherwise, NIL will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListGetProc            = PROCEDURE(    ALinkedList)
+                                                        : ALinkedListNode;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListForAllProc --
+
+    Call the provided procedure for all nodes in the indicated list.
+
+    Preconditions:
+        The object must be a valid list object.  The context points to an
+        area used for sharing data between the caller and the processing
+        procedure.
+
+    Postconditions:
+        The action provided by the given procedure will have been performed
+        on all nodes in the list.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListForAllProc         = PROCEDURE(    ALinkedList,
+                                            AListNodeProcessingProc,
+                                            ADDRESS                );  (* Context *)
+
+
+
+
+
+
+
+
+
+        (*  Here are the methods which apply to ALinkedList.  Note that some 
+            are generic to all objects, but have been redefined to
+            take parameters of type ALinkedList, while others are new and only
+            applicable to objects of type ALinkedList or its subclasses.
+        *)
+
+    ALinkedListMethodsRecord = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AListCloneProc;
+                                StoreOn           : AListStoreOnProc;
+                                Discard           : AListDiscardProc;
+                                SuperclassMethods : AnObjectMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                AddFirst          : AListAddProc;
+                                AddLast           : AListAddProc;
+                                GetFirst          : AListGetProc;
+                                GetLast           : AListGetProc;
+                                ForAll            : AListForAllProc;
+                                GetFirstVisible   : AListGetProc;
+                                GetLastVisible    : AListGetProc;
+                                ListMethodsTag    : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+    (*  Here are the new methods for the list node class  *)
+
+(*----------------------------------------------------------------------------
+    AListNodeGetProc --
+
+    Return the list node object following (preceeding) this one.
+
+    Preconditions:
+        The object must be a valid list node object.
+
+    Postconditions:
+        If there is a list node following (preceeding) this one, it will be 
+        returned.  Otherwise, NIL will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeGetProc        = PROCEDURE(    ALinkedListNode)
+                                                            : ALinkedListNode;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeAddProc --
+
+    Add the indicated list node object before (after) the one given as its 
+    target.
+
+    Preconditions:
+        The indicated object, and its target object, must both be valid
+        list node objects.
+
+    Postconditions:
+        The indicated list node will be made the predecessor (successor) of 
+        the given target.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeAddProc        = PROCEDURE(    ALinkedListNode,   (* Target *)
+                                            ALinkedListNode);  (* NodeToAdd *)
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeDeListProc --
+
+    Remove the indicated list node object from the list of which it's a part.
+
+    Predecessor:
+        The object must be a valid list node object.
+
+    Successor:
+        The given list node object will be unlinked from its successor and
+        predecessor objects.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeDeListProc     = PROCEDURE(    ALinkedListNode);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeSetObjectProc --
+
+    Define the data object which the indicated list node is associated with.
+
+    Preconditions:
+        The object must be a valid list node.
+
+    Postconditions:
+        The data object will be associated with the given list node.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeSetObjectProc  = PROCEDURE(    ALinkedListNode,  (* ListNode *)
+                                            ADDRESS        ); (* DataObject *)
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeGetObjectProc --
+
+    Return the data object which the indicated list node is associated with.
+
+    Preconditions:
+        The object must be a valid list node.
+
+    Postconditions:
+        The data object associated with the given list node will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeGetObjectProc  = PROCEDURE(    ALinkedListNode)
+                                                            : ADDRESS;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeGetListProc --
+
+    Return the list of which the indicated list node object is a member.
+
+    Preconditions:
+        The object must be a valid list node object.
+
+    Postconditions:
+        The list object which contains this list node is returned.  If the
+        list node is not linked into a list, NIL will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeGetListProc    = PROCEDURE(    ALinkedListNode)
+                                                            : ALinkedList;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeSetVisibleProc --
+
+    Set the visibility of this list node to be as indicated.
+
+    Preconditions:
+        The object must be a valid list node object.
+
+    Postconditions:
+        The visibility of the list node will be set as indicated.  Some
+        subclasses may not support visibility, in which case this method 
+        will have no effect.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeSetVisibleProc = PROCEDURE(    ALinkedListNode,
+                                            BOOLEAN        );
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AListNodeVisibleProc --
+
+    Determine the visibility of this list node.
+
+    Preconditions:
+        The object must be a valid list node object.
+
+    Postconditions:
+        The visibility of the list node will be returned.  Some subclasses 
+        may not support visibility, in which case this method will always 
+        return TRUE.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AListNodeVisibleProc    = PROCEDURE(    ALinkedListNode)
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+
+
+        (*  These methods are for objects of type ALinkedListNode.  They 
+            inherit (and redefine) some methods just because list nodes are 
+            objects, and then define new methods which apply only to list 
+            nodes and their subclasses.
+        *)
+
+    ALinkedListNodeMethodsRecord  = 
+                              RECORD
+                                Methods            : AnObjectMethods;
+                                Clone              : AListNodeCloneProc;
+                                StoreOn            : AListNodeStoreOnProc;
+                                Discard            : AListNodeDiscardProc;
+                                SuperclassMethods  : AnObjectMethods;
+                                MethodSize         : CARDINAL;
+                                ObjectMethodsTag   : CARDINAL;
+                                GetNext            : AListNodeGetProc;
+                                GetPrev            : AListNodeGetProc;
+                                AddBefore          : AListNodeAddProc;
+                                AddAfter           : AListNodeAddProc;
+                                DeList             : AListNodeDeListProc;
+                                SetDataObject      : AListNodeSetObjectProc;
+                                GetDataObject      : AListNodeGetObjectProc;
+                                GetList            : AListNodeGetListProc;
+                                NextForDisplay     : AListNodeGetProc;
+                                PrevForDisplay     : AListNodeGetProc;
+                                FirstVisibleCoNode : AListNodeGetProc;
+                                LastVisibleCoNode  : AListNodeGetProc;
+                                GetNextVisible     : AListNodeGetProc;
+                                GetPrevVisible     : AListNodeGetProc;
+                                SetVisible         : AListNodeSetVisibleProc;
+                                Visible            : AListNodeVisibleProc;
+                                SetPrivateVisible  : AListNodeSetVisibleProc;
+                                PrivateVisible     : AListNodeVisibleProc;
+                                ListNodeMethodsTag : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsLinkedList --
+
+    Initialize the indicated storage location as an object of type 
+    ALinkedList.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated object will be initialized as a list object.  This 
+        procedure does not allocate storage, it only initializes the area
+        of memory referenced by the object provided.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsLinkedList(    List         : ALinkedList);
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsLinkedListNode --
+
+    Initialize the indicated storage location as an object of type 
+    ALinkedListNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated object will be initialized as a list node object.  This 
+        procedure does not allocate storage, it only initializes the area
+        of memory referenced by the object provided.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsLinkedListNode(    ListNode : ALinkedListNode);
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsLinkedList --
+
+    Un-Initialize the indicated storage location as an object of type 
+    ALinkedList.
+
+    Preconditions:
+        The object must be a valid Linked List Object.
+
+    Postconditions:
+        The indicated object will no longer be initialized as a list object.
+        Any side-effects of InitAsLinkedList will be undone.  This 
+        procedure does not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsLinkedList(    List         : ALinkedList);
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsLinkedListNode --
+
+    Un-Initialize the indicated storage location as an object of type 
+    ALinkedListNode.
+
+    Preconditions:
+        The object must be a valid Linked List Node Object.
+
+    Postconditions:
+        The indicated object will no longer be initialized as a list node
+        object.  Any side-effects of InitAsLinkedListNode will be undone.
+        This procedure does not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsLinkedListNode(    ListNode : ALinkedListNode);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateLinkedList --
+
+    Allocate storage off the heap, and initialize it as an object of type
+    ALinkedList.  This procedure should only be used to create objects
+    which are not subclassed, or for which the subclassing does not add new
+    data fields.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, a new object of type
+        ALinkedList will be allocated, initialized, and TRUE will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateLinkedList(VAR List         : ALinkedList)
+                                                          : BOOLEAN;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateLinkedListNode --
+
+    Allocate storage off of the heap, and initialize it as an object of type
+    ALinkedListNode.  This procedure should only be used to create objects
+    which are not subclassed, or for which the subclassing does not add new
+    data fields.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, a new object of type
+        ALinkedListNode will be allocated, initialized, and TRUE will be 
+        returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateLinkedListNode(VAR ListNode : ALinkedListNode)
+                                                              : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateLinkedList --
+
+    Validate the indicated storage location as an object of type 
+    ALinkedList.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the indicated object is not a linked list, or a subclass, 
+        FatalError will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateLinkedList(    List       : ALinkedList);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateLinkedListNode --
+
+    Validate the indicated storage location as an object of type 
+    ALinkedListNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the indicated object is not a linked list node, or a subclass, 
+        FatalError will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateLinkedListNode(    ListNode : ALinkedListNode);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneLinkedListMethods --
+
+    Make a copy of this class' methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The linked list methods will be copied into the indicated method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneLinkedListMethods(    MethodObject : ALinkedListMethods);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneLinkedListNodeMethods --
+
+    Make a copy of this class' methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The linked list node methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneLinkedListNodeMethods(    MethodObject : ALinkedListNodeMethods);
+
+
+
+END LinkedListObjects.
+

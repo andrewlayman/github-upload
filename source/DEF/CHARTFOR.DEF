@@ -1,0 +1,319 @@
+DEFINITION MODULE ChartForms;
+
+    (* Modification History:
+
+         1/10/89 RSC Moved "SelectLayoutAt" here from "LayoutKluges".
+         3/22/89 EGK Added new fields to AChartFormat for for
+                     percent-complete enhancements.
+        16-Jun-89 RSC Added "ALayoutContext" for communication with
+                      "TLLAYLIS".
+        27-Jul-89 EGK Changed type of first element of ALayoutContext to
+                      be a POINTER to a node, so that the called overlay
+                      can actually change its value.
+        18-Sep-89 RSC Removed AdjustScale.
+        14-Dec-89 LAA Added CheckSumLayout, GetLayoutMetrics and 
+                      FindCurrentColumn.
+        30-Mar-90 RSC Made Timeu to Timei conversions.
+         5-Mar-91 TGS Export LayoutChanged().
+    *)
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM Gantt                  IMPORT 
+    (* TYPE *)                  ASlackStyle, AGanttLineType;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT 
+    (* TYPE *)                  ADuration, ADurationUnit, ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+CONST
+    NumOfColumns            = 20;
+
+TYPE
+    AChartColumnSpec        = RECORD
+                                ColumnID    : CARDINAL;
+                                Width       : CARDINAL;
+                                Position    : CARDINAL;
+                              END;
+
+    AChartFormatPtr = POINTER TO AChartFormat;
+
+    AChartFormat    = RECORD
+                          Tag               : CARDINAL;
+                          ID                : CARDINAL;
+                          scale             : ADuration;
+                          scaleunit         : ADurationUnit;
+                          slackstyle        : ASlackStyle;
+                          Name              : ARRAY [0..20] OF CHAR;
+                          AVPShowing        : BOOLEAN;
+                          GanttShowing      : BOOLEAN;
+                          ProgressColumnID  : CARDINAL;
+                          ProgressLineType  : AGanttLineType;
+                          TaskNameOnScreen  : BOOLEAN;
+                          Notes             : AText;
+                          GanttWidth        : CARDINAL;
+                          GanttPosition     : CARDINAL;
+                          ColumnCount       : CARDINAL;
+                          LayoutFlags       : BITSET;
+                          ColumnSpec        : ARRAY [1..NumOfColumns] OF 
+                                                            AChartColumnSpec;
+                      END;
+
+
+
+(*  For use by this module and the TLFILTER overlay *)
+
+    AnOverlayContext    = RECORD
+                            LayoutNode      : ATreeNode;
+                            ReturnCode      : ACode;
+                          END;
+
+    (* RSC 16-Jun-89 *)
+
+    ALayoutContext = RECORD
+        LayoutPtr          : POINTER TO ATreeNode;
+        ULX, ULY, LRX, LRY : CARDINAL;
+        Warning            : BOOLEAN;
+        ReturnCode         : ACode;
+    END;
+
+
+VAR
+    LayoutTree              : ATree;
+    CurrentChartFormat      : ATreeNode;
+    DefaultChartFormat      : ATreeNode;
+
+
+
+PROCEDURE LayoutChanged(); (* 5-Mar-91 TGS *)
+
+
+
+(*----------------------------------------------------------------------------
+    DoLayoutForm --
+
+    Bring up the layout form to allow editing of a layout record.
+
+    Preconditions:
+        The layout parameter must be a valid layout node.
+
+    Postconditions:
+        The layout record will be changed as directed by the user, unless the
+        form is left with ESC.  The code will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DoLayoutForm(    Layout           : ATreeNode)
+                                                        : ACode;
+
+
+
+(*----------------------------------------------------------------------------
+    DetermineFirstGantt --
+
+    For this layout, calculate the starting positions of the columns and the
+    position where Gantt bars will start.
+
+    Preconditions:
+        The layout parameter must be a valid layout node.
+
+    Postconditions:
+        The starting positions of the columns in this layout will be
+        calculated based on their widths, and the Gantt bar position will
+        be set to follow the last column.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DetermineFirstGantt(    ChartFormat : AChartFormatPtr);
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitializeChartForms --
+
+    Initialize this module.  This procedure is defined because it's not
+    possible to do the required initialization in the initialization section,
+    due to module dependencies.  This procedure should be called by TLINIT.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The module will be initialized, as required.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitializeChartForms();
+
+
+
+(*----------------------------------------------------------------------------
+    SelectLayout --
+
+    Display a list of the named layouts, defaulting the cursor position to
+    the layout passed as parameter, and allow the user to select one.
+
+    Preconditions:
+        The layout passed in must be a valid layout, or it may be NIL.
+
+    Postconditions:
+        The layout parameter will be changed to reflect the user's choice,
+        if a selection is made.  If the user exits with ESC, the initial
+        value of the layout parameter will be preserved.  Within this call,
+        it is possible to add, delete, copy and edit named layouts.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SelectLayout(VAR Layout           : ATreeNode)
+                                                        : ACode;
+
+
+
+(*----------------------------------------------------------------------------
+    SelectLayout --
+
+    Display a list of the named layouts, defaulting the cursor position to
+    the layout passed as parameter, and allow the user to select one.
+
+    Preconditions:
+        The layout passed in must be a valid layout, or it may be NIL.
+
+    Postconditions:
+        The layout parameter will be changed to reflect the user's choice,
+        if a selection is made.  If the user exits with ESC, the initial
+        value of the layout parameter will be preserved.  Within this call,
+        it is possible to add, delete, copy and edit named layouts.
+
+    RSC 1/10/89 - Moved this here from "LayoutKluges".
+
+----------------------------------------------------------------------------*)
+
+PROCEDURE SelectLayoutAt(VAR Layout             : ATreeNode;
+                             ULX, ULY, LRX, LRY : CARDINAL;
+                             Warning            : BOOLEAN) : ACode;
+
+
+(*----------------------------------------------------------------------------
+    CurrentLayout --
+
+    Return a pointer to the currently valid layout.
+
+    Preconditions:
+        InitializeChartForms must have been called.
+
+    Postconditions:
+        A pointer to the current layout will be returned.  Always!
+----------------------------------------------------------------------------*)
+
+PROCEDURE CurrentLayout(): AChartFormatPtr;
+
+
+
+
+(*----------------------------------------------------------------------------
+    SortLayouts --
+
+    Sort the layouts in the tree into alpha order.
+
+    Preconditions:
+        InitializeChartForms must have been called.
+
+    Postconditions:
+        The LayoutTree will be sorted into alphabetical order.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SortLayouts();
+
+
+
+(*----------------------------------------------------------------------------
+    CreateLayout --
+
+    Create a new layout, setting all fields of the layout to their default 
+    values.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The layout will be created if possible, and its fields defaulted.
+        TRUE will be returned iff the layout was created.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateLayout(VAR Layout           : ATreeNode)
+                                                        : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    DiscardLayout --
+
+    Get rid of the given layout tree node.
+
+    Preconditions:
+        The layout must be a valid layout node.
+
+    Postconditions:
+        The node and all its associated storage will be discarded.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DiscardLayout(VAR Layout          : ATreeNode);
+
+
+
+
+(*  CheckSumLayout --
+        Compute and return a checksum for a layout record, excluding the
+        Id field.  Use this procedure to determine if the current layout
+        has changed under you.  Id must be excluded because /File/Save
+        renumbers all objects.
+    Preconditions:
+        The chart record must be valid.
+    Postconditons:
+        A checksum for the layout is returned.
+*)
+
+PROCEDURE CheckSumLayout(    ChartRecord    : AChartFormatPtr): CARDINAL;
+
+
+
+
+
+(*  GetLayoutMetrics --
+        Determine if the Gantt bars region and/or the Spreadsheet area is
+        on-screen, and return the first position of the Gantt region.
+    Preconditions:
+        The layout must be valid.
+    Postconditions:
+        The indicated parameters are returned.
+*)
+
+PROCEDURE GetLayoutMetrics( VAR Layout         : AChartFormat;
+                                ViewWidth      : CARDINAL;
+                            VAR GanttOnScreen  : BOOLEAN;
+                            VAR FirstGantt     : CARDINAL;
+                            VAR SpreadOnScreen : BOOLEAN       );
+
+
+
+(*  FindCurrentColumn --
+        Determine which spreadsheet column corrosponds to the given XOffset.
+    Preconditions:
+        The layout must be valid.
+    Postconditions:
+        Current spreadsheet column will be returned, or if the XOffset does
+        not corrospond to the spreadsheet area, 1 will be returned.
+*)
+
+PROCEDURE FindCurrentColumn( VAR ChartRecord  : AChartFormat;
+                                 XOffset      : CARDINAL     ): CARDINAL;
+
+
+
+END ChartForms.
+

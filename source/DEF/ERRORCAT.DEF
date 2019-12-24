@@ -1,0 +1,11 @@
+DEFINITION MODULE ErrorCategories;
+
+
+CONST
+    ModuleNumber              = 16200;
+    NotPossibleInContextError = ModuleNumber + 1;
+    UnknownEventError         = ModuleNumber + 2;
+    AllocationError           = ModuleNumber + 3;
+
+END ErrorCategories.
+

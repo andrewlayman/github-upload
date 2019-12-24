@@ -1,0 +1,213 @@
+DEFINITION MODULE MsgFile;
+
+  (*
+    Modification History:
+
+    RSC 2/18/88  Updated cache stats gathering.
+
+    RSC 3/06/89  Reflect new statistics gathering.
+    RSC 7/25/89  Remove statistics.  They were LONGINTs, and we don't trust
+                 them.  Add calls with "Class".  Improved the documentation.
+  *)
+
+
+
+FROM PhraseDefs     IMPORT
+    (* TYPE *)          AClassName;
+
+
+
+
+
+(*   All messages belong to message CLASSES.  Most modules belong to the
+     STANDARD class.  Forms use the FORMS class.  RunMenu uses the TLWHAT
+     class for its menu structure.
+
+     Classes can be added dynamicly to the phrase file, and so we don't
+     use an enumeration here, but a list of constants.
+
+     Add-in products can use their own classes.  For example, ARTEMIS
+     could add its own class.
+
+     Here we define the ordinary, standard classes.
+*)
+CONST
+    Standard        = 1;
+    Forms           = 2;
+    TLWhat          = 3;
+
+
+
+(*  Open Msg File       Open or reopen the message file.
+
+    Preconditions   - This module has been initialized.
+                      The message file has NOT been opened before.
+
+    Postconditions  - The message file has been opened, or an error has
+                      been displayed.
+
+    Input Parameters    - FileName  The LString containing the name of the
+                                    file to open.  We assume that this file
+                                    is in the TEXT path.
+
+    Output Parameters   - RETURN is TRUE  if the file was opened.
+                                    FALSE if the file could not be opened.
+*)
+PROCEDURE OpenMsgFile( VAR FileName : ARRAY OF CHAR ) : BOOLEAN;
+
+
+
+
+(*  Get Message     Read a message from the message file.
+
+        Given a message number, retrieve a message of the class STANDARD.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - The appropriate message is returned.  It could be
+                      empty.
+
+    Input Parameters    - MessageNumber is the desired message key.
+
+    Output Parameters   - Message       is the message text.
+*)
+PROCEDURE GetMessage(     MessageNumber : CARDINAL;
+                      VAR Message       : ARRAY OF CHAR);
+
+
+
+
+
+(*  Get Message For Class    Read a message from the message file.
+
+        Given a message number, retrieve a message of the desired class.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - The appropriate message is returned.  It could be
+                      empty.
+
+    Input Parameters    - MessageNumber is the desired message key.
+                          MessageClass  is a valid message class.
+
+    Output Parameters   - Message       is the message text.
+*)
+PROCEDURE GetMessageForClass(     MessageNumber,
+                                  MessageClass  : CARDINAL;
+                              VAR Message       : ARRAY OF CHAR);
+
+
+
+
+(* Concat Message -- Concatenate the called for message text to
+                     the end of the LString Text.  The message is read
+                     from class STANDARD.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - The appropriate message is returned.  It could be
+                      empty.
+
+    Input Parameters    - Text          is an LString, possibly empty.
+                          MessageNumber is the desired message key.
+
+    Output Parameters   - Text          has the message text appended onto it.
+*)
+PROCEDURE ConcatMessage( VAR Text          : ARRAY OF CHAR;
+                             MessageNumber : CARDINAL );
+
+
+
+(* Concat Message For Class -- Concatenate the called for message text to
+                               the end of the LString Text.  The message is read
+                               from the class specified.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - The appropriate message is returned.  It could be
+                      empty.
+
+    Input Parameters    - Text          is an LString, possibly empty.
+                          MessageNumber is the desired message key.
+                          MessageClass  is a valid message class.
+
+    Output Parameters   - Text          has the message text appended onto it.
+*)
+PROCEDURE ConcatMessageForClass( VAR Text           : ARRAY OF CHAR;
+                                     MessageNumber,
+                                     MessageClass   : CARDINAL );
+
+
+
+
+
+(* Display Message -- Call the Message procedure to display the
+                      called for text.  The message is read
+                      from class STANDARD.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - The appropriate message is displayed.  It could be
+                      empty.
+
+    Input Parameters    - MessageNumber is the desired message key.
+
+    Output Parameters   - none.
+*)
+PROCEDURE DisplayMessage(     MessageNumber : CARDINAL );
+
+
+
+
+(* Display Message For Class -- Call the Message procedure to display the
+                                called for text.  The message is read
+                                from the class specified.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - The appropriate message is displayed.  It could be
+                      empty.
+
+    Input Parameters    - MessageNumber is the desired message key.
+                          MessageClass  is a valid message class.
+
+    Output Parameters   - none.
+*)
+PROCEDURE DisplayMessageForClass(     MessageNumber,
+                                      MessageClass   : CARDINAL );
+
+
+
+(* Find Class   -- Look for a class by name.
+
+    Preconditions   - This module has been initialized.
+                      The message file has been opened.
+
+    Postconditions  - same.
+
+    Input Parameters    - ClassName     is the name of the class to
+                                           search for.  This is case
+                                           insensitive.
+
+    Output Parameters   - ClassNumber   is the found class number.
+                                           Undefined if FALSE is returned.
+
+                          RETURN        is TRUE iff the class name was
+                                           found.
+*)
+PROCEDURE FindClass(     ClassName      : AClassName;
+                     VAR ClassNumber    : CARDINAL      ) : BOOLEAN;
+
+
+
+
+
+
+END MsgFile.
+

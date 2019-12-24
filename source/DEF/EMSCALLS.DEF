@@ -1,0 +1,213 @@
+DEFINITION MODULE EMSCalls;
+
+    (*  This module implements the primitive EMS functions.  *)
+
+    (* MODIFICATION HISTORY
+       16-Sep-88 AJL - Added the EMSGetFrameAddresses function.
+        7-Jul-89 AJL - Corrected the documentation of EMSPageMap().
+                     - Added EMSSavePageMap and EMSRestorePageMap.
+    *) 
+
+       
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+
+
+(*----------------------------------------------------------------------------
+    EMSGetStatus --
+
+    Determine the status of the EMS subsystem.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The status code from EMS is returned.  Zero indicates EMS is 
+        functioning correctly, anything else means not to use EMS.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSGetStatus(): CARDINAL;
+
+
+
+(*----------------------------------------------------------------------------
+    EMSGetPageFrame --
+
+    Find and return the page frame address, i.e. the address of physical page
+    zero.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+
+    Postconditions:
+        The address of the page frame is returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSGetPageFrame(): ADDRESS;
+
+
+
+(*----------------------------------------------------------------------------
+    EMSGetFrameAddresses --
+
+    Find and return the page addresses for all pages.  These might not
+    be contiguous.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+
+    Postconditions:
+        The address of each page in the page frame is filled into the 
+        array, up to the HIGH(Pages) or the maximum number of pages,
+        whichever comes first.   The number of pages is returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSGetFrameAddresses(VAR Pages : ARRAY OF ADDRESS) : CARDINAL;
+
+
+
+
+(*----------------------------------------------------------------------------
+    EMSGetUnallocatedPages --
+
+    Return the number of unallocated pages in EMS.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+
+    Postconditions:
+        The number of pages in EMS which are currently unallocated will be
+        returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSGetUnallocatedPages(): CARDINAL;
+
+
+
+(*----------------------------------------------------------------------------
+    EMSAllocatePages --
+
+    Allocate the requested number of pages, and return the handle by which
+    those pages are to be known.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+
+    Postconditions:
+        If TRUE is returned, the pages will have been allocated to the 
+        returned handle and be available for mapping.  Otherwise, FALSE will
+        be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSAllocatePages(    PagesWanted  : CARDINAL;
+                           VAR EMSHandle    : CARDINAL)
+                                                       : BOOLEAN;
+
+
+
+
+(*----------------------------------------------------------------------------
+    EMSPageMap --
+
+    Map and unmap logical pages of an EMS handle into physical pages of the
+    page frame.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+        The handle given must have been created by EMSAllocatePages, the 
+        physical page number must be in the range (0..3), and the logical
+        page number must be within the range (0..PagesWanted - 1).  To unmap
+        a physical page, specify a logical page number of 0FFFFH.
+
+    Postconditions:
+        If the logical page is successfully mapped into the physical page,
+        (or unmapped, if that was requested) then TRUE will be returned.
+        FALSE will be returned if there was an error.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSPageMap(    EMSHandle          : CARDINAL;
+                         LogicalPage        : CARDINAL;
+                         PhysicalPage       : CARDINAL)
+                                                       : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    EMSDeallocatePages --
+
+    Dispose of the given handle and the logical pages associated with it.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+        The handle given must have been created by EMSAllocatePages.
+
+    Postconditions:
+        The EMS handle and pages will be returned to the pool of available
+        EMS resources.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSDeallocatePages(VAR EMSHandle  : CARDINAL);
+
+
+
+(*----------------------------------------------------------------------------
+    EMSGetVersion --
+
+    Return the version of EMS software installed.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+
+    Postconditions:
+        The version number will be returned as a CARDINAL number, with major
+        and minor version numbers.  A returned value of 40 indicated version
+        4.0.
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSGetVersion(): CARDINAL;
+
+
+
+(*----------------------------------------------------------------------------
+    EMSSavePageMap --
+
+    Saves the page mapping registers into an internal save area.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+        The EMS Handle must be the one returned from EMSAllocatePages.
+
+    Postconditions:
+        The EMS state is stored into a internal area and TRUE is returned,
+        else FALSE is returned.
+         
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSSavePageMap(EMSHandle  : CARDINAL) : BOOLEAN;
+
+
+(*----------------------------------------------------------------------------
+    EMSRestorePageMap --
+
+    Restores the page mapping registers from an internal save area.
+
+    Preconditions:
+        The EMS status must have checked out ok.
+        The EMS Handle must be the one returned from EMSAllocatePages.
+        EMSSavePageMap must have been called, and returned successfully.
+
+    Postconditions:
+        The EMS state is restored to the state it was when the 
+        EMSSavePageMap procedure was called.
+         
+----------------------------------------------------------------------------*)
+
+PROCEDURE EMSRestorePageMap(EMSHandle  : CARDINAL) : BOOLEAN;
+
+
+
+
+END EMSCalls.
+
+

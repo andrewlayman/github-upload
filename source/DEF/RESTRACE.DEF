@@ -1,0 +1,65 @@
+DEFINITION MODULE ResTrace;
+
+    (* Debugging procedures for resource levelling. 
+
+        MODIFICATION HISTORY:
+        
+        Feb , 89 - JES - created from pieces of the old Tlrplan.    
+        16-Sep-90  AJL - Add ConcatTaskID.
+        27-Apr-91  AJL - Add PrintVaryingAssignment;
+
+    *)
+
+
+FROM Allocs   IMPORT
+    (* TYPE *)        ATaskPtr;
+
+FROM FlexStor IMPORT
+    (* TYPE *)        AnExtHandle;
+
+FROM ResCal         IMPORT  AnAvailabilityCell;
+
+FROM VaryAssgnment IMPORT
+    (* TYPE *)          AVaryingAssgnList;
+
+
+
+VAR
+    NoteString   : ARRAY [0..150] OF CHAR; 
+    PrintOn      : BOOLEAN;  
+
+
+PROCEDURE PrintAString( VAR S : ARRAY OF CHAR );
+
+
+
+    (* Add to the end of LString S the name and task id of 
+       the task. *)
+
+PROCEDURE ConcatTaskID( VAR S : ARRAY OF CHAR; Task : ATaskPtr );
+
+
+PROCEDURE PrintList(    List : AnExtHandle );
+
+    (* Print a list of the availability of a resource.  This is a list
+       of all the availability cells for the profile.*)
+
+PROCEDURE PrintResidueAvailability(ResidueAvailProfile : AnExtHandle); 
+
+    (* Print a single availability cell. *)
+
+PROCEDURE PrintAvailabilityCell( VAR Cell : AnAvailabilityCell );
+
+    (* Print a varying assignment list. *)
+
+PROCEDURE PrintVaryingAssignment( VaryingAssignment : AVaryingAssgnList );
+
+
+
+
+
+END ResTrace.
+
+
+
+

@@ -1,0 +1,212 @@
+DEFINITION MODULE Objects;                  (* Not a subclass of anything *)
+
+    (*  All things which are objects are subclasses of this module.  That
+        means that their data records must duplicate the object record (as
+        far as it goes) and that their methods record must duplicate the
+        object methods record (as far as it goes).  Thus, a subclass of 
+        objects has all the methods that Objects has, and all the data, plus
+        possibly more.
+    *)
+
+
+
+TYPE
+    AnObject                = POINTER TO AnObjectRecord;
+
+    AnObjectMethods         = POINTER TO AnObjectMethodsRecord;
+
+    AnObjectRecord          = RECORD
+                                Methods     : AnObjectMethods;
+                              END;
+
+
+
+
+
+
+
+    (*  The following procedure types must be implemented by all subclasses
+        of objects.  The implementation details will vary between classes.
+        These types will be duplicated in each subclass, with parameters 
+        which handle objects of the subclass' type.
+    *)
+
+(*----------------------------------------------------------------------------
+    AnObjectCloneProc --
+
+    Initialize an exact duplicate of the given object.
+
+    Preconditions:
+        The given object must be a valid object.
+
+    Postconditions:
+        Iff the new object can be allocated, it will be initialized to be a 
+        copy of the given object, and TRUE returned.  If the cloned object
+        contains references to other objects, only the references will be
+        cloned, not the referenced objects.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectCloneProc       = PROCEDURE(    AnObject,        (* OldObject *)
+                                        VAR AnObject)        (* NewObject *)
+                                                     : BOOLEAN;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectStoreOnProc --
+
+    Store the given object on the specified file object.
+
+    Preconditions:
+        The given object must be a valid object, and the file object must be 
+        open and set for writing.
+
+    Postconditions:
+        The object will be writing at the current position of the file object,
+        unless a file error occured.  
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectStoreOnProc     = PROCEDURE(    AnObject,      (* ObjectToStore *)
+                                            AnObject);     (* FileObject *)
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectDiscardProc --
+
+    Discard an object back onto the heap.  
+
+    Preconditions:
+        The object must be a valid object, and it must have been allocated 
+        off of the heap.
+
+    Postconditions:
+        The object will be deallocated, and all of its storage freed up.  This
+        includes any allocated storage within the object record also.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectDiscardProc     = PROCEDURE(VAR AnObject);
+
+
+
+
+
+
+
+
+
+
+        (*  Here is where all the generic methods (procedures) which apply
+            to an object qua object are defined.  All subclasses of Objects
+            must provide at least this structure to their methods.  The
+            SpeciesMethods is set to the method record of the superclass.
+            Here in Objects, it's NIL, since Objects does not have a
+            superclass.
+        *)
+
+    AnObjectMethodsRecord   = RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AnObjectCloneProc;
+                                StoreOn           : AnObjectStoreOnProc;
+                                Discard           : AnObjectDiscardProc;
+                                SuperclassMethods : AnObjectMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                              END;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsObject --
+
+    Initialize the area of memory referenced as an object, so that it is a
+    valid object.  This procedure does not allocate storage for an object, 
+    but initializes that storage after it is allocated.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be initialized as a valid object.  That means that
+        its methods field will point to the methods record for Objects.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsObject(    Object           : AnObject);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsObject --
+
+    UnInitialize the indicated object.
+
+    Preconditions:
+        The object must be a valid object.
+
+    Postconditions:
+        The methods field of the object will be set to NIL, so that this is
+        no longer a valid object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsObject(    Object         : AnObject);
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateObject --
+
+    Check the given object and determine if it is a valid object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        FatalError will be called if the object is not valid.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateObject(    Object         : AnObject);
+                                                       
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneObjectMethods --
+
+    Make a copy of this class' methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object methods will be copied into the indicated methods.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneObjectMethods(    ObjectMethods : AnObjectMethods);
+
+
+END Objects.
+

@@ -1,0 +1,9 @@
+DEFINITION MODULE Num2Str;
+PROCEDURE RealToLStrings( Amount          : REAL;
+                          MinDigits       : CARDINAL;
+                          MaxDigits       : CARDINAL;
+                      VAR Leading,
+                          Trailing        : ARRAY OF CHAR );
+END Num2Str.
+
+

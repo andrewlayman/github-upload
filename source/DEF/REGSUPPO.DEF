@@ -1,0 +1,20 @@
+DEFINITION MODULE RegSupport;
+    (* RegSupport - Bulk of the Registry code for use by overlays.
+
+
+       MODIFICATION HISTORY:
+       08-Jun-89 WKH    Initial version
+       21-Jun-89 WKH    Only changed comments for InitRegistrySupport
+    *)
+
+    (* InitRegistrySupport - Initialize the code that does the bulk of the
+                             work specified in the registry module.  This 
+                             routine is tied closely to the Registry module.
+                             This call will "steal" the GetRegistryInfo
+                             procedure variable exported from Registry
+    *)
+
+PROCEDURE InitRegistrySupport();
+
+END RegSupport.
+

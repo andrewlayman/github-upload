@@ -1,0 +1,13 @@
+DEFINITION MODULE TSEDWrite;
+
+    (*  MODIFICATION HISTORY
+         7-Sep-89 CMH   Removed obsolete procedures to open, write and 
+                        close the matrix size file.
+     *)
+
+PROCEDURE OpenTLGSFile():BOOLEAN;
+PROCEDURE WriteToTLGSFile(string : ARRAY OF CHAR);
+PROCEDURE CloseTLGSFile();
+    
+END TSEDWrite.
+

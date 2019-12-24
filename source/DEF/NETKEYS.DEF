@@ -1,0 +1,19 @@
+DEFINITION MODULE NetKeys;
+TYPE    
+    ADirection = (right,left,up,down);
+
+PROCEDURE Scrolling(direction    : ADirection;
+                    StartPoint,
+                    ScrollAmount : INTEGER) : INTEGER;
+PROCEDURE NetFwrdKey(VAR CurrentRow, CurrentCol : INTEGER):BOOLEAN;
+PROCEDURE NetReverseKey(VAR CurrentRow, CurrentCol : INTEGER):BOOLEAN;
+PROCEDURE NetUpKey(VAR CurrentRow, CurrentCol : INTEGER):BOOLEAN;
+PROCEDURE NetDownKey(VAR CurrentRow, CurrentCol : INTEGER):BOOLEAN;
+PROCEDURE NetPgUpKey(VAR CurrentRow, CurrentCol, VertScrollAmt : INTEGER):BOOLEAN;
+PROCEDURE NetPgDnKey(VAR CurrentRow, CurrentCol, VertScrollAmt : INTEGER):BOOLEAN;
+PROCEDURE NetRollRightKey(VAR CurrentRow, CurrentCol, HorizScrollAmt : INTEGER):BOOLEAN;
+PROCEDURE NetRollLeftKey(VAR CurrentRow, CurrentCol, HorizScrollAmt : INTEGER):BOOLEAN;
+PROCEDURE NetTabKey(VAR CurrentRow, CurrentCol : INTEGER);
+PROCEDURE NetRTabKey(VAR CurrentRow, CurrentCol : INTEGER);
+
+END NetKeys.

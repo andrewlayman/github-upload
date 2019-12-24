@@ -1,0 +1,30 @@
+DEFINITION MODULE FiscalTime;
+
+ (* Fiscal Time - manage a fiscal calendar
+
+ *)
+
+FROM BigTimeU           IMPORT
+        (* TYPES *)        ABigTime;
+
+FROM FlexStor           IMPORT
+        (* TYPE *)         AnExtHandle;
+
+
+TYPE
+    AFiscalMonth = [1..13];        (* Jan..Dec + 1 extra *)
+
+    AFiscalYear     = RECORD
+        Months   : ARRAY AFiscalMonth OF ABigTime;
+        Year     : CARDINAL; (* eg 1987 *)
+    END;
+
+    AFiscalCalendar = ARRAY [1..30] OF AFiscalYear; 
+
+
+VAR FiscalCalendar : AnExtHandle;
+
+                                      
+
+END FiscalTime.
+

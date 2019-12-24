@@ -1,0 +1,25 @@
+DEFINITION MODULE NetPrint;
+
+    (*  MODIFICATION HISTORY
+        25-Jul-89 CMH   Moved PrintBuffer from NetUtility to get out of 
+                        the way of TLGS overlays, TLNBUILD, and TLNBMAT;
+                        made it smaller.
+         6-Sep-89 CMH   Moved FillPrinterBuffer here from NetUtility.
+         7-Sep-89 CMH   Moved PrintBuffer, FillPrinterBuffer to NetTaskDraw.
+     *)
+
+(*----------------------------------------------------------------------------
+         PrintNetWork --
+           
+           Driver routine for printing a network diagram.
+        
+        PreConditions
+        
+        PostConditions   
+----------------------------------------------------------------------------*)
+PROCEDURE PrintNetwork();
+
+
+END NetPrint.
+
+

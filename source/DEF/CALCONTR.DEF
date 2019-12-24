@@ -1,0 +1,26 @@
+DEFINITION MODULE CalControl;
+
+
+    (*  CalendarDays -- Display a series of monthly calendars and allow
+                        the user to change working and non-working days. *)
+
+PROCEDURE CalendarDays;
+
+    (*  CalendarHours -- Allow changes to the working hours. *)
+
+PROCEDURE CalendarHours;
+
+    (*  CalendarForm -- Allow changes to the SMUPH, Standard Day and
+                        Standard Week. *)
+
+PROCEDURE CalendarForm;
+
+    (*  CheckForCalendarRoom -- Check the calendar to make sure that
+                                there is some time left on it.  Attempt
+                                to remove unnecessary time from the
+                                front of the schedule if not much time left. *)
+
+PROCEDURE CheckForCalendarRoom;
+
+END CalControl.
+

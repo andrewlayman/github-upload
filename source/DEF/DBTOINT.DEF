@@ -1,0 +1,171 @@
+DEFINITION MODULE DBToInt;
+
+  (* DBToInt - A variety of routines used by the dBase importers.
+
+        MODIFICATION HISTORY:
+
+        31-Aug-89 MWP Code cleanup. Rename procs, etc.
+        06-Sep-91 LAA Removed three variables which were exported, and which
+                      never should have been here in the .DEF.
+   *)
+
+FROM FileSystem    IMPORT
+        (* TYPE *)      File;
+
+CONST
+    DBASE3                  = 3;
+    DBASE4                  = 4;
+
+(* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* DBaseII and DBaseIII data records are identical except that there are  *
+* two extra field types in DBaseIII.                                     *
+*                                                                        *
+* The records are as follows:                                            *
+*                                                                        *
+* struct {                                                               *
+*   char RecordStatus;        ' ' = record exists; '*' = deleted         *
+*   char Field1[Length1];     up to 128 fields                           *
+*   char Field2[Length2];           .                                    *
+*   char Field3[Length3];           .                                    *
+*               .                   .                                    *
+*               .                   .                                    *
+*               .                   .                                    *
+* }                                                                      *
+*                                                                        *
+* Field types:                                                           *
+*    'C' - CHARACTER:  can contain any types of characters               *
+*    'N' - NUMBER: contains a number with defined # of decimal places.   *
+*          All stored as ASCII digits, including the decimal point.      *
+*    'D' - DATE: 8 bytes in form 19850131 for 85/01/31                   *                                                          *
+*    'L' - LOGICAL: one byte containing 'T'- true, or 'F' - false        *
+*    'M' - MEMO: 10 byte field containing pointer into auxilliary file   *
+*          of 512 byte blocks of memo data.                              *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
+
+(* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* DBaseIV data record layout is identical to dBase 2 and 3. There is     *
+* one extra field type in DBaseIV  -  the Float data type, designated    *
+* by the letter 'F'. Also, dBase III+ allowed a maximum of 19 digits in  *
+* it's numerical field. dBase IV allows accuracy of 20 digits.           *
+*                                                                        *
+* Field types:                                                           *
+*    'C' - CHARACTER:  can contain any types of characters               *
+*    'N' - NUMBER: contains a number with defined # of decimal places.   *
+*          All stored as ASCII digits, including the decimal point with  *
+*          a maximum precision of 20 digits.                             *
+*    'F' - FLOAT: Floating point number.
+*    'D' - DATE: 8 bytes in form 19850131 for 85/01/31                   *                                                          *
+*    'L' - LOGICAL: one byte containing 'T'- true, or 'F' - false        *
+*    'M' - MEMO: 10 byte field containing pointer into auxilliary file   *
+*          of 512 byte blocks of memo data.                              *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
+
+
+(* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* DBaseII files have a header as follows:                                *
+* struct {                                                               *
+*    char         FileType;          '2' for DBase2.                     *
+*    unsigned     NRecords;          number of records                   *
+*    char         Month;                                                 *
+*    char         Day;                                                   *
+*    char         Year;                                                  *
+*    unsigned     RecSize;           record size in characters           *
+*    struct DB2FIELD Field[32];      exactly 32 fields                   *
+* } db2hdr;                                                              *
+*                                                                        *
+* NOTES:                                                                 *
+*    1) The field name record after the last actual defined field        *
+*    contains a 0x0d in its first character.                             *
+*    2) The fileType is not included in the structure below so that it   *
+*    can be read first to determine the file type.                       *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
+
+(* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* DBaseIII files have a header as follows:                               *
+* struct {                                                               *
+*    char         FileType;                                              *
+*    char         Month;                                                 *
+*    char         Day;                                                   *
+*    char         Year;                                                  *
+*    long         NRecords;          number of records                   *
+*    unsigned     HeaderLength;      length of entire header in bytes    *
+*    unsigned     RecSize;           record size in bytes                *
+*    char         Filler[20];        space filler                        *
+*    struct DB3FIELD Field[N];       up to 128 fields (variable)         *
+* };                                                                     *
+*                                                                        *
+* NOTE:                                                                  *
+*    1) The two bytes after the last defined field are a 0x0d followed   *
+*    by a 0x00.                                                          *
+*    2) The fileType is not included in the structure below so that it   *
+*    can be read first to determine the file type.                       *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
+
+(* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DBaseIV files have a header as follows:                                *
+ * RECORD                                                                 *
+ *    FileType     : CHAR;                                                *
+ *                   Bits 0 - 2 indicate version.                         *
+ *                   Bits 3 - 5 reserved for SQL operations.              *
+ *                   Bits 6 - 7 indicate presence of memo file.           *
+ *    Month        : CHAR;    Date of last update.                        *
+ *    Day          : CHAR;           ""                                   *
+ *    Year         : CHAR;           ""                                   *
+ *    NRecords     : LONGINT;                     number of records       *
+ *    HeaderLength : CARDINAL;                    Header length in bytes  *
+ *    RecordSize   : CARDINAL;                    record size in bytes    *
+ *    Reserved_One : CARDINAL;                                            *
+ *    Transaction  : CHAR;      Boolean indicating incomplete transaction.*
+ *    Encrypted    : CHAR;      Boolean indicating database encryption.   *
+ *    LanSupport   : ARRAY[0..11] OF CHAR; Used by dBase for Lan support. *
+ *    MDXFlag      : CHAR;      Boolean indicating usage of .mdx file     *
+ *    Reserved_Two : ARRAY[0..2] OF CHAR;                                 *
+ *    Field        : ARRAY[1..n] OF AFieldRecord; up to 128 fields.       *
+ * END;                                                                   *
+ *                                                                        *
+ * NOTE:                                                                  *
+ *    1) The two bytes after the last defined field are a 0x0d followed   *
+ *    by a 0x00 in early versions of dBase 111 plus. This is a bug        *
+ *    and the field terminator was changed to the correct byte            *
+ *    representation in later versions.                                   *
+ *    2) The fileType is not included in AHeaderRecord below as it        *
+ *    is to be read first to determine the file type.                     *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *)
+
+TYPE
+  AHeaderRecord = RECORD
+                      Year         : CHAR;
+                      Month        : CHAR;
+                      Day          : CHAR;
+                      NRecs        : LONGINT;
+                      HeaderLength : CARDINAL;
+                      RecSize      : CARDINAL;
+                      ReservedOne  : CARDINAL;
+                      Transaction  : CHAR;
+                      Encrypted    : CHAR;
+                      LanSupport   : ARRAY [0..11] OF CHAR;
+                      MDXFlag      : CHAR;
+                      ReservedTwo  : ARRAY [0..2] OF CHAR;
+                  END;
+
+  AFieldRecord = RECORD
+                      Name          : ARRAY [0..10] OF CHAR;
+                      FieldType     : CHAR;
+                      Unknown       : ARRAY [0..3] OF CHAR;
+                      FieldSize     : CHAR;
+                      NDecimals     : CHAR;
+                      Filler        : ARRAY [0..13] OF CHAR;
+                 END;
+
+
+PROCEDURE CheckForCorrectFormat ( VAR  f : File ) : BOOLEAN;
+
+PROCEDURE DoDb3Header ( VAR   f  : File;
+                        VAR   HeaderRecord : AHeaderRecord ) : BOOLEAN;
+
+PROCEDURE GetDBHeaderData ( VAR f : File ) : BOOLEAN;
+
+PROCEDURE GetDBData       ( VAR f : File ) : BOOLEAN;
+
+END DBToInt.
+

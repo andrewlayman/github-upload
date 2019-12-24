@@ -1,0 +1,49 @@
+DEFINITION MODULE Filter1;
+
+        (* Filter1 -- Determine filter status of a single task, resource,
+                      assignment or dependency.
+
+
+           This module determines which of the current filters would be
+           passed by the resource.  The ATaskFilterSet returned reflects
+           the result of applying each of the active filters to the 
+           resource.  We only check the portions of those filters that
+           specify resource information, specifically the resource names
+           and keywords.
+
+           Although we return a set that is lables ATaskFilterSet, it is
+           really a set of succeeding filters.  Until now, these have been
+           only used for tasks, but we remove that restriction.
+
+           MODIFICATION HISTORY:
+
+           June 27, 1988  AJL - Original version.
+        *)
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                 ATaskFilterSet;
+
+FROM Assignments            IMPORT
+    (* TYPE *)                 AnAssignmentRecord;
+
+FROM Edges                  IMPORT
+    (* TYPE *)                  AnEdgePtr;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                 ATreeNode;
+
+
+
+PROCEDURE TaskFiltersPassed( TaskNode : ATreeNode ) : ATaskFilterSet;
+
+PROCEDURE ResourceFiltersPassed( ResourceNode : ATreeNode ) : ATaskFilterSet;
+
+PROCEDURE AssignmentFiltersPassed(     TaskNode : ATreeNode;
+                                   VAR Assignment : AnAssignmentRecord ) : ATaskFilterSet;
+
+PROCEDURE DependencyFiltersPassed( Edge : AnEdgePtr ) : ATaskFilterSet;
+
+
+
+END Filter1.
+

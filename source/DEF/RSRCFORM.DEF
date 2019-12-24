@@ -1,0 +1,138 @@
+DEFINITION MODULE RsrcFormat;
+
+  (*
+    Rsrc Format - Format Resource Information
+
+        This module is intended to do for resources what Captions does for
+        tasks.  That is, given a column ID, return information about a
+        resource.
+
+        At this time, only the information about a resource COLUMN is
+        returned, not information about a specific resource.
+
+
+        MODIFICATION History - 
+
+        17-Feb-89 RSC First version - information only.
+        17-Mar-89 RSC Added support for better reports.
+         1-Sep-89 EGK Added FormatType parameter to FormatRsrcValue.
+  *)
+
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnInfoChoice, AColumnDataRecord;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+TYPE
+
+(*
+    Get Rsrc Value
+
+        Preconditions
+                        > RsrcNode  is the resource's tree node.
+
+                        > ColumnID  is the column to return information about.
+
+        Postconditions
+                        > If TRUE, Value contains the desired information.
+
+                        > If FALSE, The column data is not applicable.
+*)
+    AGetRsrcValueProc     = PROCEDURE(    ATreeNode,          (* RsrcNode *)
+                                          CARDINAL,           (* ColumnID *)
+                                      VAR AColumnDataRecord)  (* Value *)
+                                                              : BOOLEAN;
+
+(*
+    Format Rsrc Value
+
+        Preconditions
+                        > ColumnID  is the column to return information about.
+
+                        > Width     is how wide the data is.
+
+                        > MinDecimals  is the min decimals to use for REALs.
+
+                        > MaxDecimals  is the max decimals to use for REALs.
+
+                        > RightJust    is wether to right justify the string.
+
+        Postconditions
+                        > Value contains the desired string.
+
+*)
+    AFormatRsrcValueProc  = PROCEDURE(    CARDINAL,           (* ColumnID *)
+                                          CARDINAL,           (* Width *)
+                                          CARDINAL,           (* MinDecimals *)
+                                          CARDINAL,           (* MaxDecimals *)
+                                          BOOLEAN,            (* Right Just *)
+                                          CARDINAL,           (* FormatType *)
+                                      VAR AColumnDataRecord); (* Value *)
+
+(*
+    Get Rsrc String
+
+        Preconditions
+                        > RsrcNode  is the resource's tree node.
+
+                        > ColumnID  is the column to return information about.
+
+                        > Width     is how wide the data is.
+
+        Postconditions
+                        > If TRUE, Value contains the desired string.
+
+                        > If FALSE, The column data is not applicable.
+*)
+    AGetRsrcStringProc    = PROCEDURE(    ATreeNode,          (* RsrcNode *)
+                                          CARDINAL,           (* Column *)
+                                          CARDINAL,           (* Width *)
+                                      VAR ARRAY OF CHAR)      (* Value *)
+                                                              : BOOLEAN;
+
+
+
+(*
+    Get Rsrc Info
+
+        Preconditions
+                        > ColumnID  is the column to return information about.
+
+                        > InfoChoice is the kind of information you are
+                          interested in.  See Captions.Def for the choices.
+
+                        > Length is the length of the string to return,
+                          important mostly for Right Justified strings.
+
+        Postconditions
+                        > If TRUE, InfoValue contains the desired information.
+                          If a string value is being returned, it may be right
+                          justified, and is always exactly "Length" bytes long.
+
+                        > If FALSE, The column does not exist.  This allows
+                          looking for information on ALL columns.
+*)
+    AGetRsrcInfoProc      = PROCEDURE(     CARDINAL,           (* ColumnID   *)
+                                           AColumnInfoChoice,  (* InfoChoice *)
+                                           CARDINAL,           (* Width *)
+                                       VAR AColumnDataRecord)  (* InfoValue *)
+                                       : BOOLEAN;
+
+
+
+VAR
+    GetRsrcInfo     : AGetRsrcInfoProc;
+    GetRsrcValue    : AGetRsrcValueProc;
+    FormatRsrcValue : AFormatRsrcValueProc;
+    GetRsrcString   : AGetRsrcStringProc;
+
+
+
+
+
+END RsrcFormat.
+

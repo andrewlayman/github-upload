@@ -1,0 +1,83 @@
+DEFINITION MODULE NetLUtility;
+
+
+(*  MODIFICATION HISTORY --
+
+        9/25/89 EGK   Created this by moving procs from NetLayouts.
+
+*)
+
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+(*----------------------------------------------------------------------------
+    SortNetLayouts --
+
+    Sort the layouts in the tree into alpha order.
+
+    Preconditions:
+        InitializeNetLList must have been called.
+
+    Postconditions:
+        The NetLayoutTree will be sorted into alphabetical order.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SortNetLayouts();
+
+
+
+(*----------------------------------------------------------------------------
+    CreateNetLayout --
+
+    Create a new layout, setting all fields of the layout to their default 
+    values.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The layout will be created if possible, and its fields defaulted.
+        TRUE will be returned iff the layout was created.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateNetLayout(VAR Layout        : ATreeNode)
+                                                        : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    DiscardNetLayout --
+
+    Get rid of the given layout tree node.
+
+    Preconditions:
+        The layout must be a valid layout node.
+
+    Postconditions:
+        The node and all its associated storage will be discarded.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DiscardNetLayout(VAR Layout       : ATreeNode);
+
+
+
+(*----------------------------------------------------------------------------
+    FindNetLayoutByName --
+
+    Attempt to find a layout with a name that matches the one passed.
+
+    Preconditions:
+        The name must be a valid LString.
+
+    Postconditions:
+        If a layout whose name exactly matches this one can be found, its
+        associated tree node will be returned, else NIL will be returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE FindNetLayoutByName  (VAR LayoutName : ARRAY OF CHAR) : ATreeNode;
+
+
+END NetLUtility.
+

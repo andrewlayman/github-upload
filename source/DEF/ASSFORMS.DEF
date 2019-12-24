@@ -1,0 +1,191 @@
+DEFINITION MODULE AssForms;
+
+
+  (* Module created by RSC 5/21/87.
+
+        AssForms - Handle the Assignment Forms, Cost Forms, Histories, and
+                   other miscellanious Assignment/Cost record facilities.
+
+     MODIFICATION HISTORY:
+
+      RSC  5/21/87 - Initial version.
+      RSC  2/23/88 - Add 'SummaryTask' param to call.
+      EGK  3/9/88  - Added "MakeAssignmentsRateDriven" procedure.
+      EGK  3/12/88 - Added "FindAssignmentErrors" procedure.
+      EGK  3/21/89 - Changed ZeroAssignmentWork to bring up dialog
+                     boxes to allow the user to pick how we mark
+                     assignments as being "done".
+      RSC  4/25/89 - Removed ResourceIsOnTaskForm proc.
+                     Updated other procs to reflect changes in MOD file.
+      18-May-89 RSC  Removed "ZeroAssignmentWork", which is not usefull now.
+                     Also "IsThereAssignmentWork" and "FindAssignementErrors".
+      30-Mar-90 RSC  Made Timeu to Timei conversions.
+      RSC  23-Sep-90 Provide a function for the task form to determine
+                     if there are any kind of resources on the form,
+                     not just costs.
+  *)
+
+
+FROM Assignments                IMPORT
+      (* TYPES *)                  AnAssignmentRecord;
+
+FROM RsrcMod                    IMPORT
+      (* TYPE *)                   AResourcePointer;
+
+FROM Allocs                     IMPORT
+      (* TYPES *)                  AFixType, AnAssignmentSummary,
+                                   AStartStatus,
+                                   ADurationMethod, ATaskPtr;
+
+FROM FlexStor                   IMPORT
+      (* TYPE *)                   AnExtHandle;
+
+FROM Forms                      IMPORT
+      (* TYPES *)                  AFieldValue, AForm, ACheckReason;
+
+FROM FormCon                    IMPORT
+      (* TYPES *)                  AFieldNo;
+                                   
+FROM TreeObjects                IMPORT
+      (* TYPE *)                   ATreeNode;
+
+FROM Timei                      IMPORT
+      (* TYPE *)                   ADurationUnit, ADate, ADuration;
+
+
+
+
+
+
+
+
+
+
+(* Resources Assigned To Task
+
+        Are there any resources (not costs) assigned to this task?
+
+        Preconditions - "MyContext" must be set up already.
+
+        Postconditions - none.
+
+        Input - none
+
+        Output - RETURNs TRUE iff there are resources assigned to the task.
+*)
+PROCEDURE ResourcesAssignedToTask() : BOOLEAN;
+
+
+
+
+
+
+
+ (* Recompute Task On Form - recompute the task that is currently on the
+                             task form.
+ *)
+
+PROCEDURE RecomputeTaskOnForm(     TaskNode           : ATreeNode );
+
+
+
+
+  (* Setup Task Form Assignments - We are about to enter the task form, so
+                we need to get a copy of the real world.  We need a COPY,
+                because they can hit <Escape> on the form and we need to
+                NOT save everything.
+
+          Preconditions - Task pointer must be valid.  FormValue is a big 
+                   array, and we start dealing with it at position
+                   "FirstResourceField".  WE initialize it and such.
+
+          Postconditions - FormValue is ready to be passed to DoForm for 
+                    our fields.  StoreTaskFormAssignments MUST be called
+                    upon exit from the form.
+  *)
+
+PROCEDURE SetupTaskFormAssignments(     LocalTaskNode      : ATreeNode;
+                                    VAR FormValue          : ARRAY OF AFieldValue;
+                                        FirstResourceField : CARDINAL );
+
+
+
+
+
+
+
+  (* Store Task Form Assignments - The "Exit" key was pressed on the task
+                form, so we may want to save any/all changes.
+
+          Preconditions - Task pointer must be valid.  FormValue is a big 
+                    array, and we start dealing with it at position
+                    "FirstResourceField".  WE dispose of the data.
+                    "Save Changes", if TRUE, means that any changes made
+                    since "SetupTaskFormAssignments" must be saved.
+                    FALSE means any changes are discarded.
+
+          Postconditions - Task is set appropriately.
+                    Assignment records may have been fixed up a little to
+                       reflect reality.
+                    RETURN is TRUE if changes were made and saved.
+                              FALSE if no changes made and saved.
+
+                    StoreTaskFormAssignments MUST be called
+                    upon exit from the form.
+
+  *)
+
+PROCEDURE StoreTaskFormAssignments(     TaskNode : ATreeNode ) : BOOLEAN;
+
+
+
+
+
+ (* CheckTaskFormResources - Handle the resource fields on the task form.
+                 
+       Preconditions - We must be in the TaskForm procedure, and he must
+                       have called us when DoForm passed the check proc
+                       an event.  It can be any of the valid CheckReasons.
+                       SetupTaskFormAssignments MUST have been called at
+                       some time in the recent past.
+                       Additional fields over CheckProc fields:
+                       TaskDuration - the current duration from the task form
+                       TaskScale    - The current time scale from the task form
+                       TaskMethod   - The current task duration method from the form.
+
+       Postconditions - Anything nescessary for handling resources has been
+                       done.  Do not attempt to manipulate the FormValues for
+                       resources in the caller module, as this could be
+                       disasterous!
+ *)
+PROCEDURE CheckTaskFormResources( Form               : AForm;
+                                  FieldNo            : AFieldNo;
+                                  FirstResourceField : CARDINAL;
+                              VAR FormValue          : ARRAY OF AFieldValue;
+                                  CheckReason        : ACheckReason;
+                              VAR Code               : CARDINAL;
+                                  LocalTaskNode      : ATreeNode
+                              ) : BOOLEAN;
+
+
+
+
+ (* MakeAssignmentsRateDriven - Set the calculation mode on all the
+                                resource assignments so that the
+                                rate is the controlling factor
+                                (i.e., NOT the total effort).
+
+        Preconditions  - SetupTaskForm has been called, and we have our
+                         assignment work array set up.
+
+        Postconditions - Task form's assignments will now calculate based
+                         on the rate (number and percentage each).
+
+  *)
+
+PROCEDURE MakeAssignmentsRateDriven ();
+
+
+
+END AssForms.
+

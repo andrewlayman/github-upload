@@ -1,0 +1,22 @@
+DEFINITION MODULE FatalErr;
+
+   (* RSC 3/10/88:  Module to implement the FatalError box.
+
+            You, the client, can steal the FatalError procedure entirely,
+            or just the "Get Code" procedure, so you can handle the Death
+            key differently.  You can also just steal the "FatalError
+            Notify" proc to be notified JUST BEFORE the box is put on the
+            screen.  If you steal FatalError(), you should be kind enough
+            to support the "FatalErrorNotify" proc.
+    *)
+
+FROM Keyboard IMPORT AGetCodeProcedure;
+
+
+VAR
+    FatalError        : PROCEDURE();
+    FatalErrorNotify  : PROCEDURE();
+    FatalErrorGetCode : AGetCodeProcedure;
+
+END FatalErr.
+

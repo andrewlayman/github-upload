@@ -1,0 +1,87 @@
+DEFINITION MODULE TaskDictionary;
+
+  (*   Routines for detemining if WBS codes exist within the current task tree.
+       These routines allow us to maintain a 'Dictionary' of hashed WBS codes.
+       This allows us to determine very quickly whether a task node exists which
+       contains a specific WBS code, as opposed to the old method of determination
+       which involved the task importer to conduct a linear search of every task
+       node in the tree to see if a match occurs. The old method was OK for
+       small task trees, but as the amount of nodes increased ( > 150 - 200 nodes )
+       the search time for a non-match was VERY slow. This method keeps the
+       time linear.
+
+        MODIFICATION HISTORY:
+
+        16-Oct-89  MWP  Creation
+  *)
+
+
+FROM Dictionary     IMPORT
+    (* TYPE *)              ADictionary;
+
+FROM SYSTEM         IMPORT
+                            ADDRESS;
+FROM TreeObjects    IMPORT
+    (* TYPE *)              ATree, ATreeNode;
+
+
+VAR
+    DictionaryInUse         : BOOLEAN;
+
+
+        (*
+           Prepares the WBS code dictionary for use by
+           creating it. DeleteWBSCodeDictionary MUST be called
+           before any  other calls to this proc are made, or
+           a Fatal error will result. If the Dictionary could
+           not be created, a FALSE value will be returned, else
+           a TRUE is returned.
+        *)
+PROCEDURE  CreateWBSCodeDictionary () : BOOLEAN;
+
+        (*
+           Deletes a previously created WBS code dictionary.
+        *)
+PROCEDURE  DeleteWBSCodeDictionary ();
+
+        (*
+           Returns TRUE if WBSCode is in WBS code dictionary.
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE IsInDict ( VAR WBSCode : ARRAY OF CHAR;
+                     VAR Node    : ATreeNode ) : BOOLEAN;
+
+        (*
+           Returns TRUE if WBSCode can be placed in the WBS code dictionary.
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE  PutInDict ( VAR Node : ATreeNode ) : BOOLEAN;
+
+        (*
+           Will load all WBS codes within the Task tree to the
+           WBS Code dictionary. Blank and duplicate codes are NOT
+           stored.
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE  LoadWBSCodes ();
+
+        (*
+           Similair to LoadWBSCodes, FlagDuplicateWBSCodes
+           will load all WBS codes within the Task tree to the
+           WBS Code dictionary. Duplicate WBS codes are flagged
+           if they are within a previously defined range of tasks.
+           ( via call to SetDuplicateFlagInNode, or SetDuplicateFlagsInTree )
+
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+
+END TaskDictionary.
+

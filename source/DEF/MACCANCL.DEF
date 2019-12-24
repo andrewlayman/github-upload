@@ -1,0 +1,26 @@
+DEFINITION MODULE MacCancl;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+EXPORT QUALIFIED    CancelProc, CheckForCancel, ClearMacStacks,
+                    ClearPlaybackLights, ClearPlayback;
+
+
+PROCEDURE CancelProc (S : ARRAY OF CHAR):BOOLEAN;
+
+PROCEDURE CheckForCancel( VAR What : ARRAY OF CHAR ):BOOLEAN;
+
+PROCEDURE ClearMacStacks;
+
+PROCEDURE ClearPlaybackLights;
+
+PROCEDURE ClearPlayback;
+
+END MacCancl.

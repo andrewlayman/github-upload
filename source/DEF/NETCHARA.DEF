@@ -1,0 +1,74 @@
+DEFINITION MODULE NetCharacters;
+
+    (*  MODIFICATION HISTORY
+        15-Jun-89 CMH  Changes for a critical path character
+        05-Feb-90 EGK  Made drawing chars variables instead of constants,
+                       so they can be changed in phrases.
+     *)
+
+CONST
+ (* maximum number of characters the drawing matrix knows about *)   
+    MAXCHAR = 27;
+    
+    pblank     =  0;
+    pVBar      = -2;
+    pHBar      = -3;
+    pVDash     = -4;
+    pdash      = -5;
+    pRightTee  = -6;
+    pURC       = -7;
+    pLLC       = -8;
+    pBotTee    = -9;
+    pTopTeeDown= -10;
+    pLeftTee   = -11;
+    pplus      = -12;
+    pLRC       = -13;
+    pULC       = -14;
+    pastrUL    = -15;
+    pastrUR    = -16;
+    pastrLL    = -17;
+    pastrLR    = -18;
+    pMTaskHBar = -19;
+    pMTaskVBar = -20;
+    pTopTeeUp  = -21;
+    pDLeftTee  = -22;
+    pDRightTee = -23;
+    pDPlus     = -24;
+    pDHPlus    = -25;
+    pVPound    = -26;   (* CMH 15-Jun-89 *)
+    pHPound    = -27;   (* CMH 15-Jun-89 *)
+
+VAR    
+    blank          : CHAR;
+    asterick       : CHAR;
+    UpArrow        : CHAR;
+    DownArrow      : CHAR;
+    SmallPlus      : CHAR;
+    PoundSign      : CHAR;
+    HBar2          : CHAR;
+    VBar2          : CHAR;
+    TTee2          : CHAR;
+    BTee2          : CHAR;
+    ULC2           : CHAR;
+    URC2           : CHAR;
+    LLC2           : CHAR;
+    LRC2           : CHAR;
+    HBar1          : CHAR;
+    VBar1          : CHAR;
+    ULC1           : CHAR;
+    URC1           : CHAR;
+    LLC1           : CHAR;
+    LRC1           : CHAR;
+    TopTee         : CHAR;
+    BotTee         : CHAR;
+    LeftTee        : CHAR;
+    RightTee       : CHAR;
+    plus           : CHAR;
+    ThickBar       : CHAR;
+    DoubleLeftTee  : CHAR;
+    DoubleRightTee : CHAR;
+    DoubleVertPlus : CHAR;
+    DoubleHorPlus  : CHAR;
+    
+END NetCharacters.
+

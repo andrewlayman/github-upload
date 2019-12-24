@@ -1,0 +1,13 @@
+DEFINITION MODULE GaGa;
+
+
+PROCEDURE GetGaGaMessage( PhraseNumber : CARDINAL;
+                      VAR s            : ARRAY OF CHAR );
+
+PROCEDURE ConcatGaGaMessage( PhraseNumber : CARDINAL;
+                         VAR s            : ARRAY OF CHAR );
+
+
+END GaGa.
+
+

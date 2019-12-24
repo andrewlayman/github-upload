@@ -1,0 +1,27 @@
+DEFINITION MODULE ChartControl;
+
+FROM Lights                 IMPORT
+    (* TYPE *)                  ALight;
+
+
+TYPE
+    AChartState        = (Scheduled, Sorted, Filtered, Formatted, Showing);
+    AChartStateSet     = SET OF AChartState;
+    
+VAR
+    ChartState         : AChartStateSet;
+    RecomputeLight     : ALight;
+
+PROCEDURE SetState (State:AChartState);
+
+    (* UnSetState -- Set the state to the prior condition of
+                     the State.  For example, UnSetState(Scheduled)
+                     equals SetState(UnScheduled). *)
+
+PROCEDURE UnSetState (State:AChartState);
+
+PROCEDURE DisplayTheChart;
+
+
+END ChartControl.
+

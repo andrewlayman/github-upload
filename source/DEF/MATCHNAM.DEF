@@ -1,0 +1,19 @@
+DEFINITION MODULE MatchNames;
+
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+
+
+PROCEDURE PutMatchedString  (   VAR s           : ARRAY OF CHAR;
+                                    x           : ascreenx;
+                                    y           : ascreeny;
+                                    MatchCount  : CARDINAL;
+                                    VideoMode   : avidmode;
+                                    CursorMode  : avidmode; 
+                                    CursorOn    : BOOLEAN       );
+
+END MatchNames.
+                                    
+

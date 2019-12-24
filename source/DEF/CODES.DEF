@@ -1,0 +1,55 @@
+DEFINITION MODULE Codes;
+
+
+    (******************************************************************)
+    (*                                                                *)
+    (*    Codes                                                       *)
+    (*                                                                *)
+    (*    Defines the basic keyboard code set, though not the         *)
+    (*    meanings of any of the codes.                               *)
+    (*                                                                *)
+    (******************************************************************)
+
+
+
+CONST
+    MaxCode = 511;  (* Upper range of "ACode". *)
+    BitsPerBitSet = 16;  (* Number of bits in a BITSET. *)
+
+TYPE
+
+        (*  "Acode" is the internal representation of any signal that
+            can be generated from the keyboard.  It is intended to represent
+            a single keystroke, even if that keystroke generates a multiple-
+            character sequence.
+        *)
+
+
+    ACode = [0..MaxCode];
+
+        (* Declare ASetOfCodes in such a way that we can get a reasonably
+           dense representation of a bitmap that is larger than Modula 2/86 will
+           support.   "Asetofcodes" would have been declared
+           "ASetOfCodes = SET OF ACode" if the compiler hadn't been so
+           restrictive on the maximum size of a set.
+
+           A character with ordinal value n is represented by word
+           n DIV bitsperset, bit n MOD bitsperset.
+        *)
+
+    ASetOfCodes = ARRAY [0..((MaxCode+1) DIV BitsPerBitSet)-1] OF BITSET;
+
+
+VAR
+    EmptyCodeSet : ASetOfCodes;
+
+        (* SetCodeBits sets or clears the bits in the CodeSet for the
+           range of characters First through Last.  Use this to prepare
+           a code set before calling GetCode. *)
+
+PROCEDURE SetCodeBits (VAR CodeSet:ASetOfCodes;
+                       First, Last: ACode; Value:BOOLEAN);
+
+
+END Codes.
+

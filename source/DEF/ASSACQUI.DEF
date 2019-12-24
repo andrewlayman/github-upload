@@ -1,0 +1,247 @@
+DEFINITION MODULE AssAcquire;
+
+
+
+    (*
+        Ass Acquire - Acquire an assignment record
+
+            This module, given "columns" of information, attempts to find
+            an existing assignment record or create a new record with
+            appropriate defaults.
+
+
+        Procedure Overview:
+
+            ResetAssignments()
+
+                    Prepares a task to receive edits to its assignments.
+
+            AnalyzeAssColumn()
+
+                    Look at each column being read in from a file to see if
+                    we have the columns needed to determine if the record
+                    exists.
+
+            AcquireAss()
+
+                    Once "AnalyzeAssColumn" is called for each available
+                    column, this is used to actually create or find an
+                    assignment.
+
+            ResetDefaultAssColumns()
+
+                    Resets the user-defined default columns.  When a record
+                    is created, SYSTEM defaults are applied, then any user-
+                    defined columns are applied.
+
+            DefaultAssColumn()
+
+                    Set a default assignment column.  The next time an
+                    assignment record is created, all default columns are
+                    applied first, and then the assignment is ready for
+                    changes.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module uses Undo to add and change records.  It does not begin
+            or end the undo transaction.  The intent is that clients will:
+
+                Begin Undo Transaction
+                    Call AssAquire to get    the assignment
+                    Call AssChange to change the assignment
+                End Undo Transaction.
+
+
+        Modification History:
+
+
+         17-Feb-89  RSC  First version.
+          9-Aug-89  MWP  Pass copy of import context to Acquire Ass.
+          9-Aug-89  MWP  Allow for importing baseline assignment data.
+          6-Sep-89  MWP  Added proc to test whether a column is needed
+                         for editing. Does not grab the column value.
+         11-Sep-89  MWP  Changed parameters for EndAssEdit.
+
+    *)
+
+
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+
+(*
+    Reset Assignments
+
+        Sets up for creating or changing assignment records.
+
+        As assignment records are not identified by a record number or any
+        other unique value, ordering is very important.  If changes come in
+        to some task for an assignment of, say, "BOB", any existing record
+        with that resource is changed.  If no assignment has that resource,
+        then a new assignment is created.  If two or more assignments have
+        that resource, then the FIRST assignment edited is the FIRST one with
+        the name, and the SECOND edits the SECOND existing record, and so on.
+        If there are five incoming assignments for "BOB" and only three
+        existing records, the three are updated and two new records are added.
+
+        This is not needed if you use "AcquireAss" to get the assignment
+        record.  It is only for clients who do not use "AcquireAss".
+
+        Preconditions
+                        > TaskNode is a tree node for a task that COULD have
+                          its assignments edited.  It is a VAR to satisfy
+                          "TraverseTree".  The TaskNode is not altered.
+
+                        > JunkAddress is a placeholder so that "TraverseTree"
+                          can call this procedure.  It should be NIL.
+
+        Postconditions
+                        > Task is ready to have assignments edited.
+*)
+PROCEDURE ResetAssignments( VAR TaskNode    : ATreeNode;
+                                JunkAddress : ADDRESS    );
+
+
+
+PROCEDURE ResetAllAssignments();
+
+
+
+
+(*
+    Analyze Ass Column
+
+        Preconditions
+                        > ColumnID is within range for an assignment column.
+                        > ColumnData contains the data to be changed.
+
+        Postconditions
+                        > The data has been analized for usability in
+                          defining an assignment record to edit.
+*)
+PROCEDURE AnalyzeAssColumn(     ColumnID    : CARDINAL;
+                            VAR ColumnData  : AColumnDataRecord );
+
+
+
+PROCEDURE IsControllingColumn ( ColumnID    : CARDINAL ) : BOOLEAN;  (* 6-Sep-89 MWP *)
+
+PROCEDURE AreAllControlsPresent () : BOOLEAN;
+
+
+
+
+(*
+    Acquire Ass
+
+        Preconditions
+                        > All columns have been passed through
+                          "AnalyzeAssColumn"
+
+        Postconditions
+                        > If TRUE is returned, TaskNode is the task's
+                          node, and AssignmentEntry is the specific
+                          assignment record for that task.
+
+                        > If there was a system error, or if the Task
+                          could not be found, then the ErrorHandler
+                          is called, and FALSE is returned.
+
+                        > Undo is called to notify it of the Add or Change.
+                          The client must start and end the Undo transaction.
+*)
+PROCEDURE AcquireAss( VAR TaskNode            : ATreeNode;
+                      VAR AssignmentEntry     : CARDINAL;
+                      VAR BaseLineEntry       : CARDINAL;
+                          PImportContext      : ADDRESS;            (* 9-Aug-89 MWP *)
+                          ErrorHandler        : AnErrorHandlerProc;
+                          HandlersContext     : ADDRESS          )  : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*
+    Reset Default Ass Columns
+
+        Reset the default values for assignment columns.
+
+        Preconditions
+                        > none.
+
+        Postconditions
+                        > The next assignment that is created will have all
+                          of its fields set to the system defaults, not
+                          any client defaults.
+*)
+PROCEDURE ResetDefaultAssColumns();
+
+
+
+
+
+
+(*
+    Default Ass Column
+
+        Sets up defaults for assignment columns.  These defaults are used
+        whenever creating a new assignment.
+
+        Preconditions
+                        > Column ID is within range
+
+                        > ColumnData is properly formatted for the column
+                          being defined.
+
+        Postconditions
+                        > Any assignment that is created has values applied
+                          in this order:
+
+                                System defaults
+                                Client defaults, defined with this procedure
+                                Any edits given to AssEdit.
+
+                        > Reset this action with "ResetDefaultAssColumns"
+*)
+PROCEDURE DefaultAssColumn(     ColumnID    : CARDINAL;
+                            VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+END AssAcquire.
+

@@ -1,0 +1,19 @@
+DEFINITION MODULE SubfileIn;
+
+
+
+FROM FileSystem   IMPORT File;
+
+    (* StartFileInput -- Check the file for valid format *)
+
+PROCEDURE StartFileInput      (VAR F               : File     ):BOOLEAN;
+
+    (* StartSubfileInput -- Position to the correct spot to begin
+                            reading subfile data. *)
+
+PROCEDURE StartSubfileInput   (VAR F               : File;
+                                   SubfileNumber   : CARDINAL;
+                               VAR Version         : CARDINAL):BOOLEAN;
+
+END SubfileIn.
+

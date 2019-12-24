@@ -1,0 +1,23 @@
+DEFINITION MODULE FormalTaskName;
+
+  (* Formal Task Name - Routines to manage a cache of task information.
+
+        Modification History:
+
+        30-Aug-89 MWP Creation.
+  *)
+
+
+PROCEDURE SetupTaskCache () : BOOLEAN;
+
+
+PROCEDURE CheckTaskName ( VAR RangeName  : ARRAY OF CHAR;
+                          VAR DataFormat : CARDINAL;
+                          VAR ID         : CARDINAL      ) : BOOLEAN;
+
+PROCEDURE FindTaskName (     ID         : CARDINAL;               (* 29-Aug-89 MWP *)
+                         VAR ColumnName : ARRAY OF CHAR ) : BOOLEAN;
+
+
+END FormalTaskName.
+

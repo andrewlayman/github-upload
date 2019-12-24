@@ -1,0 +1,389 @@
+DEFINITION MODULE Kbio;
+
+    (* MODIFICATION HISTORY:
+
+       Aug. 22, 1985, AJL - Changed maxcode to 511.
+       Sep. 9,  1985, AJL - Moved Message, Error, MessageWithPriority,
+                            Burp and FatalError to module Dialog.
+                          - Removed TimeoutInterval.
+       Sep. 15, 1985, AJL - Removed acode, maxcode, asetofcodes
+                            and SetCodeBits to module Codes.
+       Aug. 13, 1987  AJL - Added PourText.
+       27-Oct-87      LAA - Exported IdleProcess;
+        5-Jan-89      RSC - Added "GetCursorType"
+       13-Apr-89      LAA - Added new procedures PutStringWithColors and
+                            PutColors.
+       30-May-89      RSC - Made the VersionStringLength 30, not 16, in
+                            prep for the new serial number system.
+       10-Jun-89      WKH - Made maxrow a variable so that Time Line can
+                            support a display that displays more than the
+                            "usual" 25 lines.
+       13-Jun-89      WKH - Moved compressed mode support from video to here.
+       13-Sep-89      LAA - Exported the CleanFlag and BlinkFlag from here, so
+                            they don't have to be in Holder.  This was done so
+                            we can defer reading Holder info until after the
+                            calendar is read in from the Config file.
+        6-Dec-89      RSC - Added mouse support.
+        4-Oct-90      AJL - Renamed the videonetstarted and videonetstarted
+                            to videobutton and videoscrollbar.
+                          - Added video attribute videographvac.
+    *)
+
+    (******************************************************************)
+    (*                                                                *)
+    (*    Kbio                                                        *)
+    (*                                                                *)
+    (*    Keyboard and screen input/output module.                    *)
+    (*                                                                *)
+    (*        This module supports keyboard and screen interaction    *)
+    (*    and is intended to be reasonably independent of the         *)
+    (*    underlying hardware.  It does, however, assume several      *)
+    (*    things, including:                                          *)
+    (*                                                                *)
+    (*    a)  The screen is character-oriented, and characters can    *)
+    (*        only appear at certain positions.                       *)
+    (*                                                                *)
+    (*    b)  The screen supports a cursor, which can be turned       *)
+    (*        on and off, and can appear at any legal screen          *)
+    (*        coordinate.                                             *)
+    (*                                                                *)
+    (*    c)  The upper, left-hand character position is numbered     *)
+    (*        (0,0).                                                  *)
+    (*                                                                *)
+    (*    d)  The screen supports several video modes.  These         *)
+    (*        are "normal", "bright", "reversed" and (optionally)     *)
+    (*        "enhanced".  The screen may also support additional     *)
+    (*        modes which will be used to show the overlap of         *)
+    (*        a logical cursor with the above modes.                  *)
+    (*                                                                *)
+    (*  ALSO:                                                         *)
+    (*                                                                *)
+    (*      Several of these procedures accept an ARRAY OF CHAR as    *)
+    (*  one of the input parameters.  This array is not as            *)
+    (*  innocent as it may appear at first glance, but is instead an  *)
+    (*  "LString," that is, the first byte of the array, interpreted  *)
+    (*  as a number, contains the count of following characters to    *)
+    (*  be used.  This may be less than the upper bound of the        *)
+    (*  array.                                                        *)
+    (*                                                                *)
+    (******************************************************************)
+
+FROM Codes  IMPORT    ACode, ASetOfCodes;
+
+FROM Keyboard   IMPORT
+    (* TYPE *)          AGetCodeProcedure;  (* 6-Dec-89 RSC *)
+
+FROM SYSTEM IMPORT    WORD;
+
+
+CONST
+    maxcol               = 79;  (* The screen width, 0 to this. *)
+    AbsoluteMaxRow       = 49;
+    VersionStringLength  = 30;  (* RSC 30-May-89 *)
+
+TYPE
+
+        (* "Avidmode" is the shorthand representation of video attributes
+           for the display screen.  These values are to be used in the client
+           modules to refer to all video attributes.  The first four are
+           normal video modes, and the next four represent a combination of
+           one of the first four overlayed by the "cursor."
+
+           The actual translation of avidmode into video attribute bits,
+           or other hardware dependent features, may be controlled by
+           the vidctrllist.  This list will need to be initialized, in some
+           hardware dependent manner, before videmodes have their desired
+           effects. *)
+
+    avidmode = ( videonormal,         cvideonormal,
+                 videobright,         cvideobright,
+                 videoenhance,        cvideoenhance,
+                 videoreverse,        cvideoreverse,
+                 videoreversebright,  cvreversebright,
+                 videomessage,        cvideomessage,
+                 videowarning,        cvwarning,
+                 videocaption,        cvideocaption,
+                 videoformback,       cvideoformback,
+                 videoformdata,       cvideoformdata,
+                 videovanish,         cvvanish,
+                 videodatebar,        cvdatebar,
+                 videographbar,       cvgraphbar,
+                 videographlabel,     cvgraphlabel,
+                 videographgrid,      cvgrid,
+                 videorestingcursor,  cvrcursor,
+                 videosecondarycursor, cvscursor,
+                 videoprotectedfield, cvpfield,
+                 videoshadow,         cvshadow,
+                 videolights,         cvlights,
+                 videomenu,           cvideomenu,
+                 videomenubright,     cvmb,
+                 videomenuback,       cvmbk,
+                 videomenubox,        cvmbx,
+                 videoprompt,         cvprompt,
+                 videofilter1,        cvf1,
+                 videofilter2,        cvf2,
+                 videofilter3,        cvf3,
+                 videofilter4,        cvf4,
+                 videofilter5,        cvf5,
+                 videonetwork,        cvnetwork,
+                 videonethighlight,   cvnethighlight,
+                 videobutton,         cvbutton,       (* mouse buttons *)
+                 videoscrollbar,      cvscrollbar,    (* mouse scroll bars *)
+                 videographvac,       cvgvac);        (* histogram vacations *)
+
+    avidctrllist = ARRAY avidmode OF BITSET;
+
+        (*  "Ascreenx" and "ascreeny" are horizontal and vertical
+            video screen positions.  Together, they can designate any of
+            the possible character positions on the screen. *)
+
+    ascreenx = CARDINAL;
+    ascreeny = CARDINAL;
+
+    ACursorType = ( NoCursor, UnderlineCursor, BlockCursor );
+
+    AnIdleProcessProc       = PROCEDURE();
+
+
+        (*  This procedure is called whenever there is no keyboard input
+            for a "long" time.
+        *)
+VAR
+    IdleProcess             : AnIdleProcessProc;
+
+
+        (*----------------------------------------------------*)
+        (*                                                    *)
+        (*    The following variables are exported only for   *)
+        (*    the use of hardware configuration set up.       *)
+        (*                                                    *)
+        (*    With the possible exception of "soundon,"       *)
+        (*    they should not be read or set for any reason   *)
+        (*    other than hardware configuration.              *)
+        (*                                                    *)
+        (*----------------------------------------------------*)
+
+VAR
+
+        (*  This is an array that must be initialized externally before
+            the PutString procedure will work. *)
+
+    vidctrl  : avidctrllist;
+
+        (*  "Soundon", if true, will enable use of the speaker on the
+            computer.  If false, the speaker will not be used, and sound-
+            capable procedures will simply have no effect. *)
+
+    soundon  : BOOLEAN;
+
+    CleanFlag        : BOOLEAN;                                   (* 13-Sep-89 LAA *)
+    BlinkFlag        : BOOLEAN;
+
+        (*   "TamperedFlag" warns of unauthorized tampering with
+             the serial number of the program. *)
+
+    TamperedFlag     : BOOLEAN;
+
+    VersionString    : ARRAY [0..VersionStringLength+14] OF CHAR;
+
+    maxrow           : CARDINAL;    (* The screen height, 0 to this. *)
+
+
+        (*  KeyPress returns a TRUE value if a key has been pressed
+            and is waiting to be read, or a FALSE otherwise.  The
+            actual key hit can be then retrieved by GetCode.
+
+            This method is preferable to a "BusyRead" procedure because
+            it does not restrict the possible character set of the
+            keyboard.
+        *)
+
+PROCEDURE KeyPress() : BOOLEAN;
+
+        (*  GetCode returns a code corresponding to the a key that was
+            pressed on the keyboard.  It will convert multiple-key sequences
+            into a single code.  See the definition of "ACode."
+
+            If a code is typed in that is not in the okset, that code
+            will not be returned.  Instead, GetCode will call the Burp
+            procedure and resume waiting for a code that is in the okset. *)
+
+PROCEDURE GetCode ( VAR okset : ASetOfCodes ) : ACode;
+
+
+        (*  ScrollMode tells us if the machine has been placed into
+            Scroll-Lock state. *)
+
+PROCEDURE ScrollMode():BOOLEAN;
+
+
+        (*  BreakRequested -- Returns TRUE iff the user has pressed the
+                              Break key. *)
+
+PROCEDURE BreakRequested():BOOLEAN;
+
+
+        (*  ClearBreak     -- Resets Break so that BreakRequested no
+                              longer returns TRUE (until the key is
+                              pressed again. *)
+
+PROCEDURE ClearBreak;
+
+
+        (* FlushKeyboardBuffer -- Purge the keyboard of any waiting
+                                  characters.  Does not, however,
+                                  clear any BreakReuested. *)
+
+PROCEDURE FlushKeyboardBuffer;
+
+
+        (*  Acts like GetCode with all characters valid. *)
+
+VAR
+    GetAnyCode :    PROCEDURE () : ACode;  (* 6-Dec-89 RSC *)
+
+        (*  PushCode -- The next call to GetAnyCode or GetCode will
+                        act as though this code were typed. *)
+
+PROCEDURE PushCode ( Code : ACode );
+
+
+        (*  PutString displays characters on the video screen, in
+            the chosen position and with the chosen video attribute.
+            Remember that the "mode" is a coded index representing
+            a video attribute, but is not the hardware-dependent
+            representation of that attribute. *)
+
+PROCEDURE PutString ( VAR s:ARRAY OF CHAR;
+                      x : ascreenx; y : ascreeny; mode: avidmode );
+
+        (*  PutAttribute changes the attribute of characters on the
+            video screen at a chosen position and length.
+            Remember that the "mode" is a coded index representing
+            a video attribute, but is not the hardware-dependent
+            representation of that attribute. *)
+
+PROCEDURE PutAttribute (  x : ascreenx;
+                          y : ascreeny;
+                          length : CARDINAL;
+                          mode: avidmode );
+
+
+
+    (*  PutStringWithColors --
+
+        Display an LString on the screen in the given x and y position, 
+        with colors selected from the foreground and background video
+        modes.
+
+        Preconditions:
+            Kbio must have been initialized, and not yet terminated.
+
+        Postconditions:
+            The string will be written to the screen with the foreground
+            color of the foreground mode, and the background color of the
+            background mode.
+    *)
+
+PROCEDURE PutStringWithColors(VAR String    : ARRAY OF CHAR;
+                                  X         : ascreenx;
+                                  Y         : ascreeny;
+                                  Foreground: avidmode;
+                                  Background: avidmode     );
+
+
+
+    (*  PutColors --
+
+        Change the colors (foreground and background) of the characters on 
+        the screen, at the given position and for the given length, without 
+        altering the characters themselves.
+
+        Preconditions:
+            Kbio must have been initialized, and not yet terminated.
+
+        Postconditions:
+            The foreground and background colors of the screen will be 
+            changed for the given position and length.
+    *)
+
+PROCEDURE PutColors(    X                   : ascreenx;
+                        Y                   : ascreeny;
+                        Length              : CARDINAL;
+                        Foreground          : avidmode;
+                        Background          : avidmode);
+
+
+
+
+    (* PourText -- Put text from the string S onto the screen
+                   within the box bounded by ULX,ULY at the
+                   upper left and LRX,LRY at the lower right.
+                   Return LastY as the Y of the last line
+                   written on.  VideoMode of videovanish will
+                   disable output.
+                   *)
+
+PROCEDURE PourText  ( VAR S          : ARRAY OF CHAR;
+                          VideoMode  : avidmode;
+                          ULX        : ascreenx;
+                          ULY        : ascreeny;
+                          LRX        : ascreenx;
+                          LRY        : ascreeny;
+                      VAR LastY      : ascreeny);
+
+
+
+        (*  EraseLn sets the entire line indicated by "y" to blanks,
+            in normal video mode. *)
+
+PROCEDURE EraseLn ( y : ascreeny );
+
+        (* EraseScreen erases the entire display screen.  It does
+           not affect the cursor. *)
+
+PROCEDURE EraseScreen;
+
+    (* SetCursorType -- Set the cursor mode. *)
+
+PROCEDURE SetCursorType( CursorType : ACursorType );
+
+    (* GetCursorType -- Get the current cursor mode. *)
+
+PROCEDURE GetCursorType() : ACursorType;
+
+    (* GotoXY -- Move the hardware cursor to (x,y). *)
+
+PROCEDURE GotoXY( x : ascreenx; y : ascreeny );
+
+    (*  Tone  -- Make a noise on the speaker. *)
+
+PROCEDURE Tone  ( Pitch, Duration : CARDINAL );
+
+    (*  KbioInit -- Initialize the Kbio module.  *)
+
+PROCEDURE KbioInit;
+
+    (*  KbioTerminate -- Do whatever is necessary to clean up when the
+                         program ends. *)
+
+PROCEDURE KbioTerminate;
+
+    (*
+        PrepareVideoForExit - Reset video to state before TL started
+    *)
+PROCEDURE PrepareVideoForExit();
+
+    (*
+        PrepareVideoForReturn - Reset video to state TL wants
+    *)
+PROCEDURE PrepareVideoForReturn();
+
+    (*
+        CheckForCompressedMode - Check for compressed mode parmline option and
+                                 switch to compressed mode if on.
+    *)
+PROCEDURE CheckForCompressedMode();
+
+END Kbio.
+

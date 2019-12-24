@@ -1,0 +1,33 @@
+DEFINITION MODULE SSaveOptions;
+
+    (* Support module for selective schedule save. *)
+
+
+TYPE
+    ASaveSetting        = RECORD
+                            FilterResources     : BOOLEAN;
+                            CursorTaskOnly      : BOOLEAN;
+                            DiscardKids         : BOOLEAN;
+                          END;
+
+
+
+PROCEDURE GetSaveSettings (  VAR Settings   : ASaveSetting );
+
+PROCEDURE PutSaveSettings (  VAR Settings   : ASaveSetting );
+
+
+
+    (*  DoSaveDialog --
+
+            Bring up the form allowing the user to change the options
+            for the selective schedule save operation.  Return TRUE
+            iff the operation should proceed (i.e., if the form was
+            exited with F10).
+    *)
+
+PROCEDURE DoSaveDialog () : BOOLEAN;
+
+
+END SSaveOptions.
+

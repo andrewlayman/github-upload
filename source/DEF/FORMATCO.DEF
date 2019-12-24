@@ -1,0 +1,192 @@
+DEFINITION MODULE FormatCommon;
+
+(*  =========================================================================
+    Last Edit : September 27, 1990 1:30PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+    Format Common - Helper routine for TaskFormat, RsrcFormat, EdgeFormat, and
+                    AssFormat.
+
+    MODIFICATION HISTORY:
+
+        RSC  20-Feb-89  First version, code inspired by TLCaption.
+        RSC  16-Mar-89  Added support for "Next Column".
+        RSC  17-Mar-89  Added "GetFormattingInfo"
+        RSC  20-Mar-89  Added procedures to get words from phrases.
+        RSC  22-Mar-89  Upgraded for "Better Reports" project.
+        RSC  27-Mar-89  Added "GetValueInfo" for "Better Reports" project.
+        EGK  01-Sep-89  Added general-purpose "FormatDataValue" procedure
+                        and format type constants.  Added FormatType
+                        parameter to GetFormattingInfo.
+        26-Sep-90 PFG   Implemented user-defined column headings.  Added
+                        ColumnType parameter to ColumnInfo.
+    =========================================================================
+*)
+
+
+
+
+
+
+FROM Captions               IMPORT
+    (* TYPE *)                  AColumnInfoChoice, AColumnDataRecord,
+                                ASetOfColumnDataFields;
+
+FROM ColData                IMPORT
+    (* TYPE *)                  AColumnType;            (* 26-Sep-90 PFG  *)
+
+
+
+
+CONST
+    FormatText          = 0;
+    FormatDate          = 1;
+    FormatNumeric       = 2;
+    FormatCurrency      = 3;
+    FormatBoolean       = 4;
+    FormatPercentage    = 5;
+
+
+
+
+
+(*
+    Column Info
+
+        Reads column information from the encoded phrase.
+
+        Preconditions
+                        > PhraseNumber is the BASE phrase to get the
+                          information from.  It is in our "standard
+                          captions phrase format".
+
+                        > ColumnID is the desired column ID.
+
+                        > LastColumnID is used for the "Next Column"
+                          request.  THIS IMPLEMENTATION REQUIRES THAT ALL
+                          COLUMNS BE SEQUENTIAL.
+
+                        > InfoChoice is the kind of information you desire.
+
+                        > Length is the length of the string to return,
+                          important mostly for Right Justified strings.
+
+                        > ColumnType is the type of column: Resource,
+                          Assignment, Cross Tab, etc.
+
+        Postconditions
+                        > ReturnValue contains the desired information.
+                          If a string value is being returned, it may be right
+                          justified, and is always exactly "Length" bytes long.
+
+*)
+PROCEDURE ColumnInfo(     PhraseNumber,
+                          ColumnID,
+                          LastColumnID    : CARDINAL;
+                          InfoChoice      : AColumnInfoChoice;
+                          Length          : CARDINAL;
+                          ColumnType      : AColumnType;
+                      VAR ReturnValue     : AColumnDataRecord);
+
+
+
+
+(*
+    Get Formatting Info
+
+        Reads column information from the encoded phrase.  Returns the
+        information needed by column formatters.
+
+        Preconditions
+                        > PhraseNumber is the phrase to get the information
+                          from.  It is in our "standard captions phrase
+                          format".
+
+        Postconditions
+                        > MinDecimals, MaxDecimals, FormatType, and
+                          RightJustify are returned.
+*)
+PROCEDURE GetFormattingInfo(    PhraseNumber : CARDINAL;
+                            VAR MinDecimals,
+                                MaxDecimals  : CARDINAL;
+                            VAR RightJustify : BOOLEAN;
+                            VAR FormatType   : CARDINAL );
+
+
+
+
+
+(* Get Message Word
+
+        Given a phrase number, get the appropriate "word", or comma seperated
+        value, from the phrase and return it into "Return Value".
+
+        TheWordNumber starts with word 0, not 1.
+*)
+PROCEDURE GetMessageWord( PhraseNumber    : CARDINAL;
+                          TheWordNumber   : CARDINAL;
+                      VAR ReturnValue     : ARRAY OF CHAR );
+
+
+
+
+(* Concat Message Word
+
+        Given a phrase number, get the appropriate "word", or comma seperated
+        value, from the phrase and append it onto "Return Value".
+
+        TheWordNumber starts with word 0, not 1.
+*)
+PROCEDURE ConcatMessageWord( PhraseNumber    : CARDINAL;
+                             TheWordNumber   : CARDINAL;
+                         VAR ReturnValue     : ARRAY OF CHAR );
+
+
+(*
+    Get Value Info
+
+        Reads column information from the encoded phrase.  Returns the
+        information needed by column value procedures.
+
+        Preconditions
+                        > PhraseNumber is the phrase to get the information
+                          from.  It is in our "standard captions phrase
+                          format".
+
+        Postconditions
+                        > DataType and DataFields are returned.
+*)
+PROCEDURE GetValueInfo(    PhraseNumber  : CARDINAL;
+                       VAR DataType      : CARDINAL;
+                       VAR DataFields    : ASetOfColumnDataFields );
+
+
+
+(*----------------------------------------------------------------------------
+    FormatDataValue --
+
+    Format the given value into a displayable string according to the
+    format spec and other parameters.
+
+    Preconditions:
+        ReturnValue must be a result returned from ColumnValue or one of the
+        other analogous procedures, depending on the type of data (tasks,
+        resources, edges, etc.).
+
+    Postconditions:
+        The StringValue will return a formatted version of the data passed
+        in.
+----------------------------------------------------------------------------*)
+
+PROCEDURE FormatDataValue(    Width             : CARDINAL;
+                              MinDecimals       : CARDINAL;
+                              MaxDecimals       : CARDINAL;
+                              RightJustify      : BOOLEAN;
+                              FormatType        : CARDINAL;
+                          VAR ReturnValue       : AColumnDataRecord);
+
+
+
+END FormatCommon.
+

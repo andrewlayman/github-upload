@@ -1,0 +1,70 @@
+DEFINITION MODULE PrintCaptions;
+
+    (* MODIFICATION HISTORY:
+       04-May-89  KKC - Move CreateReportHeaderNotes from PrintSupport.
+                        Export GenerateReportHeader;
+       13-Jul-89  KKC - Add new procedure DiscardReportHeader.
+        30-Mar-90 RSC   Removed Timeu.
+        2-Jul-91  AJL - Added parameters to FilterNotes.
+    *)
+
+
+
+
+
+
+    (*  FilterNotes -- Print a list of the filters currently in
+                       effect.  Shows the Select filter if ShowSelect
+                       is TRUE, shows any highlight filters if 
+                       ShowHighlights is true. *)
+
+PROCEDURE FilterNotes( ShowSelect, ShowHighlights : BOOLEAN );
+
+
+    (*  PageHead -- Advance the printer to a new page and print the
+                    basic information about the schedule. *)
+
+PROCEDURE PageHead;
+
+(***************************************************************************
+
+    CreateReportHeaderNotes()   -
+
+        Set up the report header notes so that user can edit it.
+
+***************************************************************************)
+
+PROCEDURE CreateReportHeaderNotes();
+
+
+
+(***************************************************************************
+
+    GenerateReportHeader()  -
+
+        Generate the report header base on the inputs from
+    CreateReportHeadeNotes.
+
+***************************************************************************)
+
+PROCEDURE GenerateReportHeader();       (* KKC Apr 20, 1989 *)
+
+
+
+(***************************************************************************
+
+    DiscardReportHeader()  -
+
+        Discard the report header.
+
+      Preconditions  - 
+      Postconditions - 
+
+***************************************************************************)
+
+PROCEDURE DiscardReportHeader();
+
+
+
+END PrintCaptions.
+

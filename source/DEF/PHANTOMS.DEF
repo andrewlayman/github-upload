@@ -1,0 +1,129 @@
+DEFINITION MODULE Phantoms;
+
+    (* This module creates phantom tasks in order to fully thread
+       the task network.   Call Scan1 then CreateSummaryPhantoms.
+       When you are finished, call DiscardSummaryPhantoms.
+       Scan1 is designed to be repeatable.  That is, it does nothing
+       that will cause harm if Scan1 is called several times in
+       a row.  The other procedures are not.
+
+       MODIFICATION HISTORY:
+
+       Feb. 25, 88  AJL -Added IgnoreTime parameter to CreateSummaryPhantoms.
+       Apr. 27, 89  AJL -Removed IgnoreTime parameter.  This behavior is
+                         now supported in a different module: NetPhantoms.
+       May  11, 89  AJL -Cleaned up the documentation.  Read "make accurate."
+       Sep  16, 90  AJL -Added InitializeTask to CreateSummaryPhantoms.
+
+     *)
+
+
+FROM Allocs        IMPORT
+    (* TYPE *)         ATempTaskFlag, ATaskPtr;
+
+FROM TreeObjects   IMPORT
+    (* TYPE *)         ATreeNode;
+
+
+CONST
+    SummaryFlag  = TempTaskFlag3;
+    PhantomFlag  = TempTaskFlag4;
+
+
+(*--------------------------------------------------------------------
+
+    Scan1
+
+      - Sets PTaskList.PrivateTaskList to empty.
+
+    For each task . . .
+      - Clears the SummaryFlag and PhantomFlag bits in the task record
+        (exact bit usage is defined above).
+      - Sets the Workspace to be the address of the tree node.
+      - Call ExtraWork (one or more times.  It must be repeatable without
+        damage.)
+      - Adds the task to PTaskList.PrivateTaskList.
+
+    This is not reentrant.
+
+
+---------------------------------------------------------------------*)
+
+TYPE
+    AT2Proc = PROCEDURE (ATreeNode,ATaskPtr);
+
+PROCEDURE Scan1( ExtraWork : AT2Proc );
+
+
+
+
+
+(*--------------------------------------------------------------------
+
+    CreateSummaryPhantoms.
+
+    Preconditions:  Scan1 has been called, and the flags and values
+                    set by it have not been altered.   There are no
+                    dependencies from child tasks to ancestors.
+
+    Adds extra milestone tasks into the schedule so that dependencies
+    from summary tasks are through the intermediary of an ending
+    milestone task.  Links child tasks from their parents and to their
+    ending milestones.  Links summary tasks to their ending milestones.
+    Transfers all the successor joins from summary tasks to their
+    ending milestones.
+
+    Whenever a new task is created, the InitializeTask procedure will be
+    called with its tree node and task pointer.  The task will be locked
+    during the call.
+
+    Summary tasks will all have the flag SummaryFlag set.  The phantom
+    ending milestones will have the PhantomFlag set, too.  These
+    phantom tasks will be linked into the private task list, will
+    have their WorkSpace values set to point to their tree nodes, and
+    will be added into the task tree immediately following their
+    real summary tasks.
+
+    Partial dependencies are not counted, so that a dependency that could 
+    cause the successor task to start earlier than its antecedant will 
+    permit both tasks to be linked from the parent and to the parent 
+    phantom ending milestone. 
+
+    We modify the values of two flag bits in the tree nodes: SelfMatch
+    and ChildrenMatch.  This procedure is not reentrant.
+
+    If we fail, we return FALSE and the PTaskList.PrivateTaskList is 
+    unreliable.  We may also leave summary phantoms in the tree.
+
+
+---------------------------------------------------------------------*)
+
+TYPE
+    AnInitializeTaskProc = PROCEDURE( ATreeNode, ATaskPtr );
+
+PROCEDURE CreateSummaryPhantoms( InitializeTaskProc : AnInitializeTaskProc ):BOOLEAN;
+
+(*--------------------------------------------------------------------
+
+    DiscardSummaryPhantoms.
+
+    Preconditions:  CreateSummaryPhantoms has been called, and
+                    the following not been altered:
+
+                    PhantomFlag
+                    SummaryFlag
+                    Location of nodes within the task tree.
+
+    Reverses the effect of CreateSummaryPhantoms.
+    Removes the phantom tasks from the tree, and returns the
+    dependencies to the way they were before.  The flags declared
+    in this module are not preserved.  This is not reentrant.
+
+---------------------------------------------------------------------*)
+
+PROCEDURE DiscardSummaryPhantoms();
+
+END Phantoms.
+
+
+

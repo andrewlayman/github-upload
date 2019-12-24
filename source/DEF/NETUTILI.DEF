@@ -1,0 +1,182 @@
+DEFINITION MODULE NetUtility;
+   
+    (*  MODIFICATION HISTORY
+        20-Oct-88 CMH   Moved GetCell procedure to new AccessMatrix module.
+          SPIKE		 
+         ENHANCE
+        24-Oct-88 CMH   (18-Jun-88) Made MasterTaskWidth and MasterTaskHeight
+           TLGS         variables they can be set a different width from the 
+                        task box. 
+                        (04-Aug-88) Added special box width and height for 
+                        TLGS.  Don't want to use full character size for 
+                        frames and dividing lines as did in spike. 
+ 	                (14-Sep-88) Changed call to GetBoxSize to take the 
+ 	                layout pointer as a parameter so it can be used by 
+ 	                SPIKE and TLGS.
+        13-Jun-89 WKH   Added support for varialbe screen rows
+        15-Jun-89 CMH   Changes for a critical path character
+        24-Jun-89 CMH   Removed InitSnetMatrix and ChildrenCruncher
+                        procedures
+        26-Jun-89 CMH   Moved phantom constants from mod to def
+        17-Jul-89 CMH   Moved GetMasterTaskLabel procdure to .def so TLGS
+                        can use it.
+        24-Jul-89 EGK   Removed DrawMasterTaskExtension from here, since
+                        it's not really needed outside of this module.
+        31-Jul-89 EGK   Oops, looks like DrawMasterTaskExtension is really
+                        needed outside of here.  Exported my new version of
+                        the procedure, which contains parameters for the
+                        task label and master task column.
+        25-Jul-89 CMH   Moved PrintBuffer to NetPrint to get out of the way 
+                        of TLGS overlays, TLNBUILD, and TLNBMAT.
+         6-Sep-89 CMH   Moved BoxString, MasterTaskExpand, BoxExpand, 
+                        GetMasterTaskLabelWidth, and DrawMasterTaskExpansion
+                        from NetUtility to new module NetTaskDraw, isolating
+                        report printing data and code from TLNBUILD and 
+                        graphics. 
+         8-Sep-89 CMH   Removed MasterTaskWidth variable;
+        15-Dec-89 EGK   For mouse support, renamed ULYMAX to NetYMax and
+                        added NetXMax variable.
+     *)
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  avidmode, ascreenx, ascreeny,
+    (* VAR *)                   maxrow;
+
+FROM NetCharacters          IMPORT
+    (* CONST *)                 MAXCHAR; (* 15-Jun-89 CMH *)
+    
+FROM NetLayouts             IMPORT
+    (* TYPE *)                  ANetworkLayout;    (* 14-SEPTEMBER-1988 CMH *)
+    
+FROM NetStatic              IMPORT
+    (* TYPE *)                  DiagramTask;
+    
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+CONST
+    ToScreen = 1;
+    ToPrinter = 2;
+    NormalLayout = 0;
+    EnlargedLayout = 1;
+    ULX = 0;
+    ULY = 5;  (* 14-APRIL-1989 *)
+    SeperatorLine = ULY-1; 
+    STARTPHANTOM=1;
+    ENDPHANTOM=2;
+    
+
+TYPE
+    NetworkChars = RECORD
+        TheChar   : CHAR;
+        TopPad    : CHAR;
+        BotPad    : CHAR;
+        LeftPad   : CHAR;
+        RightPad  : CHAR;
+    END;    
+    
+VAR
+    SnetChars              : ARRAY [2..MAXCHAR] OF NetworkChars; (* 15-Jun-89 CMH *)
+    ExpandedSnetWidth,
+    ExpandedSnetHeight,
+    SnetRowMin, SnetRowMax,
+    SnetColMin, SnetColMax,
+    BoxLayout, 
+    BoxWidth,   BoxHeight,
+    TLGSBoxWidth,  TLGSBoxHeight,     	(* 04-AUGUST-1988 CMH *)
+    CharWidth,  CharHeight,  
+    MasterTaskHeight       : INTEGER;  	(* 18-JUNE-1988 CMH *)
+
+    NetYMax                 : ascreeny;     (* 12/15/89 EGK *)
+    NetXMax                 : ascreenx;
+
+
+
+
+(*----------------------------------------------------------------------------
+          GetBoxSize --
+----------------------------------------------------------------------------*)
+PROCEDURE GetBoxSize(layout : ANetworkLayout);	(* 14-SEPTEMBER-1988 CMH *)
+
+
+(*----------------------------------------------------------------------------
+    	  GetHorizMax --
+----------------------------------------------------------------------------*)
+PROCEDURE GetHorizMax(HorizScreenPos,HorizScreenMax : INTEGER);
+
+
+(*----------------------------------------------------------------------------
+          GetHorizMin --
+----------------------------------------------------------------------------*)
+PROCEDURE GetHorizMin();
+
+
+(*----------------------------------------------------------------------------
+          GetMasterTaskLabel --
+----------------------------------------------------------------------------*)
+PROCEDURE GetMasterTaskLabel(VAR s : ARRAY OF CHAR; 
+		             TaskTreeNode : ATreeNode;
+		             layout : ANetworkLayout;
+		             MaxLabelWidth : CARDINAL);
+
+
+(*----------------------------------------------------------------------------
+    	  GetPad --
+----------------------------------------------------------------------------*)
+PROCEDURE GetPad(PadSide:CHAR;PadChar:CARDINAL):CHAR;
+
+
+(*----------------------------------------------------------------------------
+    	  GetOutlineType --
+----------------------------------------------------------------------------*)
+PROCEDURE GetOutlineType(cell:INTEGER):CARDINAL;
+
+
+(*----------------------------------------------------------------------------
+    	  GetVertMax --
+----------------------------------------------------------------------------*)
+PROCEDURE GetVertMax(VertScreenPos,VertScreenMax:INTEGER);
+
+
+(*----------------------------------------------------------------------------
+    	  GetVertMin --
+----------------------------------------------------------------------------*)
+PROCEDURE GetVertMin();
+
+
+(*----------------------------------------------------------------------------
+          ISnetChars --
+----------------------------------------------------------------------------*)
+PROCEDURE ISnetChars();
+
+
+(*----------------------------------------------------------------------------
+    InitSnetHandW --
+----------------------------------------------------------------------------*)
+PROCEDURE InitSnetHandW();
+
+
+(*----------------------------------------------------------------------------
+          MasterTaskCheck --
+          Checks to see if the input task is a master/summary or 
+          normal/leaf task.
+----------------------------------------------------------------------------*)
+PROCEDURE MasterTaskCheck(cell : INTEGER) : DiagramTask;
+
+
+(*----------------------------------------------------------------------------
+         SetFilterVideoModes --
+----------------------------------------------------------------------------*)
+PROCEDURE SetFilterVideoModes(    cell          : INTEGER; 
+                              VAR NormalVidMode, 
+                                  CursorVidMode : avidmode);
+
+
+(*----------------------------------------------------------------------------
+         TaskInRange --
+----------------------------------------------------------------------------*)
+    PROCEDURE TaskInRange   (  TaskID   : INTEGER   ) : BOOLEAN;
+
+END NetUtility.
+

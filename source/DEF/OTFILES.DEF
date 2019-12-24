@@ -1,0 +1,90 @@
+DEFINITION MODULE OTFiles;
+
+    (* Definition of records in the OnTarget file format.
+       See also the implementation module for additional, internally
+       used records.
+
+       MODIFICATION HISTORY:
+
+       26-Feb-91 AJL  Changed the record formats.
+
+
+    *)
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM SYSTEM                 IMPORT    
+    (* TYPE *)                  BYTE;
+
+
+TYPE
+
+    (*$A- *)   (* Alignment off *)
+
+
+    AShortReal     =  LONGINT;   (* Not really, but the same size. *)
+
+    ACost          =  REAL;
+
+    AnOnTargetTask =  RECORD
+                          Priority              : CHAR;
+                          Fixes                 : CHAR;
+                          Parent                : INTEGER;
+                          XYLoc                 : ARRAY [0..1] OF INTEGER;
+                          Fixed                 : ARRAY [0..1] OF LONGINT;
+                          EarlyCPM              : ARRAY [0..1] OF LONGINT;
+                          EarlyLevelled         : ARRAY [0..1] OF LONGINT;
+                          BaselineCost          : ACost;
+                          Cost                  : ACost;
+                          TotalCost             : ACost;
+                          Late                  : ARRAY [0..1] OF LONGINT;
+                          Baseline              : ARRAY [0..1] OF LONGINT;
+                          Duration              : LONGINT;
+                          Slack                 : LONGINT;
+                          BaselineDuration      : LONGINT;
+                          Color,
+                          BackgroundColor       : LONGINT;
+                          Kids                  : INTEGER;
+                          Level                 : CARDINAL;
+                          ListLocation          : CARDINAL;
+                          Font                  : INTEGER;
+                          Complete              : CHAR;
+                          OriginalTimeUnits     : CHAR;
+                      END;
+
+
+    (*$A= *)   (* Alignment restore *)
+
+    (*  ReadRecordPreface -- Reads the preface of the record, returning
+                             the Type and Length of the following record
+                             body. *)
+
+PROCEDURE ReadRecordPreface( VAR F      : File;
+                             VAR Type   : CARDINAL;
+                             VAR ID     : CARDINAL;
+                             VAR Length : CARDINAL    );
+
+    (*  ReadRecordBody -- After a call to ReadRecordPreface, reads
+                          the record body. *)
+
+PROCEDURE ReadRecordBody( VAR F             : File;
+                              Length        : CARDINAL;
+                          VAR Record        : ARRAY OF BYTE);
+
+
+
+PROCEDURE SkipRecordBody(VAR F      : File;
+                             Length : CARDINAL );
+
+    (* StartFileInput -- Check the file for valid format *)
+
+PROCEDURE StartFileInput      (VAR F               : File;
+                               VAR MaxTaskNumber   : CARDINAL ):BOOLEAN;
+
+
+
+
+END OTFiles.
+

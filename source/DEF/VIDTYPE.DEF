@@ -1,0 +1,38 @@
+DEFINITION MODULE VidType;
+
+    (* MODIFICATION HISTORY:
+       
+       1989 May 25, AJL   - Original version.
+       1989 May 26, AJL   - Added AutoDetect boolean.
+       26-Dec-90  AJL     - Add VGAPlasma tupe type to support Toshiba portables.
+
+    *)  
+
+
+TYPE
+    AComputerType = (IBMPC, IBMPS2, Compaq, ATT6300, IBM3270PC, Zenith200,
+                     UnknownComputer, CustomizeIt, GetOptions);     (* 3/26/87 EGK *)
+    ABoardType    = (MonoBoard, GenericColorBoard, CGABoard, MCGABoard, EGABoard, VGABoard, CompaqPortableBoard,
+                     ATTBoard);
+    ATubeType     = (MonoTube, ColorTube, Mono3270, Color3270, Plasma3270,
+                     LCD, CompaqPlasma, VGAPlasma, UnknownTube);
+    AQuestionType = (QComputer, QModel, QBoard, QTube, QPalette);
+
+    AVideoConfiguration = RECORD
+                              ComputerType : AComputerType;
+                              BoardType    : ABoardType;
+                              TubeType     : ATubeType;
+                              AutoDetect   : BOOLEAN;
+                          END;
+
+VAR
+    VideoConfiguration : AVideoConfiguration;
+    
+    Answers      : ARRAY AQuestionType OF CARDINAL;
+
+
+
+END VidType.
+
+
+

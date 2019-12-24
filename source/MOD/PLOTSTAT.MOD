@@ -1,0 +1,5 @@
+IMPLEMENTATION MODULE PlotStatic;
+
+BEGIN
+END PlotStatic.
+

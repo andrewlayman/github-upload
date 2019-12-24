@@ -1,0 +1,35 @@
+DEFINITION MODULE ResAlaps;
+
+(* Procedures to move ALAP tasks later (and then ASAP tasks earlier etc)
+   in resource levelling.
+
+    MODIFICATION HISTORY
+
+    Feb 27, 89 - JES -created.
+    Dec 21, 90 - JES -renamed this module ResAlaps (formerly called
+                        ResMoveTasks).
+    Apr. 20 91 - AJL - Removed the unnecessary ToGo parameter from MoveTasks.
+    May 30, 91 - JES - Put back the ToGo parameter in MoveTasks, to support
+                        use of the AlreadyScheduled list in Tlrplan.
+    Mar 31, 92 - AJL - Removed ActiveList parameter to MoveTasks.
+*)
+
+
+FROM FlexStor   IMPORT  AnExtHandle;
+    (* TYPE *)
+
+(*------MoveTasks---------------------------------------------------
+
+Move ASAP tasks to as early a place as possible and ALAP tasks to
+as late a place in the schedule as possible.
+
+*)
+
+
+PROCEDURE MoveTasks(ScheduledList : AnExtHandle;
+                    TaskCount     : CARDINAL;
+                    ToGo          : CARDINAL);
+
+END ResAlaps.
+
+

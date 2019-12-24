@@ -1,0 +1,218 @@
+DEFINITION MODULE Notices;
+
+    (* This module allows one part of the program to send notices to
+       other parts of the program, bound at run time, that need to
+       be kept informed of changes to the program status.
+
+       Note that the existence of this module does not guarantee that
+       is will be called for all the defined Occasions.
+
+    *)
+    (*
+        MODIFICATION HISTORY --
+
+        24-Nov-87 LAA   Added new Occasions, mostly for use by the network
+                        view.
+        17-Feb-88 LAA   Added ResourceParentageChange as a new occasion.
+        25-Feb-88 LAA   Added KeyForAltView occasion for network view.
+         1-May-89 RSC   Added "ResourceDeleted" for the spreadhseet view
+                              and the task form.
+         4-Jun-89 EGK   Renamed "ResourceDeleted" to "ResourceDelete" and
+                        added the other object-specific notice types.
+                        Changed comments for Permission() to show that it
+                        no longer automatically sends a "BeforeActing"
+                        notice if all registering procedures return TRUE.
+         5-Jun-89 AJL   Added "ExitToDOS" so that modules can clean up any
+                        resources in use first.
+        14-Aug-89 RSC   Added new notices:
+                            QueryMemoryStatus       Is there free memory?
+                            EMSLowMemory            I need EMS memory.
+                            NetworkSettingChange    Network setting changed.
+                            VideoSetupChange        Video setup changed.
+                            LayoutChange            Layout changed.
+                            FilterChange            Filter changed.
+                            CalendarChange          Calendar changed.
+                            MiscSetupChange         Somethin' else changed.
+        15-Aug-89 RSC   Renamed "LayoutChange" to "GanttLayoutChange".
+        31-Aug-89 RSC   Removed (yes, removed) "SubfileRead" notice.
+        *)
+
+FROM SYSTEM IMPORT
+    (* TYPE *)     ADDRESS;
+
+
+TYPE
+    AnOccasion = ( AllOccasions,        (* Any of the following *)
+                   ProgramStart,        (* Program startup, after inits. *)
+                   ProgramQuit,         (* Users selects quit. *)
+                   ProgramEnd,          (* Final shutdown *)
+                   ModelLoad,           (* File Retrieve, Import, etc. *)
+                   ModelErase,          (* /File Erase *)
+                   ModelSave,           (* /File Save  *)
+                   ConfigLoad,          (* Loading defaults *)
+                   ConfigErase,         (* Erasing defaults *)
+                   ConfigSave,          (* Saving defaults *)
+                   DiskFileErase,       (* Erase a fiile from disk *)
+                   EMSLowMemory,        (* RSC 14-Aug-89 EMS memory needed *)
+                   LowMemory,           (* Memory is being requested. *)
+                   QueryMemoryStatus,   (* What is your memory status? *)
+                   ScheduleCompute,     (* Recomputing the model *)
+                   ScheduleSort,        (* Resorting the model display *)
+                   ScheduleFilter,      (* Change highlight/visibility of task. *)
+                   DisplayFormatChanged,(* Change the chart or its format *)
+                   WarningActive,       (* A WarningBox is receiving input *)
+                   FormActive,          (* A form is receiving input *)
+                   MenuActive,          (* A Menu is receiving input *)
+                   PickListActive,      (* A List is receiving input *)
+                   DialogActive,        (* A Dialog box is receiving input *)
+                   OverlayCall,         (* An overlay is called *)
+                   OverlayActive,       (* AnOverlay is active *)
+                   TakeCursorControl,   (* Taking control of the cursor *)
+                   ReturnCursorControl, (* Returning control after taking it *)
+                   KeyForAltView,       (* Inform an Alt view of a keystrok. *)
+                   ExitToDOS,           (* Some other program might mess with resources. *)
+
+                        (*  Specific model change notices follow *)
+
+                   AddATask,
+                   DeleteATask,
+                   ChangeATask,
+                   MoveATask,
+                   OpenATask,
+                   CloseATask,
+
+                   AddAResource,
+                   DeleteAResource,
+                   ChangeAResource,
+
+                   AddAnEdge,
+                   DeleteAnEdge,
+                   ChangeAnEdge,
+
+                   NetworkSettingChange,    (* RSC 14-Aug-89 as per EGK *)
+                   VideoSetupChange,        (* RSC 14-Aug-89 *)
+                   GanttLayoutChange,       (* RSC 14-Aug-89, 15-Aug-89 *)
+                   FilterChange,            (* RSC 14-Aug-89 *)
+                   CalendarChange,          (* RSC 14-Aug-89 *)
+                   MiscSetupChange          (* RSC 14-Aug-89 *)
+                 );
+
+
+        (* When notice is given of an occasion, it will occur in
+           three steps (generally): (1) Permission is asked, (2)
+           notice is given before the action is taken, and (3)
+           notice is again given that the action was completed.
+
+           For some occasions (actions), data relevant to the further
+           interpretation of the action is passed in the third parameter,
+           the ADDRESS.
+
+        *)
+
+    AStep = ( RequestPermission, BeforeActing, AfterActing, FailureToAct );
+
+
+    ANoticeProc = PROCEDURE ( AnOccasion, AStep, ADDRESS ) : BOOLEAN;
+
+
+    (* --------------------------------------------------------
+
+       RegisterForNotices
+
+       Installs a notice proc that will be called by this module whenever
+       SendNotices or Permission is called for the registered Occasion.
+
+       Preconditions:      none.
+
+       Postconditions:     The Notify procedure will become eligible
+                           to receive notices.
+
+    ------------------------------------------------------------*)
+
+
+
+PROCEDURE RegisterForNotices(     Occasion : AnOccasion;
+                                  Notify   : ANoticeProc );
+
+
+    (* --------------------------------------------------------
+
+       UnRegisterForNotices
+
+       Preconditions:      none.
+
+       Postconditions:     Any registrations of the procedure
+                           obtained with RegisterForNotices will
+                           be cancelled.
+
+    ------------------------------------------------------------*)
+
+PROCEDURE UnRegisterForNotices(     Notify   : ANoticeProc ); 
+
+
+
+
+
+    (* --------------------------------------------------------
+
+       SendNotices
+
+       Send the notice to all callers who registered for the notice.
+       Ignore the BOOLEAN return value.
+
+       Preconditions:      none.
+
+       Postconditions:     All procedures that were registered via
+                           RegisterForNotices for this Occasion or
+                           AllOccasions (and have not been subsequently
+                           UnRegistered) will be called with the
+                           passed parameters.
+
+    ------------------------------------------------------------*)
+
+
+
+PROCEDURE SendNotices(     Occasion : AnOccasion;
+                           Step     : AStep;
+                           Context  : ADDRESS );
+
+
+
+
+    (* --------------------------------------------------------
+
+       Permission
+
+       Send the notice to some or all callers who registered for it.
+       Return FALSE if any NoticeProc returns FALSE, else TRUE.
+       If any NoticeProc returns FALSE, then other NoticeProcs may
+       or may not be called.
+
+       Preconditions:      none.
+
+       Postconditions:     Some procedures that were registered via
+                           RegisterForNotices for this Occasion or
+                           AllOccasions (and have not been subsequently
+                           UnRegistered) will be called with the
+                           passed parameters, and a Step of
+                           RequestPermission.
+
+                           If all procedures return a TRUE value, then
+                           all procedures will be called, and a TRUE
+                           value is returned.
+
+                           If any procedure returns a FALSE, then
+                           subsequent procedures may or may not be called,
+                           and a FALSE is returned.
+
+    ------------------------------------------------------------*)
+
+
+PROCEDURE Permission(     Occasion : AnOccasion;
+                          Context  : ADDRESS ) : BOOLEAN;
+
+
+
+
+END Notices.
+

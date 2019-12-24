@@ -1,0 +1,205 @@
+DEFINITION MODULE PhraseDefs;
+
+(* Phrase Defs  - Phrase file definitions.
+
+    The phrase file is the file Time Line uses to read text for customer
+    interactions, other than help and forms.  It is on disk to save memory
+    room and be internationalized.
+
+    The phrase file is "compiled" by MSGCOMP from an ascii-text file into
+    an internal format.  The internal format is designed for quick access,
+    not disk space savings.  No compression of the data is performed.
+
+    The phrase file's source text file name is usually TLPHRASE.TXT.
+    The phrase file's "compiled" text is called TLPHRAS4.DAT.
+
+
+    This def is designed to be used by both Time Line and by MSGCOMP, the
+    phrase file compiler.
+
+    The phrase file's internals were redesigned for LAZLO (DOS V4) by Roger
+    Collins, and the NEW design is reflected in this module.
+
+    Phrases are accessed by both a message CLASS and a message NUMBER.
+    In the source text file, classes are designated by name.  Internally,
+    classes are designated by number only, for ease of internationalization.
+    The number of classes is dynamic, so that products added in the field
+    can receive new classes of messages for simplicity.
+
+    Notes about the compiled phrase file format:
+
+        The file consists of
+
+            - A file header, including a master index for each message class.
+            - The list of "locked" messages.
+            - The message blocks.  Each block contains an index to the
+              messages in that block.
+
+        Every block contains a block header.
+
+        Messages are stored in order by message CLASS and phrase number.
+
+        The file is accessed as a RELATIVE FILE with blocks of BlockSize.
+        This allows a simple (and fast) access method; for example, DOSIO.
+
+    MODIFICATION HISTORY:
+
+    10-Jun-89 RSC First cut of this module.  For the "new" file format.
+     2-Apr-91 TGS Default PhraseFileName is now TLPHRAS5.DAT.
+
+
+*)
+
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          TSIZE;
+
+
+
+
+
+CONST
+    (* Name of the compiled file.
+    *)
+    PhraseFileName  = "TLPHRAS5.DAT";
+
+
+
+
+    (* Block size can be any size, but I try to adhere to these notes:
+
+        - All of the index entries for the largest class must fit within one
+          block!
+        - A buffer of this size is set aside for reading data.
+        - The file is treated as a relative file with each block this size.
+        - Messages must wholely fit within a block, so the smaller the block,
+          the more wasted space.
+        - Blocks are read on demand, so the larger the block, the more time
+          it takes to read.  Spanning sector boundaries will cause additional
+          seek time.
+        - The file must fit entirely within 65535 blocks.
+    *)
+    BlockSize       = 1024;  (* Room for about 500 blocks. *)
+
+
+
+TYPE
+    (* All the disk blocks start with a header:
+    *)
+    ADiskBlockHeader    = RECORD
+        CRC16Checksum   : CARDINAL;  (* Check summ of the rest of the block. *)
+        BlockNumber     : CARDINAL;  (* Which block is this?  Starts with 1. *)
+    END;
+
+
+    ABlockNumber        = CARDINAL;
+
+
+
+    (* The FIRST block in the file contains this as its header.....
+    *)
+    APhraseFileHeader       = RECORD
+        DiskBlockHeader     : ADiskBlockHeader;
+        TimeLineVersion     : CARDINAL;     (* Which Time Line is this for? *)
+        FirstLockedMsgBlk   : ABlockNumber; (* First block of locked message #s. *)
+        LastLockedMsgBlk    : ABlockNumber; (* Last  block of locked message #s. *)
+        FirstPlusMsgBlk     : ABlockNumber; (* First block of "+" message #s. *)
+        LastPlusMsgBlk      : ABlockNumber; (* Last  block of "+" message #s. *)
+        NextIndexBlock      : ABlockNumber; (* Next master index block *)
+        FirstMessageSlot    : CARDINAL;
+        TotalIndexEntries   : CARDINAL;
+        NumberOfClasses     : CARDINAL;     (* Number of classes defined in source *)
+    END;
+
+
+    (* Followed by one or more CLASS INDEX HEADERS, one for each NumberOfClasses:
+
+        All of the messages for a class are in contiguous blocks, starting at
+        block number "StartingBlockNumber".  The first block in the file is
+        block number 1.  The index entries are the absolute index entries for the
+        file, without regard for block bounadaries.  So, an index of 2000 might be
+        in the 2nd or 3rd master index block.
+        Examples of CLASSES are "STANDARD", "FORMS", or "TLWHAT4".
+        We save the class name just for the decompiler.
+    *)
+    AClassName              = ARRAY [0..9] OF CHAR;  (* Important that this be EVEN LENGTHED due to the array size calculations! *)
+
+    AClassIndexHeader       = RECORD
+        FirstIndexEntry     : CARDINAL;
+        LastIndexEntry      : CARDINAL;
+        ClassName           : AClassName;
+    END;
+
+
+    (* a full message entry is like this, and are used mainly for LOCKED messages.
+    *)
+    AMessageEntry           = RECORD
+        MessageClass        : CARDINAL;
+        MessageNumber       : CARDINAL;
+    END;
+
+
+    (* Locked Messages are ones that should stay in memory for speed of access.
+       They are otherwise like any other message.  The list of these messages
+       is kept in one or more blocks, starting with LockedMsgBlkBlock from
+       APhraseFileHeader.
+    *)
+    ALockedMessageBlock     = RECORD
+        DiskBlockHeader     : ADiskBlockHeader;
+        NumberOfMessages    : CARDINAL;         (* in this block. *)
+        LockedMessages      : ARRAY [1..((BlockSize - TSIZE(ADiskBlockHeader) - TSIZE(CARDINAL)) DIV TSIZE(AMessageEntry))] OF AMessageEntry;
+        FILLER              : ARRAY [1..2] OF CHAR;  (* Make it come out to BlockSize *)
+    END;
+
+
+    (* A message index entry contains the message number and the byte offset into
+       BlockBytes.  IT MUST BE EVEN LENGTH FOR LATER DIVISION/ARRAY SIZE CALCS.
+    *)
+    AMessageIndexEntry      = RECORD
+        MessageNumber       : CARDINAL;
+        MessageOffset       : CARDINAL;
+    END;
+
+    
+    ADataBlockHeader        = RECORD
+        DiskBlockHeader     : ADiskBlockHeader;
+        IndexEntriesInUse   : CARDINAL;
+    END;
+
+    (* The general format of a (data) disk block is this:
+    *)
+    ADiskBlock          = RECORD
+        DataBlockHeader     : ADataBlockHeader;
+        CASE BOOLEAN OF
+            TRUE:
+                BlockIndex  : ARRAY [1..((BlockSize - TSIZE(ADataBlockHeader)) DIV TSIZE(AMessageIndexEntry))] OF AMessageIndexEntry;
+          | FALSE:
+                BlockBytes  : ARRAY [1..(BlockSize - TSIZE(ADataBlockHeader))] OF CHAR;
+        END;
+    END;
+
+
+    (* Every index block but the first is in the form of
+       "AnOverflowIndexBlock".  The first is in the form of "AClassBlock".
+    *)
+    AClassBlock = RECORD
+        PhraseFileHeader    : APhraseFileHeader;
+        CASE BOOLEAN OF
+            TRUE:
+                  ClassIndexes        : ARRAY [1..((BlockSize - TSIZE(APhraseFileHeader)) DIV TSIZE(AClassIndexHeader))] OF AClassIndexHeader;
+          | FALSE:
+                  HighMessageNumber   : ARRAY [1..((BlockSize - TSIZE(APhraseFileHeader)) DIV TSIZE(CARDINAL))] OF CARDINAL;
+        END;
+    END;
+
+    AnOverflowIndexBlock = RECORD
+        DiskBlockHeader     : ADiskBlockHeader;
+        NextIndexBlock      : ABlockNumber;
+        HighMessageNumber   : ARRAY [1..((BlockSize - (TSIZE(ADiskBlockHeader)+TSIZE(CARDINAL))) DIV TSIZE(CARDINAL))] OF CARDINAL;
+    END;
+
+
+
+END PhraseDefs.
+
+

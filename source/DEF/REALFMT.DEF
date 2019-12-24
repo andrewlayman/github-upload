@@ -1,0 +1,25 @@
+DEFINITION MODULE RealFmt;
+
+       (*  Convert from REAL to string, and format the number.
+
+           Customized by Andrew Layman.
+
+        *)
+
+ PROCEDURE RtoS(x: REAL; digits: INTEGER; width: CARDINAL;
+                ZeroPrint : BOOLEAN;
+               VAR s: ARRAY OF CHAR; VAR okay: BOOLEAN);
+
+        (*
+         x     : real number to be converted into a string.
+         digits: number of digits to the left of the decimal point.
+         width : the total length of the string to be returned.
+         ZeroPrint : If FALSE, numbers that would print as zero
+                     are returned as blank.
+         str   : the string varable returned.
+         okay  : is set to TRUE if the conversion is done properly,
+                 FALSE otherwise.
+       *)
+ END RealFmt.
+                                                               
+

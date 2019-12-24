@@ -1,0 +1,34 @@
+DEFINITION MODULE TimeUnitsTLGS;
+
+    (*  MODIFICATION HISTORY
+         5-Sep-89 CMH   Moved UnitsForScaling, CharactersForScaling,
+                        UnitsForGrouping and MilitaryTime to 
+                        TimeUnitsTLGS.DEF from TSEDTimescale.DEF so 
+                        TLNBUILD would not import from TSEDTimescale 
+                        since it has 1.6k bytes of data.
+     *)
+     
+FROM IlsaStatic		    IMPORT
+   (* TYPE *)			ATLGSScale;
+
+FROM TimeFormat             IMPORT
+    (* TYPE *)                  ATimeFormat,
+                                DefaultDateAndTimeFormat;
+
+CONST
+    MINUTES  = 7;
+    HOURS    = 6;
+    DAYS     = 5;
+    WEEKS    = 4;
+    MONTHS   = 3;
+    QUARTERS = 2;
+    YEARS    = 1;
+
+VAR
+    UnitsForGrouping,
+    UnitsForScaling      : ATLGSScale;
+    CharactersForScaling : REAL;
+    
+PROCEDURE MilitaryTime(VAR TimeFormat : ATimeFormat) : BOOLEAN;
+
+END TimeUnitsTLGS.

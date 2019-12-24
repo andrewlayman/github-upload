@@ -1,0 +1,70 @@
+DEFINITION MODULE WBSTranslate;
+
+  (*   Routines used in the creation and translation and verification of
+       WBS codes.
+
+        MODIFICATION HISTORY:
+
+         14-Jun-89  MWP  In the beginning...
+         20-Jul-89  MWP  CompareSegments moved in this module.
+         15-Aug-89  MWP  Use AWBSPtr as parameter.
+  *)
+
+
+FROM SYSTEM        IMPORT
+        (* THINGS *)        ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)              ATreeNode;
+
+FROM WBSCommon     IMPORT
+                            AWBSPtr,                                (* 15-Aug-89 MWP *)
+                            AContextPtr;
+
+        (*
+           Calculate the next highest WBS value for CursorNode based
+           on CursorNode's sibling WBS values. Direction tells us
+           whether to look at all 'Previous' nodes or all 'Next'
+           nodes relative to CursorNode.
+           The cardinal returned will be the next highest WBS
+           value to use, or zero if there was a problem.
+        *)
+PROCEDURE CalculateWBSCardinalValue ( VAR CursorNode : ATreeNode;
+                                          Direction  : CARDINAL;
+                                          WBSFormP   : AWBSPtr  ) : CARDINAL; (* 15-Aug-89 MWP *)
+         (*
+            Convert the segment 'SegmentLevel' of WBSCode to it's
+            cardinal representation. The result will be returned
+            in 'Value' along with TRUE if successful, or
+            FALSE will be returned with 'Value' unchanged if an
+            error condition arises.
+         *)
+PROCEDURE ConvertWBSCodeToCard (     SegmentLevel     : CARDINAL;
+                                     WBSFormP         : AWBSPtr;    (* 15-Aug-89 MWP *)
+                                 VAR WBSCode          : ARRAY OF CHAR;
+                                 VAR Value            : CARDINAL ) : BOOLEAN;
+
+
+        (*
+           Return the parent WBS code of 'CursorNode', with any
+           extraneous follow-by characters stripped off.
+           The code is returned in ParentWBS with a TRUE value
+           if everything is ok, else FALSE is returned with
+           ParentWBS set to a length of zero.
+        *)
+PROCEDURE CheckParentWBS ( VAR CursorNode    : ATreeNode;
+                               WBSFormP      : AWBSPtr;             (* 15-Aug-89 MWP *)
+                               ContextRecord : AContextPtr;
+                           VAR ParentWBS     : ARRAY OF CHAR ) : BOOLEAN;
+
+        (*
+           Given two decomposed WBS codes, compare them segment for
+           segment up to level 'ParentLevel'. Return TRUE if no
+           discrepencies, else FALSE.
+        *)
+PROCEDURE CompareSegments ( VAR TaskBuffer   : ARRAY OF CHAR;
+                            VAR ParentBuffer : ARRAY OF CHAR;
+                                ParentLevel  : CARDINAL ) : BOOLEAN;
+
+END WBSTranslate.
+

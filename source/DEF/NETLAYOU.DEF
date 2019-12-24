@@ -1,0 +1,78 @@
+DEFINITION MODULE NetLayouts;
+
+    (*  MODIFICATION HISTORY
+        23-Jan-88 LAA   Added NormalLayoutActive, and the DisplayNetworkLight 
+                        procedure.
+        08-Jun-89 EGK   Removed NeedsRecompute, NeedsRedraw,
+                        ClearNeedsRecompute, and ClearNeedsRedraw, which
+                        were not being used.
+        21-Sep-89 LAA   Removed all reference to Animation.
+        25-Sep-89 EGK   Moved CreateNetLayout, DiscardNetLayout, and
+                        SortNetLayouts to NetLUtility module.
+        30-Mar-90 RSC   Removed Timeu.
+    *)
+
+FROM Lights                 IMPORT
+    (* TYPE *)                  ALight;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+TYPE
+    ANetworkLayout          = POINTER TO ANetworkLayoutRecord;
+
+    ANetworkFieldSpec       = RECORD
+                                ColumnID    : CARDINAL;
+                                ColumnWidth : CARDINAL;
+                              END;
+
+    ANetworkLayoutRecord    = RECORD
+                                Tag         : CARDINAL;
+                                ID          : CARDINAL;
+                                Name        : ARRAY [0..20] OF CHAR;
+                                Notes       : AText;
+                                Fields      : ARRAY [1..6] OF ANetworkFieldSpec;
+                                Height      : CARDINAL;
+                                Width       : CARDINAL;
+                                BoxOutline  : BOOLEAN;
+                                NetLFlags   : BITSET;
+                              END;
+
+
+VAR
+    CurrentNetLayout        : ATreeNode;
+    EnlargedNetLayout       : ATreeNode;
+    NetLayoutTree           : ATree;
+    NetworkLight            : ALight;
+    NormalLayoutActive      : BOOLEAN;
+
+
+PROCEDURE GetNormalNetLayout(): ANetworkLayout;
+
+PROCEDURE GetBigNetLayout(): ANetworkLayout;
+
+PROCEDURE InitializeNetLayouts();
+
+PROCEDURE TerminateNetLayouts();  (* You must call this before leaving if
+                                     used in an overlay. *)
+
+
+
+(*----------------------------------------------------------------------------
+    DisplayNetworkLight --
+
+    Preconditions:
+        The network light must have been installed.
+
+    Postconditions:
+        The network light indicating normal or alternate layout is displayed.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DisplayNetworkLight();
+
+
+END NetLayouts.
+

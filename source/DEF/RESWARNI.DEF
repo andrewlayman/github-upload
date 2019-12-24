@@ -1,0 +1,107 @@
+DEFINITION MODULE ResWarnings;
+
+(* Procedures to issue warnings, messages, etc for use by recalc.
+
+   MODIFICATION HISTORY
+
+   Feb 27, 89 - JES -created out of pieces of Tlrplan, 
+                     and adding the procedure SendErrorMsg.
+   15-Nov-90    AJL  Added ConflictWithBounds to AWarning.
+   21-Nov-90    AJL  Added TooManyResources to AWarning.
+   19-Dec-90    AJL  Added CantSchedFutureEffort
+    7-Mar-91    AJL  Added WarningLogText;
+   17-Apr-91    AJL -Corrected description of SendErrorMsg.
+                    -Added CannotScheduleLate
+   12-Jul-91    JES -Added ResourceOverassigned to AWarning, and
+                        removed unused CannotStart.
+   22-Aug-91    AJL -Added CantMakeEffortExact, DoneInFuture and
+                     StartInFuture.
+                    -Added documentation.
+                    -Added IssueWarningWithParms.
+   16-Sep-91    AJL -Add DoneTaskWithToGoEffort and SpentOnMilestone.
+   10-Feb-92    AJL -Add DoneBeforeStart.
+    3-Apr-92    AJL -Add LinkFailed.
+*)
+
+
+FROM Allocs IMPORT ATaskPtr;
+    (* TYPE *)
+
+FROM Text   IMPORT AText;
+
+
+TYPE
+    AWarning = ( CannotSchedule, ResourcesOverassigned, PastEndOfCalendar, 
+                 BeforeStartOfCalendar, CrummedAssignment, OutOfMemory,
+                 ConflictWithBounds,TooManyResources,CantSchedFutureEffort,
+                 CannotScheduleLate,CantMakeEffortExact,
+                 DoneInFuture,StartInFuture, FutureTaskWithSpentEffort,
+                 ConflictBoundsSlack,
+                 DoneTaskWithToGoEffort,SpentOnMilestone,
+                 DoneBeforeStart,LinkFailed);
+    ASetOfWarnings = SET OF AWarning;
+
+VAR
+    WarningLogText : AText;
+
+
+    (* IssueWarning -- Display a warning message on the screen, identifying
+                       the task, and describing the problem.  Log the 
+                       warning to the WarningLogText.
+
+                       However, never display the same Warning on the screen
+                       more than once.  Subsequent tasks called with the 
+                       same warning will be logged, but not displayed on the
+                       screen. 
+                       *)
+
+
+PROCEDURE IssueWarning(Warning : AWarning; 
+                       Task    : ATaskPtr );
+
+
+    (* IssueWarningWithParms --
+
+           Like IssueWarning, but with the additional capability to
+           have parameters from the Parms string substituted for token
+           placeholders in the text of the warning.
+
+           Task names are always substituted for parameter one. "*1*".
+
+           Subsequent parameters, numbers two and up, are supplied in the
+           Parms string, with each parameter enclosed in parenthesis, as
+           in "(p2)(p3)(p4)".
+
+    *)
+           
+
+PROCEDURE IssueWarningWithParms(     Warning : AWarning; 
+                                     Task    : ATaskPtr;
+                                 VAR Parms   : ARRAY OF CHAR);
+
+(*------SendErrorMsg------------------------------------------------    
+        Send an error message to the screen.
+        Add it to the WarningLogText.
+        "Message" is a LITERAL string, e.g. "Help!" not an LString.
+*)
+
+PROCEDURE SendErrorMsg(Message: ARRAY OF CHAR);
+
+
+   (* Proc variable MessageWriter.  This procedure is used by the
+      implementation module to write all of its messages.
+      You can intercept this and redirect, or log, messages
+      by intercepting this procedure. 
+
+      The Duplicate flag is set by the caller whenever this message
+      is a repetition of a similar message already written.  The
+      default action is to not display duplicates.  *)
+
+VAR
+    MessageWriter : PROCEDURE ( VAR ARRAY OF CHAR,   (* Text *)
+                                  BOOLEAN );       (* Duplicate msg. *)
+
+
+END ResWarnings.
+
+

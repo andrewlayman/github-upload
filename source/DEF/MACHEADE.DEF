@@ -1,0 +1,68 @@
+DEFINITION MODULE MacHeader;
+
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+
+(*
+
+The Header here is essentially the same as the MacroRecord, minus the
+handle to the actual ARRY OF CARDINAL macro.
+
+MacHeaderStack = 150 bytes per Push.
+
+*)
+
+
+EXPORT QUALIFIED       
+                       AMacroHeaderType,        (* TYPE *)
+                       AMacHeaderStackPtr,     (* TYPE *)
+                       AMacHeaderRecord,       (* TYPE *)
+                       MacHeaderStack,         (* VAR  *)
+                       PushMacHeaderStack,     (* PROC *)
+                       PopMacHeaderStack;      (* PROC *)
+
+TYPE
+    AMacroName     = ARRAY [0..40] OF CHAR;
+    AMacroDesc     = ARRAY [0..80] OF CHAR;
+    AHotKeyStr     = ARRAY [0..9] OF CHAR;
+
+
+TYPE AMacroHeaderType = RECORD
+                           type        : CARDINAL;
+                           hotkey      : CARDINAL;
+                           hotkeystr   : AHotKeyStr;
+                           name        : AMacroName;
+                           description : AMacroDesc;
+                           cardlen,
+                           charlen     : CARDINAL;
+                        END;
+
+
+TYPE AMacHeaderStackPtr = POINTER TO AMacHeaderRecord;
+
+TYPE AMacHeaderRecord = RECORD
+                          tag      : CARDINAL;
+                          record   : AMacroHeaderType;
+                          next,
+                          prev     : AMacHeaderStackPtr;
+                        END;
+
+VAR
+    MacHeaderStack    : AMacHeaderStackPtr;
+
+PROCEDURE PushMacHeaderStack;
+
+
+PROCEDURE PopMacHeaderStack;
+
+
+END MacHeader.
+

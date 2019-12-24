@@ -1,0 +1,427 @@
+DEFINITION MODULE MemoOutlines;        (*  a subclass of OutlineViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AMemoOutlineStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+TYPE
+        (*  AMemoOutline is a subclass of AnOutlineView *)
+
+    AMemoOutline            = POINTER TO AMemoOutlineRecord;
+
+    AMemoOutlineMethods     = POINTER TO AMemoOutlineMethodsRecord;
+
+    AMemoOutlineRecord      = RECORD
+                                Methods     : AMemoOutlineMethods;
+                              END;
+
+
+
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for MemoOutlines
+        *)
+
+TYPE
+    AMemoOutlineStatus      = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               MemoOutlineSpare5, MemoOutlineSpare6, 
+                               MemoOutlineSpare7, MemoOutlineSpare8, 
+                               MemoOutlineSpare9);
+
+    AMemoOutlineStatusSet   = SET OF AMemoOutlineStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AMemoOutline to 
+        them.
+    *)
+
+TYPE
+    AMemoOutlineCloneProc   = PROCEDURE(    AMemoOutline,
+                                        VAR AMemoOutline)
+                                                         : BOOLEAN;
+
+    AMemoOutlineStoreOnProc = PROCEDURE(    AMemoOutline,
+                                            AnObject     );
+
+    AMemoOutlineDiscardProc = PROCEDURE(VAR AMemoOutline);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AMemoOutline to
+        them.
+    *)
+
+TYPE
+    AMemoOutlineGetObjectProc = PROCEDURE(    AMemoOutline)
+                                                           : ATree;
+
+    AMemoOutlineSetObjectProc = PROCEDURE(    AMemoOutline,
+                                              ATree        );
+
+    AMemoOutlineXYProc        = PROCEDURE(    AMemoOutline,
+                                          VAR ascreenx,
+                                          VAR ascreeny,
+                                          VAR ascreenx,
+                                          VAR ascreeny     );
+
+    AMemoOutlineTitleProc     = PROCEDURE(    AMemoOutline,
+                                          VAR ARRAY OF CHAR);
+
+    AMemoOutlineDisplayProc   = PROCEDURE(    AMemoOutline);
+
+    AMemoOutlineMoveProc      = PROCEDURE(    AMemoOutline,    
+                                              ascreenx,        
+                                              ascreeny    );
+
+    AMemoOutlineHelpProc      = PROCEDURE(    AMemoOutline);
+
+    AMemoOutlineHiddenProc    = PROCEDURE(    AMemoOutline);
+
+    AMemoOutlineRevealProc    = PROCEDURE(    AMemoOutline);
+
+    AMemoOutlineChangedProc   = PROCEDURE(    AMemoOutline);
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AMemoOutline 
+        to them.
+    *)
+
+
+TYPE
+    AMemoOutlineRecordProc    = PROCEDURE(    AMemoOutline,
+                                              AnEvent      );
+
+    AMemoOutlineGetEventProc  = PROCEDURE(    AMemoOutline,
+                                              CARDINAL,
+                                          VAR AnEvent      );
+
+    AMemoOutlineActOnProc     = PROCEDURE(    AMemoOutline,
+                                              AnEvent,
+                                          VAR AnEvent      );
+
+    AMemoOutlineGetCursorProc = PROCEDURE(    AMemoOutline)       (* View *)
+                                                           : BOOLEAN;
+
+    AMemoOutlineSetCursorProc = PROCEDURE(    AMemoOutline,  (* View *)
+                                              BOOLEAN     ); (* Displaying *)
+
+    AMemoOutlineSetCursorModeProc = PROCEDURE(    AMemoOutline,
+                                                  avidmode    );
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AMemoOutline to
+        them.
+    *)
+
+
+TYPE
+    AMemoOutlineSetFirstProc      = PROCEDURE(    AMemoOutline,
+                                                  ATreeNode    );
+
+    AMemoOutlineGetFirstProc      = PROCEDURE(    AMemoOutline )
+                                                                : ATreeNode;
+
+    AMemoOutlineGetLastProc       = PROCEDURE(    AMemoOutline )
+                                                                : ATreeNode;
+
+    AMemoOutlineSetCursorNodeProc = PROCEDURE(    AMemoOutline,
+                                                  ATreeNode    );
+
+    AMemoOutlineGetCursorNodeProc = PROCEDURE(    AMemoOutline )
+                                                                : ATreeNode;
+
+    AMemoOutlineSyncProc          = PROCEDURE(    AMemoOutline );
+
+    AMemoOutlineForceProc         = PROCEDURE(    AMemoOutline,
+                                                  ATreeNode,
+                                                  CARDINAL     );
+
+    AMemoOutlineInquireProc       = PROCEDURE(    AMemoOutline,
+                                                  ATreeNode    )
+                                                                : CARDINAL;
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from OutlineViews, so that we can pass objects of type AFilterOutline
+        to them.
+    *)
+
+
+    AMemoOutlineGetCountProc  = PROCEDURE(    AMemoOutline )
+                                                            : CARDINAL;
+
+    AMemoOutlineFindCharProc  = PROCEDURE(    AMemoOutline,
+                                              CHAR         )
+                                                            : BOOLEAN;
+
+
+
+
+
+
+    (*  Here are the methods that are specific to MemoOutlines  *)
+
+
+
+    (*  These are the methods for AMemoOutline objects.  They inherit and
+        redefine methods from ObjectViews, and add new methods of their own.
+    *)
+
+TYPE
+    AMemoOutlineMethodsRecord  = 
+                              RECORD
+
+                                Methods           : AnObjectMethods;
+                                Clone             : AMemoOutlineCloneProc;
+                                StoreOn           : AMemoOutlineStoreOnProc;
+                                Discard           : AMemoOutlineDiscardProc;
+                                SuperclassMethods : AnOutlineViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+
+                                GetExternalXY     : AMemoOutlineXYProc;
+                                GetInternalXY     : AMemoOutlineXYProc;
+                                GetTitle          : AMemoOutlineTitleProc;
+                                SetObject         : AMemoOutlineSetObjectProc;
+                                GetObject         : AMemoOutlineGetObjectProc;
+                                Move              : AMemoOutlineMoveProc;
+                                Display           : AMemoOutlineDisplayProc;
+                                GetHelp           : AMemoOutlineHelpProc;
+                                HideView          : AMemoOutlineHiddenProc;
+                                RevealView        : AMemoOutlineRevealProc;
+                                NotifyOfChange    : AMemoOutlineChangedProc;
+                                ObjectViewTag     : CARDINAL;
+
+                                RecordEvent       : AMemoOutlineRecordProc;
+                                GetRecordedEvent  : AMemoOutlineGetEventProc;
+                                ActOnEvent        : AMemoOutlineActOnProc;
+                                GetCursor         : AMemoOutlineGetCursorProc;
+                                SetCursor         : AMemoOutlineSetCursorProc;
+
+
+        SetCursorMode       : AMemoOutlineSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AMemoOutline.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag       : CARDINAL;
+
+                                SetFirst          : AMemoOutlineSetFirstProc;
+                                GetFirst          : AMemoOutlineGetFirstProc;
+                                GetLast           : AMemoOutlineGetLastProc;
+                                SetCursorNode     : AMemoOutlineSetCursorNodeProc;
+                                GetCursorNode     : AMemoOutlineGetCursorNodeProc;
+                                Synchronize       : AMemoOutlineSyncProc;
+                                ForceToPosition   : AMemoOutlineForceProc;
+                                InquirePosition   : AMemoOutlineInquireProc;
+                                NotifyNodeDeleted : AMemoOutlineSetCursorNodeProc;
+                                ListViewTag       : CARDINAL;
+
+                                ResetMatching     : AMemoOutlineSyncProc;
+                                GetMatchCount     : AMemoOutlineGetCountProc;
+                                FindChar          : AMemoOutlineFindCharProc;
+                                OutlineViewTag    : CARDINAL;
+
+                                MemoOutlineTag    : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsMemoOutline --
+
+    Initialize the indicated object as a memo outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid memo outline view object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsMemoOutline(    MemoOutline : AMemoOutline;
+                                SuperView   : AnActiveView;
+                                Ulx         : ascreenx;
+                                Uly         : ascreeny;
+                                Lrx         : ascreenx;
+                                Lry         : ascreeny;
+                                Box         : ABoxType;
+                                VideoMode   : avidmode;
+                            VAR Title       : ARRAY OF CHAR;
+                                HelpKey     : CARDINAL;
+                                TakeRug     : BOOLEAN      );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateMemoOutline --
+
+    Allocate storage for, and initialize the indicated object as a memo 
+    outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid memo outline view object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateMemoOutline(VAR MemoOutline : AMemoOutline;
+                                SuperView   : AnActiveView;
+                                Ulx         : ascreenx;
+                                Uly         : ascreeny;
+                                Lrx         : ascreenx;
+                                Lry         : ascreeny;
+                                Box         : ABoxType;
+                                VideoMode   : avidmode;
+                            VAR Title       : ARRAY OF CHAR;
+                                HelpKey     : CARDINAL;
+                                TakeRug     : BOOLEAN      ) 
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsMemoOutline --
+
+    UnInitialize the indicated object as a memo outline view.
+
+    Preconditions:
+        The object will be a valid memo outline view object. 
+
+    Postconditions:
+        The outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsMemoOutline(    MemoOutline : AMemoOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneMemoOutlineMethods --
+
+    Make a copy of the memo outline view methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The memo outline view methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneMemoOutlineMethods(    MethodObject : AMemoOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateMemoOutline --
+
+    Determine that the indicated object is in fact a valid memo outline view 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid memo outline view object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateMemoOutline(    MemoOutline : AMemoOutline);
+
+
+
+END MemoOutlines.
+

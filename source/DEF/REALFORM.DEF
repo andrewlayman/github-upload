@@ -1,0 +1,271 @@
+DEFINITION MODULE RealFormat;
+
+  (*  
+
+    MODIFICATION HISTORY:
+        26-Jun-89  KKC  Move RealToLStrings to Num2Str.asm
+        27-Jun-89  LAA  Put RealToLStrings back into this DEF.
+  *)
+
+  (*  RealFormat - Format numbers as external representations.
+
+Goal:
+
+    Produce a comprehensive module that can format real numbers into 
+    strings representing amounts or currency in any reasonable country's
+    format.  Unreasonable countries may not be supported.  Format dates
+    in international formats as well.
+
+Amounts:
+
+    Examples:
+
+           US     Britain    Italy    Germany    France 
+        1,234.56  1,234.56  1.234,56  1.234,56  1 234.56
+
+    In addition, some countries, I understand, use differing numbers of
+    digits between significance seperators (like 1,2345.67).
+
+Currency:
+
+    Usually, currency rules are a superset of amount rules.  I understand
+    that some countries (we wont mention Scandanavia by name) have different
+    sets of rules for currency and amount formatting.
+
+    Examples:
+
+                  positive         negative
+                  -----------     -----------
+        US      : $<Amount>       ($<Amount>)
+        Britain : œ<Amount>       (œ<Amount>)
+        Italy   : L. <Amount>     L. -<Amount>
+        Germany : <Amount> DM     -<Amount> DM
+        France  : <Amount> F      -<Amount> F
+
+
+    MODIFICATION HISTORY:
+
+        12-Jun-87  RSC  First version.
+        16-Dec-88  RSC  Renamed from "FormatAs".  Time routines moved to TimeFormat.
+
+ *)
+
+
+CONST SymbolSize = 5;  (* Maximum size of any symbol *)
+
+TYPE  ADecoration = RECORD
+                LeadingNegativeSymbol  : ARRAY [0..SymbolSize] OF CHAR;
+                TrailingNegativeSymbol : ARRAY [0..SymbolSize] OF CHAR;
+                LeadingPositiveSymbol  : ARRAY [0..SymbolSize] OF CHAR;
+                TrailingPositiveSymbol : ARRAY [0..SymbolSize] OF CHAR;
+            END;
+
+  (* AnAmountFormat describes country specific things about how numbers
+        are formatted.
+  *)
+       AnAmountFormat = RECORD
+     
+                RadixSymbol            : CHAR;
+                SymbolForSignificance  : CHAR;
+                DigitsForSignificance  : CARDINAL; (* MUST BE > 0 *)
+                IncludeAtLeastOneDigit : BOOLEAN; (* Before decimal point *)
+                OverflowSymbol         : CHAR;
+                Decorations            : ADecoration;
+
+            END;
+
+
+
+  (* ACurrencyFormat describes country specific and style specific things
+        about how currency amounts are formatted.  This allows various
+        STYLE formats, like "($43.22)" and "43.22 DR".
+
+     IMPLEMENTATION NOTE:
+
+       At run time, the user can choose to have currency or not.  For this
+       reason, we plug "Decorations" or "DecorationsWithCurrency" into the
+       AmountFormat.Currency field as needed.
+  *)
+       ACurrencyFormat = RECORD
+
+                AmountFormat            : AnAmountFormat;
+                MinTrailingDigits       : CARDINAL;
+                MaxTrailingDigits       : CARDINAL;
+                Decorations             : ADecoration;
+                DecorationsWithCurrency : ADecoration;
+            END;
+
+
+VAR DefaultAmountFormat   : AnAmountFormat;
+    DefaultCurrencyFormat : ACurrencyFormat;
+
+
+
+
+
+
+
+
+
+  (* AmountFormatLength - How big will the amount be?
+
+      This procedure answers the musical question,
+      "How big will the biggest number be?"
+
+      Preconditions  - Format is the amount format record
+                       LeadingDigits is the maximum leading digits you
+                           expect.  This could become "FieldSize" on 
+                           "FormatAs..." calls.
+                       TrailingDigits is the largest number of trailing
+                           digits you expect.  This is like "MaxDigits".
+
+      Postconditions - Alignment is where the decimal point will show up.
+                           If there will be no decimal point, because
+                           TrailingDigits = 0, Alignment will equal
+                           LeadingDigits.
+                       RETURN is the maximum space taken up by the amount.
+ *)
+
+PROCEDURE AmountFormatLength(
+        VAR Format         : AnAmountFormat;  (* format to use. *)
+            LeadingDigits  : CARDINAL;        (* To right of decimal point *)
+            TrailingDigits : CARDINAL;        (* To right of decimal point *)
+        VAR Alignment      : CARDINAL         (* Where decimal point will be *)
+            ) : CARDINAL;                     (* Returned length *)
+
+
+
+  (* CurrencyFormatLength - How big will the currency be?
+
+      This procedure answers the musical question,
+      "How big will the biggest number be?"
+
+      Preconditions  - Format is the currency format record
+                       LeadingDigits is the maximum leading digits you
+                           expect.  This could become "FieldSize" on 
+                           "FormatAs..." calls.
+                       ShowDigits is TRUE if you will want customary digits.
+                       IncludeSymbol is TRUE if you will want the "$".
+
+      Postconditions - Alignment is where the decimal point will show up.
+                           If there will be no decimal point, because
+                           TrailingDigits = 0, Alignment will equal
+                           LeadingDigits.
+                       RETURN is the maximum space taken up by the amount.
+ *)
+
+PROCEDURE CurrencyFormatLength(
+        VAR Format         : ACurrencyFormat; (* Currency format record *)
+            LeadingDigits  : CARDINAL;        (* To right of decimal point *)
+            ShowDigits     : BOOLEAN;         (* Will you show customary digits? *)
+            IncludeSymbol  : BOOLEAN;         (* Will you include currency symbol? *)
+        VAR Alignment      : CARDINAL         (* Where decimal point will be *)
+            ) : CARDINAL;                (* Returned length *)
+
+
+
+
+
+
+
+
+
+  (* FormatAsAmount - Format a real number as an amoun string, including
+           any appropriate decorations, like "." and ",".
+
+    Preconditions  - A good real number in Amount.
+                     A filled in AmountFormat record in Format.
+                     An LString at least 1 byte big in Result.
+                     The desired resultant field size in FieldSize.
+                     The Minimum number of fractional digits desired.
+                     The Maximum digits you will allow.  These only show up 
+                         if they would be non-zero.
+                     RightJust is TRUE if you wan the field right justified.
+
+    Postconditions - Result is FieldSize size, filled in with the number or
+                     the OverflowSymbol, possibly right justified.
+
+    DANGER!! - 
+        Result had better be big enough for FieldSize chars!
+ *)
+
+PROCEDURE FormatAsAmount(
+            Amount    : REAL;            (* Amount to be converted *)
+        VAR Format    : AnAmountFormat;  (* see below *)
+        VAR Result    : ARRAY OF CHAR;   (* Returned LString *)
+            FieldSize : CARDINAL;        (* desired field size *)
+            MinDigits : CARDINAL;        (* To right of decimal point *)
+            MaxDigits : CARDINAL;        (* To right of decimal point *)
+            RightJust : BOOLEAN   );     (* Right justify? *)
+
+
+
+
+
+
+  (* FormatAsCurrency - Format a real number as a currency string, including
+           any appropriate decorations, like "$" and "DB".
+
+    Preconditions  - A good real number in Amount.
+                     A filled in CurrencyFormat record in Format.
+                     An LString at least 1 byte big in Result.
+                     The desired resultant field size in FieldSize.
+                     RightJust is TRUE iff you want the field right justified.
+                     Wether you want the fraction, like $1.23, or just $1
+                     Wether to include the currency symbol, like "$".
+
+
+    Postconditions - Result is FieldSize size, filled in with the number or
+                     the OverflowSymbol, possibly right justified.
+ *)
+
+PROCEDURE FormatAsCurrency(
+            Amount        : REAL;            (* Amount to be converted *)
+        VAR Format        : ACurrencyFormat; (* see below *)
+        VAR Result        : ARRAY OF CHAR;   (* Returned LString *)
+            FieldSize     : CARDINAL;        (* Of LString *)
+            RightJust     : BOOLEAN;         (* Right justify? *)
+            ShowDigits    : BOOLEAN;         (* Show customary fraction? *)
+            IncludeSymbol : BOOLEAN    );    (* Include the currency symbol? *)
+
+
+
+
+
+  (* RealToLStrings - Convert a real number to Lstrings.  This includes no
+                      string decorations.  It is loosely based on the 
+                      Logitek RealConversions module.  This procedure does
+                      NOT:
+                  1) Handle exponential notation.
+                  2) Validate the reality of the number.
+                  3) Put leading spaces or decimal points in the number.
+                  4) Output leading zeroes or trailing zeroes beyond
+                     'MinDigits'
+
+     Preconditions  - Amount is a POSITIVE REAL number.
+                      MinDigits is the Minimum number of decimal places.
+                         If need be, the number will be padded with zeroes
+                         up to this point.
+                      Max digits is the maximum number of decimal places.
+                         The Amount will be ROUNDED UP to this level of accuracy.
+
+     Postconditions - Leading contains the digits before the decimal point.
+                      Trailing contains the digits after the decimal point.
+                      There are NO Leading or Trailing zeroes.
+     DANGER!
+         It is assumed that MaxDigits <= HIGH(Trailing), and that the
+         leading digits can fit into Leading.  A TooLong() error will
+         result if this is not true.
+         I also assume that MinDigits <= MaxDigits.
+ *)
+
+PROCEDURE RealToLStrings( Amount          : REAL;
+                          MinDigits       : CARDINAL;
+                          MaxDigits       : CARDINAL;
+                      VAR Leading,
+                          Trailing        : ARRAY OF CHAR );
+
+
+
+END RealFormat.
+

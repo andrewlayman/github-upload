@@ -1,0 +1,158 @@
+DEFINITION MODULE Links;
+
+   (* MODIFICATION HISTORY:
+
+        RSC Oct 29, 87 - First version, from inspiration by Andrew.
+        EGK Feb 8, 89  - Added ARollupContext type and two procedures
+                         to get and put lines of a task's "summarizes
+                         script".
+        AJL Jan. 31 91 - More documentation.
+   *)
+
+
+   (* See format notes at the end of this module for definition of the 
+      links format.  Please also see the TLLinks.mod module, which
+      has similar notes, and update it if you change these. *)
+
+
+FROM FileSystem     IMPORT
+    (* TYPE *)          File;
+
+FROM Text            IMPORT
+        (* TYPE *)      AText;
+
+FROM TreeObjects     IMPORT
+        (* TYPE *)      ATreeNode;
+
+
+
+
+
+
+CONST
+    LinkOverlayNameLine = 0;  (* Which overlay handles this *)
+    LinkFileTypeLine    = 1;  (* Version number/file type.  SPIKE is 0 *)
+    LinkPathLine        = 2;  (* Dev:Path\Name.Ext of other schedule. *)
+
+ (* Define some Link Actions for passing to TLLinks.  These are the actions
+    that must be supported by all versions of the link-to-files overlays.
+    Other ones can be added to individual link schemes.
+ *)
+    LinkActionForm      = 1;  (* Link Form from Task Form. *)
+
+TYPE
+    AGetDisplayableLinkProc = PROCEDURE ( ATreeNode, VAR ARRAY OF CHAR );
+
+ (* Link interface record is used as an interface between the base layer and
+    TLLINKS.MOD.  It should be general to handle most things, and not limit
+    what the overlay can do.
+ *)
+
+    ALinkInterface = RECORD
+
+        TaskNode      : ATreeNode;  (* Task in question, or NIL if none *)
+        LinkText      : AText;      (* Text area for link, or NIL if none *)
+        DesiredAction : CARDINAL;   (* What to do.  See 'LinkAction...' under constants *)
+        ChangesMade   : BOOLEAN;    (* Did task change? *)
+        CompletedOK   : BOOLEAN;    (* Action complete OK? *)
+
+    END;
+
+
+    (* Rollup context record is used to communicate between TLROLLEM and the
+       overlays that it calls to do task linking.
+    *)
+
+    ARollupContext  = RECORD
+                          Node        : ATreeNode;      (* Which task *)
+                          f           : File;           (* The file to use *)
+                      END;
+
+VAR
+
+ (* Get Displayable Link - Given a task node, return a printable string
+                           suitable for columnar display on the Gantt chart.
+
+    Preconditions  - TaskNode must be a viable task node or NIL.
+    Postconditions - s contains the string to display.
+
+  *)
+    GetDisplayableLink   : AGetDisplayableLinkProc;
+
+
+
+
+ (* Invoke TLLinks - Invoke TLLinks with an action code.
+
+     Preconditions  - LinkInterface  is what to pass to TLLinks.
+     Postconditions - LinkInterface  has been updated as needed.
+                      IF The overlay can't load, CompletedOk is FALSE.
+ *)
+PROCEDURE InvokeTLLink( VAR LinkInterface : ALinkInterface );
+
+
+
+    (* GetSummaryInfoLine - return a particular line from the task node's
+                            summarizes "script".  LineType should be one
+                            of the predefined constants above.
+    *)
+
+PROCEDURE GetSummaryInfoLine    (    Node       : ATreeNode;
+                                     LineType   : CARDINAL;
+                                 VAR s          : ARRAY OF CHAR );
+
+    (* SetSummaryInfoLine - Set the text of a particular line in the task
+                            node's summarizes "script".  LineType should
+                            be one of the predefined constants above.
+    *)
+
+PROCEDURE SetSummaryInfoLine    (    Node       : ATreeNode;
+                                     LineType   : CARDINAL;
+                                 VAR s          : ARRAY OF CHAR );
+
+END Links.
+
+
+
+
+The links supported by Time Line version 4.0 and following are described
+in a text record associated with each linked task.
+
+All linked tasks, regardless of the linking method, have their first 
+three lines identical.  The lines contain:
+
+0:  LinkOverlayNameLine   (* Which overlay handles this *)
+1:  LinkFileTypeLine      (* Version number/file type.  Time Line is 0 *)
+                          (*                            On Target is 1 *)
+2:  LinkPathLine          (* Dev:Path\Name.Ext of other schedule. *)
+
+The Link Path Name Line is the line we display on the screen as the
+'Link to' column.  If a new scheme comes in and wants something different,
+Line 3 still must be preserved such that Time Line users without the
+add-in product can still at least DISPLAY the link, if not actually use it.
+
+Initial SPIKE notes:
+
+  > As I just said, Line 2 must ALWAYS be displayable as a column for
+    backwards compatability.
+
+  > If the LinkOverlayNameLine file does not exist, we reject any try at
+    rolling up the task.  See the TLLink module for that.
+
+Each linking overlay can define the remaining lines.  The following
+are the ones used by the TLLNKSUM overlay, which links tasks to other 
+Time Line schedules:
+
+3:  LinkFlagsLine         (* Choice field settings on link form *)
+
+The flags in line 3 are
+    ResCopyFlag     = 1;    (* TRUE iff should copy resources *)
+    EffortFlag      = 2;    (* TRUE iff roll up all efforts   *)
+    LinkDateFlag    = 3;    (* TRUE iff end date only         *)
+
+4:  LinkWBSLine           (* WBS code (15 chars max).  *)
+    If blank, it means to rollup the entire schedule.
+
+
+
+

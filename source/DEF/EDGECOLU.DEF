@@ -1,0 +1,117 @@
+DEFINITION MODULE EdgeColumns;
+
+    (*  MODIFICATION HISTORY
+        16-Mar-89 LAA   Created from the old ColumnNames module, to support
+                        the new Assignments Report.
+        10-Jun-91 PFG   Added GetRsrcColumnName to get the latest resource
+                        column name and format it for use in a data column
+                        field of a form.
+         9-Jan-92 AJL   Created this module from RsrcColumns.
+    *)
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+
+
+
+    (*  EdgeColumnsTreeExists --
+
+        Query whether or not the resource columns tree already exists.
+
+        Preconditons:
+            None.
+
+        Postconditions:
+            TRUE will be returned iff the resource columns tree exists.
+    *)
+
+PROCEDURE EdgeColumnsTreeExists(): BOOLEAN;
+
+
+
+
+    (*  CreateEdgeColumnsTree --  
+
+            Create the tree of tasl column names for use by 
+            PickEdgeColumns and SearchForEdgeColumns.
+
+        Preconditions:
+            None.
+
+        Postconditions:
+            If the use count is zero, and if heap space is available, the 
+            column name tree will be created, and TRUE returned.  If the use
+            count is > 0, it will just be incremented.  Otherwise,  FALSE will 
+            be returned, and the tree won't have been created.  
+    *)
+
+PROCEDURE CreateEdgeColumnsTree() : BOOLEAN;
+
+
+
+
+
+    (*  DisposeEdgeColumnsTree --
+
+            Get rid of the column name tree made by CreateEdgeColumnsTree.
+
+        Preconditions:
+            The column name tree must have been created by a call to
+            CreateEdgeColumnsTree.
+
+        Postconditions:
+            If the use count is 1, the column name tree and all it's node 
+            will be discarded.  Otherwise, the use count will be decremented.
+    *)
+
+PROCEDURE DisposeEdgeColumnsTree();
+
+
+
+
+
+
+
+
+    (*  GetEdgeColumnName --
+
+        Get the latest column name for the column ID passed.  Format it as
+        needed for the data column fields on forms and return that string.
+
+        Preconditons:
+            A valid column ID must be passed in ColumnID.
+
+        Postconditions:
+            The string is returned in String.
+    *)
+
+PROCEDURE GetEdgeColumnName(    ColumnID    : CARDINAL;
+                                VAR String      : ARRAY OF CHAR);
+
+
+
+    (*  SearchForEdgeColumn --
+
+            Find the ColumnId in the resource column tree for the provided 
+            column name (an LString).
+
+        Preconditions:
+            The resource column tree must have been created by a call to
+            CreateEdgeColumnsTree, and not discarded by DisposeEdgeColumnsTree.
+
+        Postconditions:
+            If the column name can be found in the tree, it's name and id
+            will be returned.  If the column name can't be found, NIL will 
+            be returned.  The search ignores case.
+    *)
+
+PROCEDURE SearchForEdgeColumn(VAR ColumnName : ARRAY OF CHAR;
+                              VAR ColumnId   : CARDINAL     )
+                                                             : BOOLEAN;
+
+END EdgeColumns.
+
+
+
+

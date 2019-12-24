@@ -1,0 +1,92 @@
+DEFINITION MODULE ImpTLWindows;
+
+(*  MODIFICATION HISTORY --
+    13-Mar-92 LAA   Pass the count of number of resource assignments to
+                    GetAssignments, so we can put up a thermometer.
+    18-Mar-92 TGS   Add parameter to GetResources for "MaxIDNumber".  This
+                    is so the ResourceTable is initialized and valid over
+                    the entire range of ID numbers used.  "Count" is still
+                    needed to create a thermometer of proper size.
+    19-Mar-92 TGS   If the Count parameter to GetResources() is MAXCARDINAL,
+                    don't create a thermometer.  This is so the TLWin linker,
+                    which doesn't want one, doesn't get one.
+    19-Mar-92 LAA   Added a FixedCostNode parameter to GetResources.  This
+                    will be returned to point to a resource implicitly created
+                    so we can turn costs which are on a task in Rocky into
+                    assignments to a fixed cost.
+*)
+
+FROM CorTable               IMPORT
+    (* TYPE *)                  ACorrelationTable;
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+FROM Timei                  IMPORT 
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+TYPE
+    AProcessLineProc        = PROCEDURE( VAR ARRAY OF CHAR, ADDRESS );
+
+
+    (* ----------------------------------------------------------
+
+    GetResources:
+
+        F: the file to read from.
+        ResourceTable: correlates id to resource node.
+        Count              : input: how many resources are expected.
+                             if this is MAXCARDINAL, then no thermometer
+                             (this is for clients, i.e. schedule 
+                              linker, that don't want one.)
+        FixedCostNode      : returns a pointer to a resource node which is
+                             the implicitly created resource for doing fixed
+                             costs.  This resource didn't come from the Rocky
+                             or OT file.
+    --------------------------------------------------------------- *)
+
+PROCEDURE GetResources(VAR F                  : File;
+                       VAR ResourceTable      : ACorrelationTable;
+                           MaxIDNumber,
+                           Count              : CARDINAL;
+                       VAR FixedCostNode      : ATreeNode         ) : BOOLEAN;
+ 
+
+    (*  GetAssignments --
+        Read the input file an extract all resource assignments.  Create the
+        Time Line equivalents, and hook up tasks and resources using the
+        two tables.  Return TRUE if everything goes well, FALSE otherwise.
+    *)
+
+PROCEDURE GetAssignments( VAR F             : File;
+                              TaskTable     : ACorrelationTable;
+                              ResourceTable : ACorrelationTable;
+                              Count         : CARDINAL           ) : BOOLEAN;
+
+
+    (*  ForEachLine --
+
+        Given an LString, call the ProcessLine procedure for each line which
+        is not longer than Width.  Each line will be broken on a word
+        boundary, if possible.
+    *)
+
+PROCEDURE ForEachLine( VAR String           : ARRAY OF CHAR;
+                           Width            : CARDINAL;
+                           ProcessLine      : AProcessLineProc;
+                           Context          : ADDRESS           );
+
+
+
+PROCEDURE TLWin1DateToDate( TLW1Date : LONGINT ) : ADate;
+
+END ImpTLWindows.
+
+

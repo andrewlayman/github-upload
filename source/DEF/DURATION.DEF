@@ -1,0 +1,62 @@
+DEFINITION MODULE Duration;
+
+(*
+    MODIFICATION HISTORY:
+
+    12-Mar-90 KKC   First Version.
+     8-Feb-91 TGS   FindDuration now returns 0 if "End" is before "Start",
+                    rather than "negative durations".
+
+*)
+
+FROM CalShift               IMPORT
+    (* TYPE  *)                 ATimeSheet;
+
+FROM Timei                  IMPORT
+    (* TYPE  *)                 ADuration, ADate;
+
+
+(*----------------------------------------------------------------------------
+
+    FindDuration:
+        Given a date range, find the number of working moments in between.
+    If ( DateBegin < DateEnd ) THEN return zero. -- 8-Feb-91 TGS 
+
+----------------------------------------------------------------------------*)
+PROCEDURE FindDuration(
+                        StartDate : ADate;
+                          EndDate : ADate;
+                        TimeSheet : ATimeSheet
+                      ) : ADuration;
+
+
+(*----------------------------------------------------------------------------
+    AddWorkTime -
+        Given a start date and a duration, find an end date such that
+    duration = workingmoment between start date and end date.
+
+    If Duration < 0 Then RETURN SubtractWorkingTime( Date,  -Duration, TimeSheet );
+----------------------------------------------------------------------------*)
+PROCEDURE AddWorkingTime(
+                                Date : ADate;
+                            Duration : ADuration;
+                           TimeSheet : ATimeSheet
+                        ) : ADate;
+
+
+
+
+(*----------------------------------------------------------------------------
+    SubtractWorkTime -
+        Given a end date and a duration, find a start date such that
+    duration = workingmoment between start date and end date.
+    If Duration < 0 Then RETURN AddWorkingTime( Date,  -Duration, TimeSheet );
+----------------------------------------------------------------------------*)
+PROCEDURE SubtractWorkingTime(
+                                   Date : ADate;
+                               Duration : ADuration;
+                              TimeSheet : ATimeSheet
+                             ) : ADate;
+END Duration.
+
+

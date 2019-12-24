@@ -1,0 +1,226 @@
+IMPLEMENTATION MODULE ColumnName;
+
+(*  =========================================================================
+    Last Edit : September 5, 1990 11:36AM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Supports the User-defined column names form.
+
+    MODIFICATION HISTORY:
+
+    14-May-90 KKC   First version
+    22-Aug-90 PFG   Completed first version.
+
+    =========================================================================
+*)
+
+
+FROM Codes                  IMPORT
+    (* TYPE  *)                 ACode;
+
+FROM Dialog                 IMPORT 
+    (* PROC  *)                 Error;
+
+FROM FormCon                IMPORT
+    (* TYPE  *)                 AFieldNo;
+
+FROM Forms                  IMPORT
+    (* TYPE  *)                 AFieldValue, AForm, ACheckReason,
+                                DoForm;
+
+FROM Keys                   IMPORT
+    (* CONST *)                 ExitKey;
+
+FROM LStrings               IMPORT
+    (* PROC  *)                 SetLengthOf, Copy, ConcatLS, LengthOf,
+                                Remove, TrimRear, ConcatS,  Procustes;
+
+FROM MsgFile                IMPORT
+    (* PROC  *)                 GetMessage;
+
+FROM Space                  IMPORT
+    (* PROC  *)                 HeapAvailable, ALLOCATE, DEALLOCATE;
+
+
+
+
+CONST
+
+    ModuleNumber            =   600;
+
+    ColumnFormID            =   72;
+
+    NameField               =   0;
+    Description1Field       =   1;
+    Description2Field       =   2;
+    ShortTitle1Field        =   3;
+    ShortTitle2Field        =   4;
+    LongTitle1Field         =   5;
+    LongTitle2Field         =   6;
+    BeginUsingShortField    =   7;
+    UsualTitleLenField      =   8;
+    ExportNameField         =   9;
+    OriginalNameField       =   10;
+
+    LastColumnFormField     =   10;
+
+
+
+PROCEDURE CheckColumnForm(
+                                 Form : AForm;
+                              FieldNo : AFieldNo;
+                        VAR FormValue : ARRAY OF AFieldValue;
+                          CheckReason : ACheckReason;
+                             VAR Code : CARDINAL
+                          ) : BOOLEAN;
+BEGIN
+    Code := 0;
+    RETURN TRUE;
+END CheckColumnForm;
+
+
+
+
+PROCEDURE AllocateFormValue(VAR FormValue : ARRAY OF AFieldValue) : BOOLEAN;
+
+VAR
+    i                       :   CARDINAL;
+
+BEGIN
+    IF HeapAvailable() THEN
+        FOR i := 0 TO LastColumnFormField DO
+            NEW(FormValue[i].CharValue);
+            SetLengthOf(FormValue[i].CharValue^, 0 );
+        END;
+        RETURN TRUE;
+    END;
+    RETURN FALSE;
+END AllocateFormValue;
+
+
+
+PROCEDURE DeAllocateFormValue( VAR FormValue : ARRAY OF AFieldValue );
+
+VAR
+    i                       :   CARDINAL;
+
+BEGIN
+    FOR i := 0 TO LastColumnFormField DO
+        DISPOSE(FormValue[i].CharValue);
+        FormValue[i].CharValue := NIL;   (* Safely !!! *)
+    END;
+END DeAllocateFormValue;
+
+
+
+
+
+PROCEDURE CopyFormValueToUserDefinedColumn( 
+                                         VAR FormValue : ARRAY OF AFieldValue;
+                                 VAR UserDefinedColumn : AUserDefinedColumn 
+                                          );
+BEGIN
+    WITH UserDefinedColumn DO
+        Copy(FormValue[NameField].CharValue^, Name);
+        TrimRear(FormValue[Description1Field   ].CharValue^);
+        Copy(FormValue[Description1Field   ].CharValue^, Description);
+        Procustes(Description, MaxDescriptionLen);
+        TrimRear(Description);
+        IF (LengthOf(Description) = MaxDescriptionLen - 1) THEN
+            ConcatS(Description, " ");
+        END;
+        TrimRear(FormValue[Description2Field].CharValue^);
+        ConcatLS(Description, FormValue[Description2Field].CharValue^);
+        Copy(FormValue[ShortTitle1Field].CharValue^, ShortTitle1);
+        Copy(FormValue[ShortTitle2Field].CharValue^, ShortTitle2);
+        Copy(FormValue[LongTitle1Field].CharValue^, LongTitle1);
+        Copy(FormValue[LongTitle2Field].CharValue^, LongTitle2);
+        UsualTitleLength := FormValue[UsualTitleLenField].CardValue;
+        BeginUsingShort := FormValue[BeginUsingShortField].CardValue;
+        Copy(FormValue[ExportNameField].CharValue^, ExportName);
+        Copy(FormValue[OriginalNameField].CharValue^, OriginalName);
+    END;
+END CopyFormValueToUserDefinedColumn;
+
+
+
+
+
+PROCEDURE CopyUserDefinedColumnToFormValue( 
+                                 VAR UserDefinedColumn : AUserDefinedColumn;
+                                        VAR FormValue : ARRAY OF AFieldValue
+                                         );
+VAR
+    Line            :       ARRAY[0..255] OF CHAR;
+
+BEGIN
+    WITH UserDefinedColumn DO
+        Copy(Name, FormValue[NameField].CharValue^);
+
+        Copy(Description, FormValue[Description1Field].CharValue^);
+        IF (LengthOf( Description ) > MaxDescriptionLen) THEN
+            Procustes( 
+                        FormValue[Description1Field].CharValue^, 
+                        MaxDescriptionLen
+                     );
+            Copy( Description, Line );
+            Remove(Line, 1, MaxDescriptionLen);
+            Copy( Line, FormValue[Description2Field].CharValue^);
+        ELSE
+            SetLengthOf(FormValue[Description2Field].CharValue^, 0);
+        END;
+
+        Copy(ShortTitle1, FormValue[ShortTitle1Field].CharValue^);
+        Copy(ShortTitle2, FormValue[ShortTitle2Field].CharValue^);
+        Copy(LongTitle1, FormValue[LongTitle1Field].CharValue^);
+        Copy(LongTitle2, FormValue[LongTitle2Field].CharValue^);
+        FormValue[UsualTitleLenField].CardValue := UsualTitleLength;
+        FormValue[BeginUsingShortField].CardValue := BeginUsingShort;
+        Copy(ExportName, FormValue[ExportNameField].CharValue^);
+        Copy(OriginalName, FormValue[OriginalNameField].CharValue^);
+    END;
+END CopyUserDefinedColumnToFormValue;
+
+
+
+
+
+
+PROCEDURE DoColumnForm( VAR UserDefinedColumn : AUserDefinedColumn;
+                        VAR Changed           : BOOLEAN
+                      );
+VAR
+    FormValue               :   ARRAY [0..LastColumnFormField] OF AFieldValue;
+    Code                    :   ACode;
+    s                       :   ARRAY [0..255] OF CHAR;
+
+BEGIN
+
+    Changed := FALSE;
+
+    IF (NOT AllocateFormValue( FormValue )) THEN
+        GetMessage(ModuleNumber + 1, s);       (* Not enough memory *)
+        Error(s);
+        RETURN;
+    END;
+
+    CopyUserDefinedColumnToFormValue( UserDefinedColumn, FormValue );
+
+    Code := DoForm(13, 8, 67, 21, ColumnFormID, TRUE,
+                      FormValue, CheckColumnForm);
+
+    IF (Code = ExitKey) THEN
+        Changed := TRUE;
+        CopyFormValueToUserDefinedColumn( FormValue, UserDefinedColumn );
+    END;
+
+    DeAllocateFormValue( FormValue );
+
+END DoColumnForm;
+
+
+
+BEGIN
+END ColumnName.
+

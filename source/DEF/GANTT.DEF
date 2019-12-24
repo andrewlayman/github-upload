@@ -1,0 +1,111 @@
+DEFINITION MODULE Gantt;
+
+    (* MODIFICATION HISTORY
+
+            3/22/89 EGK     - Added Percentage parameter to GanttLine.
+          30-Mar-90 RSC       Made Timeu to Timei/TimeForm conversions.
+          25-Jan-91 RSC       Added "SetGanttLineTask".
+
+    *)
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  ATaskPtr;
+
+FROM  Timei                 IMPORT
+    (* TYPE *)                  ADate, ADuration, ADurationUnit;
+
+FROM  TreeObjects           IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+CONST
+    DateLnDepth  = 2;   (* Number of lines used for the Dates lines. *)
+    StatWidth    = 4;   (* Columns needed for the status codes. *)
+    MaxPrtWidth  = 255; (* Maximum columns per chart. *)
+
+TYPE
+    ADStyle = (HourMinute, DayHour, MonthDay, YearMonth);   (* Style of DateLines. *)
+    AGanttFont = ARRAY [0..11] OF CHAR;
+    ASlackStyle = (TotalSlack, FreeSlack, NoSlack);
+    AGanttLineType = (Baseline, Plan);
+
+CONST
+    FutureBar               = 0;
+    EndOfBar                = 1;
+    DoneBar                 = 2;
+    StartOfBar              = 3;
+    CursorBar               = 4;
+    FixedDelayBar           = 5;
+    OtherDelayBar           = 6;
+    MilestoneBar            = 8;
+    TodayBar                = 9;
+    SlackBar                = 10;
+
+VAR
+    ChartFont               : AGanttFont;    (* Font for Actual detail tasks *)
+    SummaryFont             : AGanttFont;    (* Font for Actual summary tasks *)
+    BaselineDetailFont      : AGanttFont;    (* Font for Baseline detail tasks *)
+    BaselineSummaryFont     : AGanttFont;    (* Font for Baseline summary tasks *)
+    PrinterGanttFont        : AGanttFont;
+    WPGanttFont             : AGanttFont;
+
+
+    (*  Check, and maybe alter, the parameters for the DateLines
+       and GanttLine PROCEDUREs.  ScaleRange and STYLE are purely output. *)
+
+PROCEDURE CheckScale (Columns,FirstColumn:CARDINAL; (*columns used for gantt bars*)
+                      VAR StartDate: ADate;
+                      VAR LineScale : ADuration;
+                      VAR ScaleRange: ADurationUnit;    (* Every what? *)
+                      VAR Style : ADStyle           (* Style of dateline. *)
+                     ) : BOOLEAN;
+
+    (* DATELINES -- Produce the two line caption that appears at the
+                    top of a Gantt chart.   In order to pleasantly
+                    interpret the meaning of the columns, DateArray
+                    will be filled in, up to its length, with the
+                    "official" date for that column, which may not be
+                    the leftmost date subsumed by that column. *)
+
+PROCEDURE DateLines ( StartDay      : ADate;
+                      Columns,
+                      FirstColumn   : CARDINAL;
+                      Scale         : ADuration;
+                      ScaleRange    : ADurationUnit;
+                      Style         : ADStyle;
+                      VAR Font      : AGanttFont;
+                      ScreenFlag    : BOOLEAN;
+                      VAR Line1,
+                          Line2     : ARRAY OF CHAR;
+                      VAR DateArray : ARRAY OF ADate );
+
+
+PROCEDURE GanttLine (Task           : ATreeNode;
+                     LineType       : AGanttLineType;
+                     StartDay       : ADate;
+                     Today          : ADate;
+                     Percentage     : CARDINAL;
+                     Columns,
+                     FirstColumn    : CARDINAL;
+                     LineScale      : ADuration;
+                     SlackStyle     : ASlackStyle;
+                     VAR Font       : AGanttFont;
+                     VAR Line       : ARRAY OF CHAR;
+                     VAR Started,
+                         Continues  : BOOLEAN );
+
+
+(* Set Gantt Line Task
+
+        sets up a shortcut for GanttLine to speed it up a smirch by
+        removing the need to lock the task.  Call this before calling
+        GanttLine.  This is a separate proc because GanttLine is
+        assemblerized.
+
+*)
+PROCEDURE SetGanttLineTask( TaskNode : ATreeNode; TaskPtr : ATaskPtr );
+
+
+
+END Gantt.
+

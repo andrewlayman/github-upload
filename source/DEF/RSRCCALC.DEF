@@ -1,0 +1,279 @@
+DEFINITION MODULE RsrcCalc;
+
+  (* MODIFICATION HISTORY:
+
+         7/10/87 RSC Created from AssForms for sharing with Planner.
+        18-Feb-88 LAA   Took ManHoursToRealTime and RealTimeToManHours out
+                        and moved into their own module.
+         8-May-89 RSC  Added a new recalc proc to recalc an assignment tree.
+                       Done for the sanity of the spreadsheet view.
+        20-May-89 RSC  Moved "DurationToRealTime" and "RealTimeToDuration"
+                       to the WorkHours module (formerly "ManHours")
+         1-Jun-89 RSC  Removed "AnAssignmentPointer" and "ANextAssignmentProc".
+                       These now come from Assignme.Def.
+        30-Mar-90 RSC  Made Timeu to Timei/TimeForm conversions.
+        10-Aug-90 RSC  Radicly changed the AssignmentCost procedure, to
+                       account for all the new cost types and possibilites.
+                       Add dates to the cost procedures.
+        27-Aug-90 RSC  Removed the "ViaAss" versions of the procs.
+        12-Aug-91 AJL  Updated documentation for ComputeTaskCosts.
+  *)
+
+FROM Assignments        IMPORT
+        (* TYPES *)        AnAssignmentRecord, AnAssignmentArray;
+
+FROM Allocs             IMPORT
+        (* TYPES *)        AnAssignmentSummary, ADurationMethod,
+                           AStartStatus, AFixType;
+
+FROM SYSTEM             IMPORT
+        (* TYPE *)          ADDRESS;
+
+FROM Timei              IMPORT 
+        (* TYPES *)        ADate, ADuration;
+
+FROM TreeObjects        IMPORT
+        (* TYPE  *)        ATreeNode;
+
+
+
+
+
+
+
+TYPE
+        (* Resource assignments have several costs associated with them.
+
+            There are the baseline costs, actual spent costs, actual
+            to-go costs.
+
+            Within those, you can include the computed costs (based on
+            hours of effort), or the overtime costs (at the overtime rate),
+            or the "extras" cost (the customer slush-fund).
+
+            By setting different bits in AnAssignmentCostTypeSet, you can
+            direct the AssignmentCost procedure to return one of many
+            types of costs included in its returned total.
+        *)
+    AnAssignmentCostType = (
+
+        TreatAsBaseline,    (* Is this assignment from the baseline? *)
+                            (*   (if not, it is assumed to be the plan) *)
+
+        IncludeToGo,        (* Include yet-to-go costs in the total? *)
+        IncludeSpent,       (* Include spent costs in the total? *)
+        IncludeExtras,      (* Include the Extras costs? *)
+        IncludeOvertime );  (* Include overtime costs? *)
+
+    AnAssignmentCostTypeSet = SET OF AnAssignmentCostType;
+
+
+
+(* Assignment Cost - How many bucks are attributable to this assignment
+                     for the specified cost types?
+
+    10-Aug-90 RSC Added the new parameters for EVE.
+
+    Preconditions:
+
+        The assignment record is valid and points to a valid resource.
+
+        PeriodStartDate <= PeriodEndDate
+
+        You have chosen a period of time you are interested in.  To get
+        accurate costs back, it is important to chose a period of time
+        during which the task who ownes this assingnment actually runs.
+        The more accurate the time period, the closer the answer.  For
+        example, a cost report over time should call this routine with
+        MAX(Task start date, reporting period start) and
+        MIN(Task end date,   reporting period end), making sure that the
+        start is really before the end.
+
+        See the TimeMath module for procedures to aid in this endever.
+
+    Postconditions:
+
+        The model remains unchanged.  The only affect of this procedure
+        is to return the computed cost.
+    
+    InputParameters:
+
+        AssignmentRecord    is the assignment you are interested in.
+        StartOfPeriod       is the start of the period of time to report
+                               about.
+        EndOfPeriod         is the end of the period to report about.
+        AssignmentCostTypes is the set of cost types to report on.
+                                See the notes on the definition of
+                                "AnAssignmentCostTypeSet", above.
+
+    OutputParameter:
+
+        RETURN value is the dollar amount for this assignment for the
+               sum of all types asked for.
+
+    Note:
+
+        If an empty cost type set is passed in, 0.0 will be returned.
+
+*)
+PROCEDURE AssignmentCost( VAR AssignmentRecord      : AnAssignmentRecord;
+                              StartOfPeriod,
+                              EndOfPeriod           : ADate;
+                              AssignmentCostTypes   : AnAssignmentCostTypeSet
+                        ) : REAL;
+
+
+
+
+
+
+
+
+ (* SummTaskNodeAmounts - Figure out the cost of this task in bucks and time.
+
+      Preconditions  - A Valid TaskNode
+                       BaseLine is TRUE if you want BaseLine.  FALSE=Plan.
+      Postconditions - Completed and ToGo are the local summaries.
+ *)
+PROCEDURE SummTaskNodeAmounts( TaskNode : ATreeNode;
+                               BaseLine : BOOLEAN;
+                           VAR Completed,
+                               ToGo     : AnAssignmentSummary );
+
+
+
+
+
+
+
+
+
+ (* Summ Assignments - Summarize the assignment records.
+
+    Preconditions:
+
+        The assignment array is valid for Count assignments.
+
+        StartOfPeriod <= EndOfPeriod
+
+        You have chosen a period of time you are interested in.  To get
+        accurate costs back, it is important to chose a period of time
+        during which the task who ownes this assingnment actually runs.
+        The more accurate the time period, the closer the answer.  For
+        example, a cost report over time should call this routine with
+        MAX(Task start date, reporting period start) and
+        MIN(Task end date,   reporting period end), making sure that the
+        start is really before the end.
+
+        See the TimeMath module for procedures to aid in this endever.
+
+    Postconditions:
+
+        The model remains unchanged.  The only affect of this procedure
+        is to return the computed cost.
+    
+    Input:
+
+        Assignments is a valid assignment array.
+        Count       is the number of assignment records
+        StartOfPeriod is the start of the period to report on.
+        EndOfPeriod is the end of the period.
+        BaseLine    is wether you want BaseLine or not (Plan).
+
+     Output:
+
+        CompletedSummary and ToGoSummary are the returned amounts.
+ *)
+PROCEDURE SummAssignments(  Assignments     : AnAssignmentArray;
+                            Count           : CARDINAL;
+                            StartOfPeriod,
+                            EndOfPeriod     : ADate;
+                            BaseLine        : BOOLEAN;
+                        VAR CompletedSummary,
+                            ToGoSummary     : AnAssignmentSummary);
+
+
+
+
+
+
+ (* ComputeTaskNodeCosts - Figure out the cost of this task in work
+                           hours and duration.  This also may ajust the
+                           resource assignment records.
+
+                           This also ajusts the task's COSTS.
+
+                           There is no need to call "SummAssignments"
+                           after calling this procedure.
+
+      Preconditions  - A Valid TaskNode
+      Postconditions - The Task has been recomputed, and the results
+                       are stored in the task record.
+ *)
+PROCEDURE ComputeTaskNodeCosts( TaskNode : ATreeNode );
+
+
+
+
+
+
+
+ (* ComputeTaskCosts - Figure out the cost of this task in effort
+                       and duration.  This also may ajust the resource
+                       assignment records.
+
+      Preconditions  - Assignments is an accessible assignment array.
+                       Count    is the count of assignments.
+                       Duration is the Task Duration.  It is input for
+                                Duration Driven tasks and ignored otherwise.
+                       CompletedSummary and ToGoSummary is the effort in
+                                man hours for this task.  They are input
+                                for Resource Driven tasks.
+                       Method   is the task duration method.
+
+        StartOfPeriod <= EndOfPeriod
+
+        You have chosen a period of time you are interested in.  To get
+        accurate costs back, it is important to chose a period of time
+        during which the task who ownes this assingnment actually runs.
+        The more accurate the time period, the closer the answer.  For
+        example, a cost report over time should call this routine with
+        MAX(Task start date, reporting period start) and
+        MIN(Task end date,   reporting period end), making sure that the
+        start is really before the end.
+
+        See the TimeMath module for procedures to aid in this endeavor.
+
+
+      Postconditions - May recalc resource assignment records.
+                       Duration, for Duration Driven tasks, is the same as
+                                what was passed.  For Resource Driven Tasks,
+                                it is the (new) task duration.
+                       CompletedSummary and ToGoSummary, for Resource Driven
+                                tasks, the Time field is what was passed.  For
+                                Duration Driven tasks, they are the (new)
+                                Work Hours.
+
+                           This also ajusts the task's COSTS.
+
+                           There is no need to call "SummAssignments"
+                           after calling this procedure.
+
+ *)
+
+PROCEDURE ComputeTaskCosts( Assignments : AnAssignmentArray;
+                            Count       : CARDINAL;
+                        VAR Duration    : ADuration;
+                        VAR CompletedSummary,
+                            ToGoSummary : AnAssignmentSummary;
+                            Method      : ADurationMethod;
+                            StartStatus : AStartStatus;
+                            StartOfPeriod,
+                            EndOfPeriod : ADate;
+                            Fixation    : AFixType );
+
+
+
+END RsrcCalc.
+
+

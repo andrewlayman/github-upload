@@ -1,0 +1,46 @@
+DEFINITION MODULE ResLates;
+
+    (* This module exports a procedure to compute the latest start
+       date for a task, given a maximum end date. 
+
+    MODIFICATION HISTORY:
+
+    Dec 21, 90  JES - created.
+    Jan 10, 91  JES - changed FindLatestStartDate so it also returns
+                        the corresponding end date.
+    Jan 14, 91  JES - added parameter "DoWeUseLateAvailabilities" to
+                        procedure FindLatestStartDate.
+    *)
+
+
+FROM Allocs         IMPORT ATaskPtr;
+    (* TYPE *)
+
+FROM Timei          IMPORT ADate, ADuration;
+    (* TYPE *)
+
+(* ------------ FindLatestStartDate -----------------------------
+
+   Given a maximum end date, find the latest
+   feasible start date for the task (i.e., whose end date is <=
+   max end date). If such a date can be found, sets FoundADate to
+   TRUE and StartDate to that date, and sets TaskEndDate to the
+   corresponding end date.
+   Otherwise, sets FoundADate to FALSE.
+
+   If AllowOverbookings is FALSE, feasibility includes resource-level
+   constraints; otherwise it does not. If HonorDaysOff is TRUE,
+   feasibility includes vacation constraints (depending on the
+   task type etc); otherwise it does not.
+*)
+
+PROCEDURE FindLatestStartDate (Task                      : ATaskPtr;
+                               MaxEndDate                : ADate;
+                               DoWeAllowOverbookings     : BOOLEAN;
+                               DoWeUseLateAvailabilities : BOOLEAN;
+                           VAR FoundADate                : BOOLEAN;
+                           VAR StartDate                 : ADate;
+                           VAR TaskEndDate               : ADate);
+
+END ResLates.
+

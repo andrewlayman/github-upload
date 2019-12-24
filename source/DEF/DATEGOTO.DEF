@@ -1,0 +1,206 @@
+DEFINITION MODULE DateGoto;
+
+(*  =========================================================================
+    Last Edit : May 24, 1991 1:35PM by PFG
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Manage a QuickPick DateList.  In other words, given any DateList,
+        put it into a QuickPick list.
+
+    MODIFICATION HISTORY:
+
+        31-Jul-90  RSC  Added DeleteProc to the ManageDateList proc.
+         4-Sep-90  RSC  Correct cursor positioning.
+        24-May-91  PFG  Changed DeleteProc to actually do the delete, not
+                        just check to see if a delete is okay.  Added an
+                        argument that says whether delete was done or not.
+                        Also made Element a VAR param so it could be
+                        changed to reflect the deleted element.
+    =========================================================================
+*)
+
+FROM DateLists  IMPORT
+    (* TYPE *)      ADateList, ADateListIndex;
+
+
+
+
+TYPE
+
+    (* A Date Display Proc
+    
+        Given the element of the date list identified by the DateList and
+        Element, return a displayable string for the list.
+
+        Preconditions
+
+            The Date List and Element specify a valid date list record.
+
+        Postconditions
+
+            The Display string is printable.
+
+        Input
+
+            DateList is a valid date list of some flavor.
+            Element  is one of the elements in the list.
+
+        Output
+
+            Display  is a display string of a reasonable width for the list.
+
+    *)
+    ADateDisplayProc    = PROCEDURE (     (* DateList *)  ADateList,
+                                          (* Element  *)  ADateListIndex,
+                                      VAR (* Display  *)  ARRAY OF CHAR );
+
+
+
+    (* A Date Edit Proc
+    
+        Given the element of the date list identified by the DateList and
+        Element, somehow edit the entry (presumably with a form).
+
+        Preconditions
+
+            The Date List and Element specify a valid date list record,
+            or indicate that a new record is to be created.
+
+        Postconditions
+
+            The DateList has been updated to keep the ordering of
+            the list in proper date order.
+
+        Input
+
+            DateList      is a valid date list of some flavor.
+            Element       is the cursor element number of the
+                             item to be edited (if Edit is TRUE),
+                             or of the template item (if Edit is FALSE).
+            Edit          is TRUE  if this is an EDIT,
+                             FALSE if this is an INSERT.
+
+        Output
+
+            DateList         Could have changed.
+            Element       is the "cursor" element.  The element that
+                             was updated (this can change from what was
+                             input due to colapsing of the DateList).
+
+            RETURN        is TRUE  iff the list was changed (either one
+                             record changed in place, or records
+                             have been inserted),
+                             FALSE otherwise.
+
+    *)
+    ADateEditProc       = PROCEDURE ( VAR (* DateList *)    ADateList,
+                                      VAR (* Element  *)    ADateListIndex,
+                                          (* Edit     *)    BOOLEAN
+                                    ) : BOOLEAN;
+
+
+    (* Date Delete Proc
+
+            (* 24-May-91 PFG  Changed to do the delete rather than just
+                              verify that the delete is possible.  This
+                              was done to correct a problem with identical
+                              adjacent entries.  *)
+
+        Deletes the datelist element
+            OR
+        Tells the calling procedure to delete the element itself
+            OR
+        Informs the calling procedure that the element can't be deleted.
+
+        Preconditions
+
+            DateList    will be a valid date list.
+            Element     will be the element that is about to be deleted.
+
+        Postconditions
+
+            Element     will indicate the element the cursor should now rest
+                        on; unchanged if the delete was not done.
+            WasDeleted  will be TRUE if the delete proc did the deleting
+                        itself; FALSE if the caller should do the deleting.
+
+        Input
+
+            As above, under Preconditions
+
+        Output
+
+            TRUE if the delete can (or did) succeed; FALSE if the delete
+            is not possible.
+
+
+    *)
+
+    ADateDeleteProc     = PROCEDURE (     (* DateList   *)  ADateList,
+                                      VAR (* Element    *)  ADateListIndex,
+                                      VAR (* WasDeleted *)  BOOLEAN
+                                    ) : BOOLEAN;
+
+
+
+
+
+(* Manage Date List
+
+    Given some callback procedures, display a GoTo list of entries from
+    the DateList and allow Inserts, Deletes, and Edits.
+
+    Preconditions
+
+        The date list must be valid (NIL is OK)
+        The DisplayProc must return the largest desired width for a display
+            string when asked for the FIRST item.  The rest can be smaller.
+
+    Postconditions
+
+        The date list has been updated as per the customer's desires.
+        The list may be completely different that it was.
+
+    Input
+
+        DateList    The date list to manage (edit)
+        DataSize    The size of the data record, not including StartDate.
+        DisplayProc The proc to call to get a printable string
+        EditProc    The proc to call to edit one record.
+        Title       The title for the box.
+
+    Output
+
+        DateList    The new list
+        RETURN      TRUE iff DateList has changed.
+
+    NOTE:
+        The list will be centered and autoscaled.  The autoscaling depends
+        on the DisplayProc returning the LARGEST SIZE ITEM POSSIBLE WHEN
+        ASKED FOR THE FIRST ITEM.  After the first item, the rest can be
+        whatever size is needed, and the item will be trimmed/padded to
+        be the same size as the first item.
+
+        Exceptions:
+        
+            - There is a minimum and a maximum size (around 15 and 75)
+            - If the DateList is NIL, a default size is assigned (around 40).
+*)
+PROCEDURE ManageDateList( VAR DateList     : ADateList;
+                              DataSize     : CARDINAL;
+                              DisplayProc  : ADateDisplayProc;
+                              EditProc     : ADateEditProc;
+                              DeleteProc   : ADateDeleteProc;
+                              Title        : ARRAY OF CHAR
+
+                        ) : BOOLEAN;
+
+
+
+
+
+
+END DateGoto.
+

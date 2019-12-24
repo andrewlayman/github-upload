@@ -1,0 +1,56 @@
+DEFINITION MODULE ResConstants;
+
+
+(* Constants - and one global variable - used in resource levelling.
+
+
+   MODIFICATION HISTORY
+
+    Feb-24-89   JES   - created, mostly by yanking constants from TlrPlan
+    Jul-12-89   JES   - add global variable "InsufficientVirtualMemory"
+    Aug-30-89   AJL   - Changed name of "InsufficientVirtualMemory" to
+                        "SchedulingAbandoned". 
+    Oct-30-90   CL    - Removed MAXDATE.                         
+    Nov 29-90   JES   - removed MaxResourcesPerTask, and added
+                        MaxLevellableResourcesPerTask and
+                        MaxEmployableResourcesPerTask.
+    Nov 30-90   JES   - Added constant LongZero.
+    Feb 11-92   JES   - Added constants Two and TwoPercent (to temporarily
+                        fix contouring).
+*)
+FROM Allocs   IMPORT ATempTaskFlag;
+    (* TYPE *)
+
+CONST
+
+    ModuleNumber = 13700;
+
+    OurCountDown = ModuleNumber+4; (* "Adjusting for resource conflicts, "  *)
+
+    Zero        = 0.0;
+    LongZero    = 0L;
+    TwoPercent  = 2.0;  (* to temporarily fix contouring *)
+    Two         = 2L;   (*         "                     *)
+
+        (*<PRODUCTION*)
+    HowOften2    = 4;
+    (*PRODUCTION>*)
+    (*<PRINT
+    HowOften2    = 1;
+    PRINT>*)
+
+
+    MAXCARDINAL = 0FFFFH;
+
+    MaxLevellableResourcesPerTask = 50; 
+    MaxEmployableResourcesPerTask = 75;
+
+    DontBump    = TempTaskFlag5;      (* Same as Visited in TLCPM. *)
+
+VAR
+
+    SchedulingAbandoned : BOOLEAN;    (* Something caused scheduling to
+                                         end before it was a complete recalc. *)
+
+END ResConstants.
+

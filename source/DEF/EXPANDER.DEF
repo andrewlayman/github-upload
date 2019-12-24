@@ -1,0 +1,15 @@
+DEFINITION MODULE Expander;
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+
+PROCEDURE ReadUncompressedChar ( VAR f  : File;
+                                 VAR c  : CHAR  );
+
+PROCEDURE InitExpansion;
+
+
+END Expander.
+

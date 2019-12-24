@@ -1,0 +1,31 @@
+DEFINITION MODULE FixPhantoms;
+
+(* Procedures to move each phantom summary ("phantom ender") task
+   back to as early in time as allowed by dependencies. 
+
+    MODIFICATION HISTORY
+
+    Sep 15, 89 - JES -created.
+    May 31, 91 - JES -changed so ToGo is not a VAR parameter.
+
+*)
+
+FROM FlexStor    IMPORT
+    (* TYPE *)          AnExtHandle;    
+
+
+
+(*------AdjustPhantoms---------------------------------------------
+
+Move phantoms summaries to as early in time as possible, allowing for
+dependencies.
+
+*)
+
+
+PROCEDURE AdjustPhantoms(ScheduledList : AnExtHandle;
+                         TaskCount     : CARDINAL;
+                         ToGo          : CARDINAL);
+
+END FixPhantoms.
+

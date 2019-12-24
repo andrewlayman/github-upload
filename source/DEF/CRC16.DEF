@@ -1,0 +1,12 @@
+DEFINITION MODULE CRC16;
+
+FROM SYSTEM IMPORT ADDRESS;
+
+    (* CheckSum -- Compute a checksum of "Size" bytes beginning
+                   at address "A".   *)
+
+PROCEDURE CheckSum (     A    : ADDRESS;
+                         Size : CARDINAL  ) : CARDINAL;
+
+END CRC16.
+

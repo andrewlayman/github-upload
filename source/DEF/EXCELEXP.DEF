@@ -1,0 +1,212 @@
+DEFINITION MODULE ExcelExport;
+
+(*  Defines the primitive operations involved with writing data to a Excel
+    spreadsheet file.
+
+        MODIFICATION HISTORY
+         8-Jul-89 MWP   Added support for percentage records.
+         1-Sep-89 MWP   Added parameter to WriteTextRecord which tells whether
+                        we are writing a header record or not.
+        30-Mar-90 RSC   Made Timeu to Timei conversions.
+        17-Sep-91 AJL   Add WriteBooleanRecord.
+*)
+
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADuration;
+
+
+CONST
+      VERSION               = 2;
+      DOC_TYPE              = 10H;
+
+(*
+ * Excel record type codes. All valid record types are defined here.
+ * Any omissions in this list mean the record type is undefined formally.
+*)
+
+      BDIMENSIONS           =  0;
+      BBLANK                =  1;
+      BINTEGER              =  2;
+      BNUMBER               =  3;
+      BLABEL                =  4;
+      BBOOLERR              =  5;
+      BFORMULA              =  6;
+      BSTRING               =  7;
+      BROW                  =  8;
+      BBOF                  =  9;
+      BEOF                  =  10;
+      BINDEX                =  11;
+      BCALCCOUNT            =  12;
+      BCALCMODE             =  13;
+      BPRECISION            =  14;
+      BREFMODE              =  15;
+      BDELTA                =  16;
+      BITERATION            =  17;
+      BPROTECT              =  18;
+      BPASSWORD             =  19;
+      BHEADER               =  20;
+      BFOOTER               =  21;
+      BEXTRNCOUNT           =  22;
+      BEXTRNSHEET           =  23;
+      BNAME                 =  24;
+      BWINPROTECT           =  25;
+      BVERPGBRKS            =  26;
+      BHORPGBRKS            =  27;
+      BNOTE                 =  28;
+      BSELECTION            =  29;
+      BFORMAT               =  30;
+      BFORMATCNT            =  31;
+      BCOLDEFAULT           =  32;
+      BARRAY                =  33;
+      BEXTRNNAME            =  35;
+      BCOLWIDTH             =  36;
+      BDEFROWHEIGHT         =  37;
+      BLMARGIN              =  38;
+      BRMARGIN              =  39;
+      BTOPMARGIN            =  40;
+      BBOTMARGIN            =  41;
+      BROWHDRS              =  42;
+      BPGRIDLINES           =  43;
+      BFILEPASS             =  47;
+      BFONT                 =  49;
+      BFONT2                =  50;
+      BTABLE                =  54;
+      BTABLE2               =  55;
+      BCONTINUE             =  60;
+      BWINDOW1              =  61;
+      BWINDOW2              =  62;
+      BBACKUP               =  64;
+      BPANE                 =  65;
+
+(*
+ * 20 pre-defined Excel format codes. These are reserved internal Excel formats
+ * that are present in all excel worksheet files. If format codes exist from
+ * code >= 20, then they are user defined.
+ *
+ * We currently do NOT recognize user defined format codes.
+*)
+
+      F_GENERAL             =   0;
+
+      F_INTEGER             =   1;
+
+      F_FIXED               =   2;
+      F_FIXED1              =   3;
+      F_FIXED2              =   4;
+
+      F_CURR1               =   5;
+      F_CURR2               =   6;
+      F_CURR3               =   7;
+      F_CURR4               =   8;
+
+      F_PERCENT1            =   9;
+      F_PERCENT2            =  10;
+      F_EXPONENT            =  11;
+
+      F_DATE_1              =  12;
+      F_DATE_2              =  13;
+      F_DATE_3              =  14;
+      F_DATE_4              =  15;
+
+      F_TIME_1              =  16;
+      F_TIME_2              =  17;
+      F_TIME_3              =  18;
+      F_TIME_4              =  19;
+
+      F_DATE_TIME           =  20;
+
+
+
+
+
+PROCEDURE OpenFile  (   VAR Name        : ARRAY OF CHAR )   : BOOLEAN;
+
+    (*  Name is the full file name including directory and extension.
+        Returns TRUE iff file was successfully opened for writing.
+    *)
+
+
+PROCEDURE CloseFile;
+
+    (*  Closes the file that was opened with the OpenFile command.      *)
+
+
+PROCEDURE CheckFileStatus ()    : BOOLEAN;
+
+    (*  Returns FALSE if there were any problems writing to the file.  *)
+
+
+
+
+
+PROCEDURE WriteTextRecord       (     Col, Row  : CARDINAL;
+                                  VAR s         : ARRAY OF CHAR;
+                                      RightJust : BOOLEAN;
+                                      Protect   : BOOLEAN;
+                                      Header    : BOOLEAN  );
+
+PROCEDURE WriteBooleanRecord    (     Col, Row  : CARDINAL;
+                                  VAR Value     : BOOLEAN;
+                                      RightJust : BOOLEAN;
+                                      Protect   : BOOLEAN;
+                                      Header    : BOOLEAN  );
+
+PROCEDURE WriteIntegerRecord    (     Col, Row  : CARDINAL;
+                                      Number    : INTEGER;
+                                      WriteZero : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteRealRecord       (     Col, Row  : CARDINAL;
+                                      Number    : REAL;
+                                      Decimals  : CARDINAL;
+                                      WriteZero : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteCurrencyRecord   (     Col, Row  : CARDINAL;
+                                      Amount    : REAL;
+                                      WriteZero : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WritePercentageRecord   (     Col, Row  : CARDINAL;
+                                        Amount    : REAL;
+                                        WriteZero : BOOLEAN;
+                                        Protect   : BOOLEAN       );
+
+PROCEDURE WriteDateRecord       (     Col, Row  : CARDINAL;
+                                      Date      : ADate;
+                                      End       : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteDurationRecord   (     Col, Row  : CARDINAL;
+                                      Dur       : ADuration;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteBigTimeRecord    (     Col, Row  : CARDINAL;
+                                      Time      : ABigTime;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteBlankRecord      (     Col, Row  : CARDINAL;
+                                      Protect   : BOOLEAN       );
+
+
+
+PROCEDURE WriteActiveRange      (     FromCol   : CARDINAL;
+                                      FromRow   : CARDINAL;
+                                      ToCol     : CARDINAL;
+                                      ToRow     : CARDINAL      );
+
+PROCEDURE WriteNameRange        ( VAR Name      : ARRAY OF CHAR;
+                                      FromCol   : CARDINAL;
+                                      FromRow   : CARDINAL;
+                                      ToCol     : CARDINAL;
+                                      ToRow     : CARDINAL      );
+
+PROCEDURE WriteColumnWidth      (     Column    : CARDINAL;
+                                      Width     : CARDINAL      );
+
+END ExcelExport.
+

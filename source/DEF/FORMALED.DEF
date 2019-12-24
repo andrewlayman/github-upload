@@ -1,0 +1,23 @@
+DEFINITION MODULE FormalEdgeName;
+
+  (* Formal Edges Name - Routines to manage a cache of edges information.
+
+        Modification History:
+
+        30-Aug-89 MWP Creation.
+  *)
+
+
+PROCEDURE SetupEdgeCache () : BOOLEAN;
+
+
+PROCEDURE CheckEdgeName ( VAR RangeName  : ARRAY OF CHAR;
+                          VAR DataFormat : CARDINAL;
+                          VAR ID         : CARDINAL      ) : BOOLEAN;
+
+PROCEDURE FindEdgeName (     ID         : CARDINAL;               (* 29-Aug-89 MWP *)
+                         VAR ColumnName : ARRAY OF CHAR ) : BOOLEAN;
+
+
+END FormalEdgeName.
+

@@ -1,0 +1,69 @@
+DEFINITION MODULE RecordIO;
+
+
+
+
+FROM FileSystem   IMPORT File;
+
+FROM SYSTEM       IMPORT ADDRESS;
+
+
+    (* Records are composed, structurally, of two parts: a preface
+       and a body.  The preface contains a Type code and a count
+       of the number of bytes in the body of the record.
+
+       Type codes are in the range of 0..EF hexadecimal.  Codes
+       F0..FF are reserved for internal bookkeeping, though code
+       FF indicates not a data record, but an end of a subfile.
+    *)
+
+PROCEDURE WriteRecord(VAR F             : File;
+                          Type          : CARDINAL;
+                          RecordAddress : ADDRESS;
+                          Length        : CARDINAL);
+
+    (*  ReadRecord -- Reads a record into a buffer.  Also returns
+                      the type code. *)
+
+PROCEDURE ReadRecord (VAR F             : File;
+                      VAR Type          : CARDINAL;
+                          RecordAddress : ADDRESS;
+                          MaxLength     : CARDINAL);
+
+    (*  ReadRecordPreface -- Reads the preface of the record, returning
+                             the Type and Length of the following record
+                             body. *)
+
+PROCEDURE ReadRecordPreface( VAR F      : File;
+                             VAR Type   : CARDINAL;
+                             VAR Length : CARDINAL    );
+
+    (*  ReadRecordBody -- After a call to ReadRecordPreface, reads
+                          the record body. *)
+
+PROCEDURE ReadRecordBody( VAR F             : File;
+                              Length        : CARDINAL;
+                              RecordAddress : ADDRESS;
+                              MaxLength     : CARDINAL);
+
+    (* WriteString -- Writes an LString to the file. *)
+
+PROCEDURE WriteString(VAR F         : File;
+                          Type      : CARDINAL;
+                      VAR String    : ARRAY OF CHAR);
+
+    (* ReadString -- Read an LString from the file, up to the
+                     maximum room in String. *)
+
+PROCEDURE ReadString (VAR F         : File;
+                      VAR String    : ARRAY OF CHAR);
+
+    (* ReadStringBody -- Read an LString body from the file, up to the
+                         maximum room in String. *)
+
+PROCEDURE ReadStringBody (VAR F         : File;
+                              Length    : CARDINAL;
+                          VAR String    : ARRAY OF CHAR);
+
+END RecordIO.
+

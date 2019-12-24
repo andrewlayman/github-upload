@@ -1,0 +1,111 @@
+DEFINITION MODULE AccessMatrix;
+
+    (*  MODIFICATION HISTORY:
+
+        19-Sep-89 EGK   Exported constants relating to block size and
+                        block count.
+         8-Jul-91 EGK   Added RefreshDrawingMatrix procedure to allow
+                        the private cache to be flushed.
+    *)
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM NetStatic              IMPORT
+    (* CONST *)                 DimWidth, DimHeight;
+
+
+CONST
+    MAXCHAR = 60; 
+    COLORBIAS = 30; 
+    TASKBANK =180;   
+
+CONST
+    BlockHeight         = 40;       (* Cells per block horizontally *)
+    BlockWidth          = 40;       (* Cells per block vertically *)
+
+    BlockSize           = BlockHeight * BlockWidth;     (* bytes per block *)
+
+    BlockCountX         = (DimWidth DIV BlockWidth) + 1;  (* Max # of blocks horizontally *)
+    BlockCountY         = (DimHeight DIV BlockHeight) + 1;      (* Max # of blocks vertically *)
+
+    BlockCount          = BlockCountX * BlockCountY;    (* total # of blocks *)
+
+TYPE
+    AMatrixBlockArray   = ARRAY [0..BlockCount-1] OF AnExtHandle;
+
+VAR
+    MatrixBlock         : POINTER TO AMatrixBlockArray;
+
+
+(*----------------------------------------------------------------------------
+          GetCell --
+          Gets a value from the drawing matrix, used for 
+          network diagrams and tree charts. Task index not adjusted.
+----------------------------------------------------------------------------*)
+PROCEDURE GetCell(row,col:CARDINAL):INTEGER;
+
+
+(*----------------------------------------------------------------------------
+          GetCellInfo --
+          Gets a value from the drawing matrix, used for 
+          network diagrams and tree charts.  Task index ready to use.
+----------------------------------------------------------------------------*)
+PROCEDURE GetCellInfo(row,col:CARDINAL):INTEGER;
+
+
+(*----------------------------------------------------------------------------
+          SetCell --
+          Sets a value into the drawing matrix, used for 
+          network diagrams and tree charts.
+----------------------------------------------------------------------------*)
+PROCEDURE SetCell(row,col:CARDINAL;cell:INTEGER);
+
+
+(*----------------------------------------------------------------------------
+          MoveMatrixCols --
+          Opens up a column in the drawing matrix to insert
+          a new column
+----------------------------------------------------------------------------*)
+PROCEDURE MoveMatrixCols(col1, col2, row : INTEGER);
+
+
+(*----------------------------------------------------------------------------
+          MoveMatrixRows --
+          Opens up a row in the drawing matrix to insert
+          a new row
+----------------------------------------------------------------------------*)
+PROCEDURE MoveMatrixRows(row1, row2 : INTEGER);
+
+
+(*----------------------------------------------------------------------------
+          ClearDrawingMatrix --
+          Clear the flexstore buffers used for the drawing
+          matrix. 
+----------------------------------------------------------------------------*)
+PROCEDURE ClearDrawingMatrix();   
+
+  
+(*----------------------------------------------------------------------------
+          FreeDrawingMatrix --
+          Release the flexstore buffers used for the drawing
+          matrix. 
+----------------------------------------------------------------------------*)
+PROCEDURE FreeDrawingMatrix();   
+
+
+
+(*----------------------------------------------------------------------------
+          RefreshDrawingMatrix() --
+
+          Update the drawing matrix by flushing the private cache.
+          This should be called prior to any direct access to the
+          MatrixBlock elements without going through GetCell or
+          GetCellInfo.
+----------------------------------------------------------------------------*)
+PROCEDURE RefreshDrawingMatrix();
+
+
+  
+END AccessMatrix.
+

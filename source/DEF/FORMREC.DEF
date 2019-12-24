@@ -1,0 +1,125 @@
+DEFINITION MODULE FormRec;
+
+  (* Modified 5/27/87 by RSC to move the FLine fields to the end of the
+                             form records.
+              9/28/87 by RSC to add Delta fields, help key, and PhrasesStart.
+             11/04/87 by RSC to even length of lines & make title longer.
+              2/19/88 by AJL to add Justify and Shift attributes to AnAttribute.
+   *)
+
+
+FROM Kbio       IMPORT ascreenx, ascreeny;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType, ABoxAttribute;
+    
+FROM Codes      IMPORT ASetOfCodes;
+
+FROM FormCon    IMPORT AFieldNo, AChoiceNo, AFieldType;
+
+
+CONST
+    MaxCapLen = 31;      (* Maximum length of the name of a choice. *)
+    MaxFLines = 20;         (* Max lines per form *)
+    FLineLen = 80;          (* Characters per line; the form's width. *)
+    MaxIndividualFields = 25;  (* How many individually definable fields.
+                                  0 through this. *)
+    MaxCaptionsPerField = 2;  (* How many can be referenced per field. *)
+
+TYPE
+    ACapLen    = [ 0..MaxCapLen ];  (* Length of the name of a choice. *)
+    Anxoff     = [ 0..FLineLen-1];
+    AFormLine  = ARRAY [0..FLineLen+1] OF CHAR; (* Made even length. RSC 11/4/87 *)
+    Ayoff         = [ 0..MaxFLines-1 ];
+    AnAttribute   = (DisplayOnly,         (* No editing changes allowed. *)
+                     Numeric,             (* Use numeric editing rules.  *)
+                     FlowLeft,            (* Allow cursor flow out of this field to next. *)
+                     FlowRight,
+                     ResetCursorOnError,  (* On error, position cursor to start of field. *)
+                     BlankIfZero,         (* FormCard, display zeros as blank field. *)
+                     HighlightOnEntry,    (* Highlight during CheckFieldEntry.   *)
+                     ShowCaptions,        (* Enable captions    *)
+                     Hidden,              (* No display of data. *)
+                     JustifyLeft,
+                     JustifyRight,
+                     ShiftUp        );
+    ASetOfAttributes = SET OF AnAttribute;
+    APromptType      = (NoPrompts,        (* No Prompts for fields *)
+                        OverlayedPrompts, (* Prompts are within form *)
+                        SeparatePrompts); (* Outside of form area. *)
+
+        (* Defines a string area on the background. *)
+    ACaption       = RECORD
+                          X,
+                          Y,
+                          Len   : CHAR;
+                       END;
+
+    AFormField = RECORD
+                     Attributes  : ASetOfAttributes;
+                     Captions    : ARRAY [1..MaxCaptionsPerField] OF ACaption;
+                     CASE FFType : AFieldType OF
+                         FormString,
+                         FormCard,
+                         FormReal   :  StLen : [ 0..FLineLen ];
+                                       xoff  : Anxoff;
+                                       yoff  : Ayoff;
+                                       CodeSet:ASetOfCodes;
+                                       Digits : INTEGER;  (* Only used for FormReal. *)
+                            |
+                         FormChoice :  Count : AChoiceNo;
+                                       Choicexoff:
+                                         ARRAY AChoiceNo OF Anxoff;
+                                       Choiceyoff:
+                                         ARRAY AChoiceNo OF Ayoff;
+                                       ChoiceLen:
+                                         ARRAY AChoiceNo OF ACapLen;
+                     END;
+                     Group       : CARDINAL;
+                 END;
+
+
+    AFormRecord  = RECORD
+                     ID                     : CARDINAL;  (* record number on disk *)
+                     Title                  : ARRAY [0..39] OF CHAR;
+                     HelpKey                : ARRAY [0..5] OF CHAR;
+                     MaxLine                : [ 0..MaxFLines ];
+                     PhrasesStart           : CARDINAL;
+                     CheckCodeSet           : ASetOfCodes;
+                     Box                    : ABoxType;
+                     PromptType             : APromptType;
+                     PromptULX              : ascreenx;
+                     PromptULY              : ascreeny;
+                     PromptLRX              : ascreenx;
+                     PromptLRY              : ascreeny;
+                     MaxField               : AFieldNo; (* Allow for repeats. *)
+                         (* Allow a group of fields to repeat.  Set
+                            StartField > MaxField if no repeats. *)
+                     Table : RECORD
+                         StartField      : CARDINAL; (* Repeating fields. *)
+                         MinorSize       : CARDINAL; (* Number of repeating fields. *)
+                         MajorSize       : CARDINAL; (* Grouped into rows/columns of . . . *)
+                         MajorDeltaX     : CARDINAL; (* Change per major grouping. *)
+                         MajorDeltaY     : CARDINAL;
+                         MinorDeltaX     : CARDINAL;(* Change per minor grouping. *)
+                         MinorDeltaY     : CARDINAL;
+                         MajorGroupDelta,            (* Change tab stop by this *)
+                         MinorGroupDelta,
+                         MajorPhraseDelta,           (* Change phrase #'s by this *)
+                         MinorPhraseDelta : CARDINAL;
+                     END;
+                     CheckCode : CARDINAL;  (* A CRC-16 check of the data. *)
+                         (*  Background fields - RSC 5/27/87 *)
+                     FLine  : ARRAY Ayoff OF AFormLine;
+                         (*  Definitions of actual fields. *)
+                     Fields : ARRAY [0..MaxIndividualFields] OF AFormField;
+                 END;
+    AFormRecordPointer = POINTER TO AFormRecord;
+
+
+
+
+
+END FormRec.
+
+

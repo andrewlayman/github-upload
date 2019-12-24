@@ -1,0 +1,238 @@
+DEFINITION MODULE Words;
+
+
+    (* Modification History:
+
+            RSC  2/1/89     Added "ASetOfDelimiters" and
+                                  "ParseBalWithDelimiter".
+    *)
+
+
+
+
+
+TYPE
+    ASetOfDelimiters  =   SET OF CHAR;
+
+
+
+
+    (* In each of these routines, the meaning of a word is "a string
+       of characters bounded by either end of the string, or the
+       BreakChar". *)
+
+    (* StartOfWord --
+
+       Preconditions -- (1) s is a valid LString
+       PostConditions-- If the position in string s at index i is
+                        the start of a word, this will return TRUE,
+                        else FALSE.
+                        If i is passed <= 1 or >= LengthOf(s) then
+                        this will return TRUE;
+    *)
+
+PROCEDURE StartOfWord(VAR s:ARRAY OF CHAR;
+                          i:CARDINAL;
+                          BreakChar : CHAR
+                     ):BOOLEAN;
+
+    (* EndOfWord --
+
+       Preconditions -- (1) s is a valid LString
+       PostConditions-- If the position in string s at index i is
+                        the end of a word, this will return TRUE,
+                        else FALSE.
+                        If i is passed <= 1 or >= LengthOf(s) then
+                        this will return TRUE;
+    *)
+
+PROCEDURE EndOfWord(VAR s:ARRAY OF CHAR;
+                        i:CARDINAL;
+                        BreakChar : CHAR
+                   ):BOOLEAN;
+
+    (* FindNextWord --
+
+       Preconditions -- (1) s is a valid LString
+                        (2) i >= 1 or LengthOf(s) = 0
+
+       PostConditions-- i will be returned so that it is either
+                        (a) > the original i and at the start of a
+                        word, or (b) >= LengthOf(s) or (c) at the
+                        end of the last word in s.
+
+    *)
+
+PROCEDURE FindNextWord(VAR s:ARRAY OF CHAR;
+                       VAR i:CARDINAL;
+                           BreakChar : CHAR );
+
+    (* FindPriorWord --
+
+       Preconditions -- (1) s is a valid LString
+                        (2) i >= 1 or LengthOf(s) = 0
+
+       PostConditions-- i will be returned so that it is either
+                        (a) < the original i and at the start of a
+                        word, or (b) = 1.
+
+    *)
+
+PROCEDURE FindPriorWord(VAR s:ARRAY OF CHAR;
+                        VAR i:CARDINAL;
+                            BreakChar : CHAR );
+
+
+
+    (* FindNextEndOfWord --
+
+       Preconditions -- (1) s is a valid LString
+                        (2) i >= 1 or LengthOf(s) = 0
+
+       PostConditions-- i will be returned so that it is either
+                        (a) > the original i and at the end of a
+                        word, or (b) >= LengthOf(s).
+
+    *)
+
+PROCEDURE FindNextEndOfWord(VAR s:ARRAY OF CHAR;
+                            VAR i:CARDINAL;
+                                BreakChar : CHAR );
+
+
+    (* MaxWordstringThatFits --
+
+       Find the longest substring of s, starting at position
+       StartAt, that is <= MaxLen characters long and contains
+       only whole words, and does not contain the HardEnd character.
+
+       Preconditions -- (1) s is a valid LString.
+                        (2) StartAt >= 1 or LengthOf(s) = 0;
+
+       PostConditions -- The value returned is <= MaxLen and the
+                         substring of s from positions StartAt to
+                         StartAt + the value returned - 1 contains
+                         only whole words, and is the longest such
+                         substring not containing the HardEnd
+                         character.
+    *)
+
+PROCEDURE MaxWordstringThatFits(VAR s         : ARRAY OF CHAR;
+                                    StartAt   : CARDINAL;
+                                    MaxLen    : CARDINAL;
+                                    BreakChar : CHAR;
+                                    HardEnd   : CHAR
+                               ) : CARDINAL;
+
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+        ParseBal
+
+        Parse the string S matching a parenthesis-balanced string.
+
+        Preconditions:
+            S is a valid LString.
+            i is the char to start at.
+
+        PostConditions:
+            i is the NEXT char in the string.
+            IF S[1] = "(" then Bal will be set to the shortest substring
+                               of S, beginning at i, that contains a
+                               balanced set of parenthesis.  However, the
+                               leading and final parenthesis are removed.
+                               If there is no such string, then the
+                               entire string beginning at S[i] is
+                               returned.
+            ELSE Bal will return the substring of S beginning at i and
+                               continuing to the end of S or the first
+                               "(".
+       --------------------------------------------------------------*)
+PROCEDURE ParseBal( VAR S         : ARRAY OF CHAR;
+                    VAR i         : CARDINAL;
+                    VAR Bal       : ARRAY OF CHAR );
+
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+        ParseString
+
+        Parse the string S matching a parenthesis-balanced string.
+
+        Preconditions:
+            S is a valid LString.
+            i is the char to start at.
+
+        PostConditions:
+            i is the NEXT char in the string.
+            IF S[1] = "(" then Bal will be set to the shortest substring
+                               of S, beginning at i, that contains a
+                               balanced set of parenthesis.  However, the
+                               leading and final parenthesis are removed.
+                               If there is no such string, then the
+                               entire string beginning at S[i] is
+                               returned.
+            ELSE Bal will return the substring of S beginning at the
+                               first nonblank char after i and
+                               continuing to the end of S or the first
+                               "(" or " ".
+       --------------------------------------------------------------*)
+PROCEDURE ParseString( VAR S         : ARRAY OF CHAR;
+                       VAR i         : CARDINAL;
+                       VAR Bal       : ARRAY OF CHAR );
+
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+        RSC 2/1/89
+
+        ParseBal With Delimiter
+
+        Parse the string S matching a parenthesis-balanced string, or
+                  matching up to the delimiter.
+
+        Preconditions:
+            S          is a valid LString.
+            i          is where to start.
+            Skip       is what to skip before scanning.
+            Delimit    is what to look for if not a parenticised string,
+                           and while it is a VAR parameter, that is just
+                           to keep things zipping along.
+
+        PostConditions:
+            IF S[i] = "(" then Bal will be set to the shortest substring
+                               of S, beginning at i, that contains a
+                               balanced set of parenthesis.  However, the
+                               leading and final parenthesis are removed.
+                               If there is no such string, then the
+                               entire string beginning at S[i] is
+                               returned.
+            ELSE Bal will return the substring of S beginning at the first
+                               char after i that is NOT a delimiter, and
+                               continuing to the end of S or the first
+                               Char that IS a Delimiter.
+
+            i is the NEXT charactor to look at.  If > LengthOf(S), you
+                    are done.
+
+       --------------------------------------------------------------*)
+PROCEDURE ParseBalWithDelimiter( VAR S          : ARRAY OF CHAR;
+                                 VAR i          : CARDINAL;
+                                 VAR Skip,
+                                     Delimit    : ASetOfDelimiters;
+                                 VAR Bal        : ARRAY OF CHAR );
+
+END Words.
+

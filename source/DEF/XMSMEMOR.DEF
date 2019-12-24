@@ -1,0 +1,359 @@
+DEFINITION MODULE XMSMemory;
+
+(*  =========================================================================
+    Last Edit : February 1, 1991 3:20PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Interface module to XMS memory as per the Lotus/Intel/Microsoft/AST
+        Extended Memory Specification, Version 2.0.
+
+    MODIFICATION HISTORY:
+        24-Mar-90 WKH   Initial version.
+        24-Apr-90 RSC   Added EMB support and robustified things.
+
+    =========================================================================
+*)
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+CONST   (* "Potential" XMS error codes *)
+    XMSFunctionNotImplemented   = 080H;
+    XMSVDISKDriverDetected      = 081H;
+    XMSA20Error                 = 082H;
+    XMSGeneralDriverError       = 08EH;
+    XMSUnrecoverableDriverError = 08FH;
+    XMSHMADoesNotExist          = 090H;
+    XMSHMAAlreadyInUse          = 091H;
+    XMSDXLessThanHMAMINParm     = 092H;
+    XMSHMANotAllocated          = 093H;
+    XMSA20StillEnabled          = 094H;
+    XMSAllEMBAllocated          = 0A0H;
+    XMSAllEMBHandlesInUse       = 0A1H;
+    XMSEMBHandleInvalid         = 0A2H;
+    XMSEMBSourceHandleInvalid   = 0A3H;
+    XMSEMBSourceOffsetInvalid   = 0A4H;
+    XMSEMBDestHandleInvalid     = 0A5H;
+    XMSEMBDestOffsetInvalid     = 0A6H;
+    XMSEMBLengthInvalid         = 0A7H;
+    XMSEMBInvalidOverlap        = 0A8H;
+    XMSEMBParityError           = 0A9H;
+    XMSSmallerUMBIsAvail        = 0B0H;
+    XMSNoUMBAvail               = 0B1H;
+    XMSInvalidUMBSegmentNumber  = 0B2H;
+
+
+
+(* XMS errors, but not expected given the calls we use:
+
+    XMSEMBBlockNotLocked        = 0AAH;
+    XMSEMBBlockIsLocked         = 0ABH;
+    XMSEMBBlockLockOverflow     = 0ACH;
+    XMSEMBBlockLockFailed       = 0ADH;
+*)
+
+
+
+TYPE
+    AnXMSStatsRecord = RECORD
+        XMSDriverDetected       : BOOLEAN;
+        UMBMemoryDetected       : BOOLEAN;
+        EMBMemoryDetected       : BOOLEAN;
+        HMAMemoryDetected       : BOOLEAN;
+        HMAAddress              : ADDRESS;
+        HMASize                 : CARDINAL;
+        XMSDriverVersion        : CARDINAL;
+        XMSSpecificationVersion : CARDINAL;
+        HMAAllocationError      : CARDINAL;
+        A20EnableError          : CARDINAL;
+    END;
+
+
+VAR
+    XMSStatsRecord  : AnXMSStatsRecord;
+
+
+
+
+
+
+
+
+(* EMB Available - How much extended memory is available?
+
+    Preconditions - 
+
+        XMSStartup has been called and returned TRUE.
+
+    Postconditions -
+
+        Extended memory stats are returned.
+
+    INPUT:
+
+        None
+
+    Output:
+
+        LargestFreeK        The largest contiguous free K area.
+        TotalFreeK          The total quantity of free K.
+
+        RETURN              Error code.  0 = no error.
+
+    NOTE:
+
+        This function attempts to make up for known driver deficiancies,
+        ie HIMEM.SYS version 2.04 and earlier reported HMA as part of the
+        extended memory available, I do not.
+*)
+PROCEDURE EMBAvail( VAR LargestFreeK,
+                        TotalFreeK     : CARDINAL ) : CARDINAL;
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* Get UMB Memory - Get a chunk of UMB memory.
+
+    Preconditions -
+
+        XMSStartup has been called and returned TRUE.
+
+    Postconditions -
+
+        If available, some space in UMB was returned to you.
+
+    Input:
+
+        Size        - Desired maximum size in PARAGRAPHS.
+
+    Output:
+
+        Size        - Actual size in PARAGRAPHS.
+        Segment     - Starting segment address.
+
+        RETURN      - Error code, or 0 if no error.
+                      Error code is one of those above in the CONST area.
+*)
+PROCEDURE GetUMBMemory(VAR Size    : CARDINAL;
+                       VAR Segment : CARDINAL) : CARDINAL;
+
+
+
+
+
+
+
+(* Get EMB Memory - Get a chunk of EMB (Extended) memory.
+
+    Preconditions -
+
+        XMSStartup has been called and returned TRUE.
+
+    Postconditions -
+
+        If available, some Extended memory is allocated, and a handle
+                is returned to you.
+
+    Input:
+
+        Size        - Desired size in KB.
+
+    Output:
+
+        Handle      - Handle to the memory, used in CopyEMBToDOS()
+
+        RETURN      - Error code, or 0 if no error.
+                      Error code is one of those above in the CONST area.
+*)
+PROCEDURE GetEMBMemory(    Size    : CARDINAL;
+                       VAR Handle  : CARDINAL) : CARDINAL;
+
+
+
+
+                       
+                       
+                       
+                       
+(* Free UMB Memory - release memory previously allocated via GetUMBMemory.
+
+    Preconditions -
+    
+        The Segment was returned from a prior SUCCESFULL call to
+            GetUMBMemory.
+
+    Postconditions -
+
+        Memory previously allocated has been returned to the XMS driver.
+
+    Input:
+
+        Segment - same as returned from prior GetUMBMemory call.
+
+    Output:
+
+        RETURN  - Error code.  One of those above in the CONST area.
+                  0 if no error.
+*)
+PROCEDURE FreeUMBMemory( Segment : CARDINAL) : CARDINAL;
+
+
+
+
+
+
+
+
+
+(* Free EMB Memory - release memory previously allocated via GetEMBMemory.
+
+    Preconditions -
+    
+        The Handle was returned from a prior SUCCESFULL call to
+            GetEMBMemory.
+
+    Postconditions -
+
+        Memory previously allocated has been returned to the XMS driver.
+
+    Input:
+
+        Handle - same as returned from prior GetEMBMemory call.
+
+    Output:
+
+        RETURN  - Error code.  One of those above in the CONST area.
+                  0 if no error.
+*)
+PROCEDURE FreeEMBMemory( Handle : CARDINAL) : CARDINAL;
+
+
+
+
+
+
+
+
+
+(* Copy EMB to DOS
+
+    Copy part or all of an Extended block to DOS addressable memory.
+
+    Preconditions -
+
+        > Extended memory was allocated with "GetEMBMemory()" and not yet
+          freed.  Handle is (therefore) good.
+
+        > DOS or UMB memory was allocated for a size appropriate to receive
+          the copy.
+
+    Postconditions -
+
+        If succesfull, data was copied from Extended memory to DOS
+        memory or UMB memory (somewhere in the 1MB addressable area).
+
+    Input:
+
+        EMBHandle     Handle returned from good call to "GetEMBMemory()".
+        StatingByte   First byte to copy; must be in range 0..AllocatedSize
+        LengthToCopy  # of bytes to copy; Start+Len must be <= AllocatedSize
+        ToHereInDOS   is any valid DOS or UMB memory block, previously
+                         allocated.
+    Output:
+
+        RETURN      0 iff no error, error number otherwise.
+
+    Notes:
+
+        Length MUST BE EVEN.
+        If starting byte is on a word boundary, xfer goes faster.
+        If starting byte is on a DWORD boundary AND this is a 386,
+            the XFER could go even faster (if support for it in XMS driver).
+*)
+PROCEDURE CopyEMBToDOS(     EMBHandle    : CARDINAL;
+                            StartingByte,
+                            LengthToCopy : LONGINT;
+                            ToHereInDOS  : ADDRESS ) : CARDINAL;
+
+
+
+(* Copy DOS to EMB
+
+    Same notes as for CopyEMBToDOS, but here we are putting memory back
+    INTO extended from DOS or UMB space.
+
+    StartingByte still refers to the starting byte in the EXTENDED memory.
+*)
+PROCEDURE CopyDOSToEMB(     EMBHandle     : CARDINAL;
+                            StartingByte,
+                            LengthToCopy  : LONGINT;
+                            FromHereInDOS : ADDRESS ) : CARDINAL;
+
+
+
+
+
+
+
+(* XMS Startup - does XMS exist?  Call this once to init XMS, and it returns
+                 TRUE if there is some to get.
+
+    Preconditions -
+
+        This proc has not been called before.
+
+    Postconditions -
+
+        XMS has been checked for, and HMA allocated if found.
+
+    Return parameter:
+
+        TRUE  - XMS driver exists, and there is either
+
+                    > All HMA avail
+                    > Some UMB
+                    > Some EMB
+
+        else FALSE.
+*)
+PROCEDURE XMSStartup() : BOOLEAN;
+
+
+
+
+
+
+
+(* XMS ShutDown - terminate storage.
+
+    Preconditions -
+
+        None.  Even XMSStartup need not be called,  Even this procedure may
+        have been called before.
+
+        HOWEVER, IF ANY HMA, UMB OR EMB was allocated, IT MUST HAVE BEEN
+        DEALLOCATED BY THIS TIME.
+
+    Postconditions -
+
+        HMA is released.  Access to UMB and EMB is shut off.
+
+        NO FURTHER ACCESS TO HMA, UMB, or EMA IS ALLOWED.
+*)
+PROCEDURE XMSShutDown();
+
+
+
+
+END XMSMemory.
+

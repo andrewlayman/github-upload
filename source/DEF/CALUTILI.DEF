@@ -1,0 +1,58 @@
+DEFINITION MODULE CalUtility;
+
+(*  =========================================================================
+    Last Edit : February 6, 1991 1:52PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        This is a module that holds calendar utility routines, ones that
+        can be called by non-calendar functions, like Loading schedules.
+
+    MODIFICATION HISTORY:
+
+     6-Feb-91 RSC  First version.
+
+    =========================================================================
+*)
+
+
+FROM Timeu         IMPORT
+    (* TYPE *)          ATimeTable;
+
+
+
+
+
+PROCEDURE QtrHourToSector(     QtrHour,
+                               ProposedSMU      : CARDINAL;
+                           VAR SectorStart,
+                               SectorEnd        : CARDINAL );
+
+
+
+
+
+(*
+    FALSE means "Abort changes to Time Table"
+    TRUE  means "TimeTable's WeekMaps fixed up."
+*)
+PROCEDURE CheckAndFixupWeekTable( VAR TimeTable   : ATimeTable;
+                                      ProposedSMU : CARDINAL;
+                                      Warn        : BOOLEAN ) : BOOLEAN;
+
+
+
+(* 2-Nov-90 RSC Massive reworking for qtr hour day changes.
+*)
+PROCEDURE RecomputeTable(VAR TimeTable    : ATimeTable;
+                             DisplayMsg   : BOOLEAN );
+
+
+
+
+
+
+END CalUtility.
+
+

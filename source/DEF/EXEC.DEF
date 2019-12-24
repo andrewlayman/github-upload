@@ -1,0 +1,40 @@
+DEFINITION MODULE Exec;
+
+(*
+  Shell commands. Provides a way to call the DOS interpreter, or to
+  execute a program from within another.
+
+  (* 21-Mar-91 RSC Cleaned out Run and DosCommand, changed the params
+                   to DosShell.
+  *)
+*)
+
+  FROM SYSTEM IMPORT ADDRESS;
+
+  EXPORT QUALIFIED
+    DosShell, Execute;
+
+  PROCEDURE DosShell( VAR ShellName : ARRAY OF CHAR; VAR done: BOOLEAN);
+  (* call "COMMAND.COM"                                      *)
+  (* remain in DOS command shell, until user types EXIT      *)
+  (* FULL PATH AND NAME OF COMMAND.COM MUST BE PASSED AS ShellName. *)
+
+  PROCEDURE Execute(programFileNameAdr: ADDRESS;
+                       (* pointer to program filename *)
+                    environment: CARDINAL;
+                       (* paragraph address of environment *)
+                       (* 0 for current environment        *)
+                    commandLineAdr: ADDRESS;
+                       (* pointer to command line parameters *)
+                       (* first byte is number of characters in command line *)
+                       (* next characters contain parameters                 *)
+                    FCB1Adr, FCB2Adr: ADDRESS;
+                       (* pointer to default file control blocks *)
+                    VAR errorCode: CARDINAL
+                       (* DOS error code *)
+                   );
+  (* call program with given parameter block information *)
+  (* no search strategy will be performed                *)
+
+END Exec.
+

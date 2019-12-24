@@ -1,0 +1,128 @@
+DEFINITION MODULE Schedule;
+
+(*  =========================================================================
+    Last Edit : November 2, 1990 4:11PM by CL
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+
+
+    MODIFICATION HISTORY:
+
+        RSC 9/28/87 - Rearranged things for alignment.
+                      Added "RetrievalName", the name of the
+                      schedule to retrieve (as seperate from
+                      the name to save).
+
+        WKH 4/3/89  - Added schedule file locking capabilities to support LAN's
+        WKH 4/12/89 - Moved ScheduleDOSTimeStamp from mod to here.
+        WKH 5/7/89  - Added definition of AScheduleLockClass.            
+        RSC 6/7/89  - Removed "ConfigPath".
+        WKH 6/7/89  - Added SuperUserName and UserName variables.
+        WKH 6/20/89 - Added UserSerialNumber variable
+                      Also added ProductName variable
+        WKH 6/25/89 - Moved SuperUserName, UserName, UserSerialNumber, and
+                      ProductName from here to Registry.DEF
+        30-Mar-90  RSC   Made Timeu to Timei/TimeForm conversions.
+        05-Jun-90  AJL   Add Revision number.
+        14-Sep-90  RSC   Added file extensions to parameterize those that
+                         are not easily added to the phrases file.
+        24-Oct-90  PFG  Added StartDateMustStart and ForceCritical for
+                        the Options form.
+		 2-Nov-90  AJL  Put those options into a record, FixedDateRules.
+    =========================================================================
+*)
+
+
+FROM BigTimeU     IMPORT  ABigTime;
+
+FROM Codes        IMPORT  ACode;
+
+FROM Text         IMPORT  AText;
+
+FROM Timei        IMPORT  ADate;
+
+
+
+
+TYPE
+    AScheduleSaveType = (NormalSave,  VisibleOnly,
+                         SaveOption3, SaveOption4, SaveOption5 ); (* Extras *)
+
+    AScheduleLockClass = (RealLock, ShadowLock, DualLock); (* 5/7/89 WKH *)
+
+VAR
+    ScheduleSaveType        : AScheduleSaveType;
+    ScheduleDOSTimeStamp    : ABigTime;    (* 4/12/89 WKH *)
+
+    ProjectStartDate         : ADate;             (* First date of the project. *)
+
+    ProjectText              : AText;
+
+    SortSelection            : CARDINAL; (* The last column ID used to sort *)
+
+    SortOrderManuallyAltered : BOOLEAN;  (* TRUE if tasks have been manually moved *)
+
+    WarnBeforeManualChange   : BOOLEAN;  (* TRUE if tasks have been sorted, but not manually moved *)
+
+    ConfigSaved   : BOOLEAN;
+    ScheduleSaved : BOOLEAN;  (* Set iff the image of the project in
+                                 memory matches the disk files.  This
+                                 is set whenever the project is loaded
+                                 or saved.  It should be reset to FALSE
+                                 by anyone who changes the schedule. *)
+    Loaded        : BOOLEAN;  (* Set whenever a project is loaded. *)
+    InstalledFlag : BOOLEAN;  (* Set iff the user has executed his
+                                 installation procedures. *)
+    RevisionNumber: CARDINAL; (* Count how many times project file is saved. *)
+
+    ProjectName   : ARRAY [0..8] OF CHAR;  (* Lstring, contains project name. *)
+    RetrievalName : ARRAY [0..8] OF CHAR;  (* Lstring, contains last project name. *)
+
+    ProjectMedia: ARRAY [0..80] OF CHAR;  (* Contains name of disk drive
+                                             and path to data files. *)
+    Author            : ARRAY [0..70] OF CHAR;
+    FullScheduleName  : ARRAY [0..70] OF CHAR;
+
+    PlannedProjectName : ARRAY [0..8] OF CHAR;  (* Name of the planned project. *)
+
+    ZeroIsLowestPriority    : BOOLEAN;  (* IF TRUE, then 0 is the lowest task
+                                            priority; otherwise 0 is highest *)
+
+    CurrentFileExtension    : ARRAY [0..4] OF CHAR; (* ".T%0" 14-Sep-90 RSC *)
+
+
+	FixedDateRules : RECORD
+        StartDateMustStart      : BOOLEAN;  (* If True, fixed task MUST start on 
+                                               date specified.  Otherwise, task
+                                               starts NO SOONER THAN date 
+                                               specified. *) (* 24-Oct-90 PFG *)
+    
+        ForceCritical           : BOOLEAN;  (* If True, fixed tasks will be forced
+                                               to critical path. *) (* 24-Oct-90 PFG *)
+		END;
+
+
+
+
+
+
+
+PROCEDURE ScheduleForm() : ACode;
+
+PROCEDURE DisplayScheduleLight();
+
+PROCEDURE DoOptionsForm();
+
+PROCEDURE LockSchedule(VAR SchedulePath      : ARRAY OF CHAR;
+                       VAR ScheduleName      : ARRAY OF CHAR;
+                           AllowReadLock     : BOOLEAN;
+                           ScheduleLockClass : AScheduleLockClass) : BOOLEAN;
+
+PROCEDURE UnLockSchedule(ScheduleLockClass : AScheduleLockClass);
+
+PROCEDURE IsScheduleLocked() : BOOLEAN;
+
+END Schedule.
+
+

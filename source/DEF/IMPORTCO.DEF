@@ -1,0 +1,49 @@
+DEFINITION MODULE ImportCommon;
+
+  (* Importable - A variety of routines used by the importers.
+
+        MODIFICATION HISTORY:
+
+        6-Sep-89 MWP Created.
+       10-Sep-89 MWP Moved proc CleanUp into this module.
+       19-Sep-89 MWP Added proc to process Break key.
+       20-Sep-89 MWP Added reporting of rows read and rows imported to
+                     journal.
+   *)
+
+FROM EditError      IMPORT
+    (* TYPE *)              AnErrorSeverity, AKindOfError;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)              ADDRESS;
+
+CONST
+    TaskImport              = 0;
+    ResourceImport          = 1;
+    AssignmentImport        = 2;
+    EdgeImport              = 3;
+
+VAR
+    HaltImport              : BOOLEAN;
+    PrintErrorHeader        : BOOLEAN;
+
+
+PROCEDURE ImportErrorHandler(    Severity        : AnErrorSeverity;
+                                 ErrorKind       : AKindOfError;
+                                 ColumnID        : CARDINAL;
+                             VAR ErrorText       : ARRAY OF CHAR;
+                             VAR Field           : ARRAY OF CHAR
+                             ) : BOOLEAN;
+
+
+PROCEDURE CompleteBEndImport ( RowsImported : CARDINAL;
+                               RowsRead     : CARDINAL;           (* 20-Sep-89 MWP *)
+                               ReportType   : CARDINAL );
+
+PROCEDURE CleanUp ();
+
+PROCEDURE StopImport () : BOOLEAN;
+
+
+END ImportCommon.
+

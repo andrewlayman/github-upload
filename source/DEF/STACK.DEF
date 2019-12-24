@@ -1,0 +1,31 @@
+DEFINITION MODULE Stack;
+
+(*  =========================================================================
+    Last Edit : April 26, 1991 5:49PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Dump the stack to the screen.
+
+    MODIFICATION HISTORY:
+
+        23-Aug-89 RSC  First version.
+        26-Apr-91 RSC  Added Trace param.
+
+
+    =========================================================================
+*)
+
+
+TYPE
+    ATraceProc  = PROCEDURE( VAR ARRAY OF CHAR );
+
+PROCEDURE Dump( VAR MapPath      : ARRAY OF CHAR;
+                    TraceLString : ATraceProc );
+
+
+
+END Stack.
+
+

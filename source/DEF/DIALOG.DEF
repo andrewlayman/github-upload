@@ -1,0 +1,230 @@
+DEFINITION MODULE Dialog;
+
+
+    (* MODIFICATION HISTORY
+
+       Nov 30 1987  AJL -Added ABoxHandle,
+                         ProgressBox, ReleaseBox, DiscardBoxHandle;
+
+        19-Feb-88 LAA   - Added procedure to get and set the message
+                          priority.
+        14-May-89 AJL   - Corrected the documentation.
+        13-Apr-91 AJL   - Corrected the documentation some more.
+                        - Added ErrorPhrase procedure.
+    *)
+
+
+    (* =========================================================
+     *
+     * These routines will all print text on more than one line
+     * and will word wrap it.  Lines breaks may be forced by a
+     * "¸" (unless the first letter of the line is a "¸").
+     * If the first letter of the line is a "¸", then the second
+     * character will become the break character, and text will
+     * be printed starting with the third character.
+     *
+     * ========================================================= *)
+
+TYPE
+    ABoxHandle;     (* Opague *)
+
+        (*  Message displays the chosen message on the screen,
+            erasing any previously showing message, provided that
+            any previously showing message has a priority <= 5.
+            This assigns a default priority of "5" to the message. *)
+
+PROCEDURE Message ( VAR s: ARRAY OF CHAR );
+
+        (*  MessageWithPriority displays the chosen message on the screen
+            provided that its priority is greater or equal to the priority
+            of any currently showing message. *)
+
+PROCEDURE MessageWithPriority ( VAR s: ARRAY OF CHAR; Priority:CARDINAL);
+
+        (*  Error displays the message also, but calls attention
+            to it by enhancing the video attributes and making
+            noise on the speaker.
+
+            This routine will not exit until a key has been pressed.
+        *)
+
+PROCEDURE Error   ( VAR s: ARRAY OF CHAR );
+
+
+    (* --------------------------------------------------------------
+
+       ErrorPhrase
+
+       If N is 0, reports that a "serious error" has occurred.
+       If N > 0, retrieves phrase N from the message phrases STANDARD
+       section, and displays it using the Error procedure.
+
+    -------------------------------------------------------------- *)
+
+
+PROCEDURE ErrorPhrase ( N : CARDINAL );
+
+
+
+
+
+        (*  NotYetImplemented displays a message to the effect that
+            the procedure or module so named has not yet been implemented,
+            in a style identical to that of Error.      *)
+
+PROCEDURE NotYetImplemented (Name: ARRAY OF CHAR );
+
+
+        (*  Fatal Error displays a canned fatal error message,
+            and waits for any key to be struck, then halts
+            the program or overlay. *)
+
+PROCEDURE FatalError;
+
+
+
+        (* The message text of a dialog box can optionally begin with
+           a "(".  If so, no title is needed for the box, but the string
+           beginning after the parenthesis and up to the matching ")"
+           is used as the title. 
+
+           Similarly, or in a nested manner, if the title begins with a
+           Yen symbol (Alt-157, "ù"), then the user will be offered help.
+
+           If the title begins with a parenthesis (skipping the ù) then
+           the following characters in parenthesis are used for the help key.
+
+           All help keys passed to the help system are preceded by the
+           Greek alpha character, ALT-224, "‡".
+
+           So, for example, "(ù(KEY)TITLE)..." would specify a key of
+           "‡KEY" and title of "TITLE".
+         *)
+
+
+
+TYPE
+    ADialogOption = ( NoHelp, OfferHelp );
+
+
+
+
+
+  (* Multiple Choice Box - Do a box with an optional menu of choices.
+
+        Preconditions  - S is the text to display;  Valid LString, etc.
+                         Title is the title for the box
+                         Options is either OfferHelp or NoHelp
+                         MenuPrefix prefixes the menu, should there be one.
+                         MenuString is the LString containing menu choices,
+                              seperated by a comma.  IF LengthOf(Menu) is
+                              0, no menu is attempted.
+                         Selection is the first of the selections to highlight.
+
+        Postconditions - Selection is the menu choice taken, if there was a
+                                menu displayed.
+                         RETURN is TRUE iff F10 or <ENTER> was hit on a menu
+                                 selection.
+  *)
+
+PROCEDURE MultipleChoiceBox( VAR S                    : ARRAY OF CHAR;
+                             VAR Title                : ARRAY OF CHAR;
+                                 Option               : ADialogOption;
+                             VAR MenuPrefix           : ARRAY OF CHAR;
+                             VAR MenuString           : ARRAY OF CHAR;
+                             VAR Selection            : CARDINAL
+                            ) : BOOLEAN;
+
+
+
+    (* WarningBox -- Display a dialog box on the screen containing
+                     the text in "S" and with the given title.  Lines
+                     in "S" are separated with code 252 ("¸").
+                     Exit when CancelKey, is pressed.  If OfferHelp is
+                     passed, then help will be offered, and a brief
+                     help-available message will be printed in the
+                     box.  *)
+
+PROCEDURE WarningBox( VAR S          : ARRAY OF CHAR;
+                      VAR Title      : ARRAY OF CHAR;
+                          Option     : ADialogOption   );
+
+
+    (* CancellationBox -- Display a message as in WarningBox.  Allow
+                          the user to choose to Continue or Abort an
+                          action.  Return TRUE iff Continue. *)
+
+PROCEDURE ContinuationBox( VAR S          : ARRAY OF CHAR;
+                           VAR Title      : ARRAY OF CHAR;
+                               Option     : ADialogOption   ) : BOOLEAN;
+
+
+        (*  Burp makes a noise on the speaker indicating that input
+            has been rejected, unless the sound is off, in which
+            case it will signal visually. *)
+
+PROCEDURE Burp;
+
+
+(*----------------------------------------------------------------------------
+    MessageBox --
+
+    Display the message inside a box.
+----------------------------------------------------------------------------*)
+
+PROCEDURE MessageBox(VAR String  : ARRAY OF CHAR;
+                     VAR Title   : ARRAY OF CHAR);
+
+
+(*----------------------------------------------------------------------------
+    Barf --
+
+    Produce a retching sound on the speaker.
+
+----------------------------------------------------------------------------*)
+
+PROCEDURE Barf();
+
+
+
+(*----------------------------------------------------------------------------
+    ProgressBox
+
+    Displays a message box on the screen.  The box
+    contains the ForWhat text.  A BoxHandle is returned to allow the
+    box to be removed, later.
+
+----------------------------------------------------------------------------*)
+
+PROCEDURE ProgressBox( VAR ForWhat : ARRAY OF CHAR ):ABoxHandle;
+
+
+
+
+(*----------------------------------------------------------------------------
+    ReleaseBox
+
+    Restores the screen under the box to its appearance before the box
+    was displayed.
+
+----------------------------------------------------------------------------*)
+
+PROCEDURE ReleaseBox( VAR Handle : ABoxHandle );
+
+(*----------------------------------------------------------------------------
+    DiscardBoxHandle
+
+    Tosses away the box handle.
+
+----------------------------------------------------------------------------*)
+
+PROCEDURE DiscardBoxHandle( VAR Handle : ABoxHandle );
+
+
+PROCEDURE MessagePriority() : CARDINAL;
+
+
+PROCEDURE SetMessagePriority(    Priority   : CARDINAL);
+
+END Dialog.
+

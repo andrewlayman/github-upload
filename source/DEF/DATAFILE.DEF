@@ -1,0 +1,72 @@
+DEFINITION MODULE DataFiles;
+
+
+    (* ---------------------------------------------------------------
+
+    DataFiles  -- Defines some of the basic constants and types used
+                  in loading and saving Time Line data files.
+
+    MODIFICATION HISTORY:
+
+    AJL   8-Apr-91 -Initial version.
+
+    ------------------------------------------------------------------- *)
+
+
+CONST
+         (* Subfile numbers.  These are the numbers of the subfiles for
+            each of the object types in the data file. *)
+
+     ProjectType           = 1;
+     EnvironmentType       = 2;
+     PrintFileType         = 3;
+     SummaryType           = 4;
+     ResourceType          = 5;
+     TaskType              = 6;
+     EdgeType              = 8;
+     CalendarType          = 9;
+     BugsType              = 10;
+     SignatureType         = 11;
+     PrinterTableType      = 12;
+     FileNamesType         = 13;
+     VideoType             = 14;
+     PreferencesType       = 15;
+     CodeSetsType          = 16;
+     FontsType             = 17;
+     PlotsType             = 18; (* RSC 8/14/87 from PlotGo *)
+     FiltersType           = 19;
+     HeldItemsType         = 20;
+     MemosType             = 21;
+     LayoutsType           = 23;
+     NetLayoutsType        = 24;
+     TLGSDeviceType        = 25;                                  (* 21-May-89 LAA *)
+     PalettesType          = 26;  (* Actually, 26, 27 and 28 because of 3 trees *)
+     ColumnNamesType       = 29;
+     CountsType            = 30;
+
+         (* Version numbers of selected subfiles. *)
+     ResourceFileVersionNumber   = 2;
+     TaskFileVersionNumber       = 9;
+     EdgeFileVersionNumber       = 6;
+     EnvironmentVersionNumber    = 17;
+     CalendarFileVersionNumber   = 1;
+     BugsFileVersionNumber       = 1;
+     ProjectFileVersionNumber    =  12;
+
+
+
+     (* Data types to count how many records of various types are
+        stored in the file. *)
+TYPE
+     AQuantityOf = (QResource,QTask,QEdge,QAssignment);
+
+     AQuantities = ARRAY AQuantityOf OF LONGINT;
+
+
+
+     
+
+
+
+END DataFiles.
+

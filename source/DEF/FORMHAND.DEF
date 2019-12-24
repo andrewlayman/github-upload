@@ -1,0 +1,93 @@
+    (* FormHand --
+
+       This module is intended to allow users of forms to be ignorant
+       of the exact format of a form definition if they wish to be.
+       This module takes on that function by creating AFormHandle,
+       which will contain a form's definition record.  How it does
+       that remains a mystery.
+
+     *)
+
+DEFINITION MODULE FormHand;
+
+
+FROM   SYSTEM   IMPORT ADDRESS, WORD;
+
+
+TYPE
+    AFormHandle;     (* Opague reference to a heap item containing
+                        a form's definition record. *)
+
+
+
+
+    (* AttachHandleToFormNumber -- Retrieve the form with the
+                                   indicated number from the
+                                   forms file and make FormHandle
+                                   reference it.
+        Preconditions -- The forms file must already be open.
+        Postconditions -- The handle will refer to memoy which
+                          has been allocated from the heap and
+                          which contains a form definition
+                          record with the proper id Number, or
+                          else a FALSE will be returned.
+    *)
+
+PROCEDURE AttachHandleToFormNumber( VAR FormHandle : AFormHandle;
+                                        Number     : CARDINAL
+                                  ) : BOOLEAN;
+
+
+
+
+
+    (* AttachHandleToRecord -- Copy the record to the heap
+                               and make FormHandle
+                               reference it.
+        Preconditions --  None.
+        Postconditions -- The handle will refer to memoy which
+                          has been allocated from the heap and
+                          which contains a form definition
+                          record, or
+                          else a FALSE will be returned.
+    *)
+
+PROCEDURE AttachHandleToRecord    ( VAR FormHandle  : AFormHandle;
+                                    VAR Record      : ARRAY OF WORD
+                                  ) : BOOLEAN;
+
+
+    (* DiscardFormHandle -- Release space.  Invalidate.
+
+       Preconditions -- The handle must have been created by either
+                        AttachHandleToFormNumber or
+                        AttachHandleToRecord.
+       Postconditions -- Any space formerly referred to by the
+                         handle will be released, and the handle will
+                         no longer validly reference a form.
+    *)
+
+
+PROCEDURE DiscardFormHandle       ( VAR FormHandle  : AFormHandle );
+
+
+
+
+    (* GetAddressFromFormHandle -- Find the form definition.
+
+       Preconditions -- The handle must have been created by either
+                        AttachHandleToFormNumber or
+                        AttachHandleToRecord.
+       Postconditions -- The Address will be set to the heap address
+                         of the form definition record referred
+                         to by the FormHandle.
+    *)
+
+
+PROCEDURE GetAddressFromFormHandle( VAR FormHandle  : AFormHandle;
+                                    VAR Address     : ADDRESS );
+
+
+
+END FormHand.
+

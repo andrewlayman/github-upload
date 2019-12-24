@@ -1,0 +1,401 @@
+DEFINITION MODULE DependOutlines;        (*  a subclass of OutlineViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched ADependOutlineStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+TYPE
+
+        (*  ADependOutline is a subclass of AnOutlineView  *)
+
+    ADependOutline          = POINTER TO ADependOutlineRecord;
+
+    ADependOutlineMethods   = POINTER TO ADependOutlineMethodsRecord;
+
+    ADependOutlineRecord    = RECORD
+                                Methods     : ADependOutlineMethods;
+                              END;
+
+
+
+
+
+    (*  These types are re-definitions of types exported from OutlineViews. *)
+
+
+    ADependOutlineStatus    = (RugTaken, OnScreen, NeedsRedisplay, 
+                               ViewHidden, CursorOn,
+                               DependOutlineSpare5, DependOutlineSpare6, 
+                               DependOutlineSpare7, DependOutlineSpare8, 
+                               DependOutlineSpare9);
+
+    ADependOutlineStatusSet = SET OF ADependOutlineStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type ADependOutline to
+        them.
+    *)
+
+
+    ADependOutlineCloneProc   = PROCEDURE(    ADependOutline,
+                                          VAR ADependOutline)
+                                                             : BOOLEAN;
+
+    ADependOutlineStoreOnProc = PROCEDURE(    ADependOutline,
+                                              AnObject       );
+
+    ADependOutlineDiscardProc = PROCEDURE(VAR ADependOutline);
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type ADependOutline
+        to them.
+    *)
+
+
+    ADependOutlineGetObjectProc = PROCEDURE(    ADependOutline)
+                                                               : ATree;
+
+    ADependOutlineSetObjectProc = PROCEDURE(    ADependOutline,
+                                                ATree          );
+
+    ADependOutlineXYProc        = PROCEDURE(    ADependOutline,
+                                            VAR ascreenx,
+                                            VAR ascreeny,
+                                            VAR ascreenx,
+                                            VAR ascreeny       );
+
+    ADependOutlineTitleProc     = PROCEDURE(    ADependOutline,
+                                            VAR ARRAY OF CHAR  );
+
+    ADependOutlineProc          = PROCEDURE(    ADependOutline );
+
+    ADependOutlineMoveProc      = PROCEDURE(    ADependOutline,    
+                                                ascreenx,        
+                                                ascreeny       );
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type ADependOutline 
+        to them.
+    *)
+
+
+
+    ADependOutlineRecordProc    = PROCEDURE(    ADependOutline,
+                                                AnEvent        );
+
+    ADependOutlineGetEventProc  = PROCEDURE(    ADependOutline,
+                                                CARDINAL,
+                                            VAR AnEvent        );
+
+    ADependOutlineActOnProc     = PROCEDURE(    ADependOutline,
+                                                AnEvent,
+                                            VAR AnEvent        );
+
+    ADependOutlineGetCursorProc = PROCEDURE(    ADependOutline )
+                                                                : BOOLEAN;
+
+    ADependOutlineSetCursorProc = PROCEDURE(    ADependOutline,
+                                                BOOLEAN        );
+
+    ADependOutlineSetCursorModeProc = PROCEDURE(    ADependOutline,
+                                                    avidmode      );
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type ADependOutline to
+        them.
+    *)
+
+
+
+    ADependOutlineSetNodeProc   = PROCEDURE(    ADependOutline,
+                                                ATreeNode      );
+
+    ADependOutlineGetNodeProc   = PROCEDURE(    ADependOutline )
+                                                                : ATreeNode;
+
+    ADependOutlineForceProc     = PROCEDURE(    ADependOutline,    (* View *)
+                                                ATreeNode,         (* Node *)
+                                                CARDINAL       );  (* Position *)
+
+    ADependOutlineInquireProc   = PROCEDURE(    ADependOutline,
+                                                ATreeNode      )
+                                                                : CARDINAL;
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from OutlineViews, so that we can pass objects of type ADependOutline
+        to them.
+    *)
+
+
+    ADependOutlineGetCountProc  = PROCEDURE(    ADependOutline )
+                                                                : CARDINAL;
+
+    ADependOutlineFindCharProc  = PROCEDURE(    ADependOutline,
+                                                CHAR           )
+                                                                : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+
+    These are the methods for ADependOutline objects.  They inherit and
+    redefine methods from OutlineViews, but do not add any new methods
+    of their own.
+
+----------------------------------------------------------------------------*)
+
+
+    ADependOutlineMethodsRecord = RECORD
+
+        Methods                 : AnObjectMethods;
+        Clone                   : ADependOutlineCloneProc;
+        StoreOn                 : ADependOutlineStoreOnProc;
+        Discard                 : ADependOutlineDiscardProc;
+        SuperclassMethods       : AnOutlineViewMethods;
+        MethodSize              : CARDINAL;
+        ObjectMethodsTag        : CARDINAL;
+
+        GetExternalXY           : ADependOutlineXYProc;
+        GetInternalXY           : ADependOutlineXYProc;
+        GetTitle                : ADependOutlineTitleProc;
+        SetObject               : ADependOutlineSetObjectProc;
+        GetObject               : ADependOutlineGetObjectProc;
+        Move                    : ADependOutlineMoveProc;
+        Display                 : ADependOutlineProc;
+        GetHelp                 : ADependOutlineProc;
+        HideView                : ADependOutlineProc;
+        RevealView              : ADependOutlineProc;
+        NotifyOfChange          : ADependOutlineProc;
+        ObjectViewTag           : CARDINAL;
+
+        RecordEvent             : ADependOutlineRecordProc;
+        GetRecordedEvent        : ADependOutlineGetEventProc;
+        ActOnEvent              : ADependOutlineActOnProc;
+        GetCursor               : ADependOutlineGetCursorProc;
+        SetCursor               : ADependOutlineSetCursorProc;
+        SetCursorMode           : ADependOutlineSetCursorModeProc;
+        ActiveViewTag           : CARDINAL;
+
+        SetFirst                : ADependOutlineSetNodeProc;
+        GetFirst                : ADependOutlineGetNodeProc;
+        GetLast                 : ADependOutlineGetNodeProc;
+        SetCursorNode           : ADependOutlineSetNodeProc;
+        GetCursorNode           : ADependOutlineGetNodeProc;
+        Synchronize             : ADependOutlineProc;
+        ForceToPosition         : ADependOutlineForceProc;
+        InquirePosition         : ADependOutlineInquireProc;
+        NotifyNodeDeleted       : ADependOutlineSetNodeProc;
+        ListViewTag             : CARDINAL;
+
+        ResetMatching           : ADependOutlineProc;
+        GetMatchCount           : ADependOutlineGetCountProc;
+        FindChar                : ADependOutlineFindCharProc;
+        OutlineViewTag          : CARDINAL;
+
+        DependOutlineTag        : CARDINAL;
+
+                                  END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsDependOutline --
+
+    Initialize the indicated object as a dependency outline.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid dependency outline object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsDependOutline(    DependOutline : ADependOutline;
+                                  SuperView     : AnActiveView;
+                                  Ulx           : ascreenx;
+                                  Uly           : ascreeny;
+                                  Lrx           : ascreenx;
+                                  Lry           : ascreeny;
+                                  Box           : ABoxType;
+                                  VideoMode     : avidmode;
+                              VAR Title         : ARRAY OF CHAR;
+                                  HelpKey       : CARDINAL;
+                                  TakeRug       : BOOLEAN       );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateDependOutline --
+
+    Allocate storage for, and initialize the indicated object as a dependency 
+    outline.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid dependency outline object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateDependOutline(VAR DependOutline : ADependOutline;
+                                  SuperView     : AnActiveView;
+                                  Ulx           : ascreenx;
+                                  Uly           : ascreeny;
+                                  Lrx           : ascreenx;
+                                  Lry           : ascreeny;
+                                  Box           : ABoxType;
+                                  VideoMode     : avidmode;
+                              VAR Title         : ARRAY OF CHAR;
+                                  HelpKey       : CARDINAL;
+                                  TakeRug       : BOOLEAN      ) 
+                                                                : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsDependOutline --
+
+    UnInitialize the indicated object as a dependency outline.
+
+    Preconditions:
+        The object will be a valid dependency outline object. 
+
+    Postconditions:
+        The dependency outline will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsDependOutline(    DependOutline : ADependOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneDependOutlineMethods --
+
+    Make a copy of the dependency outline methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The dependency outline methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneDependOutlineMethods(    MethodObject : ADependOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateDependOutline --
+
+    Determine that the indicated object is in fact a valid dependency outline 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid dependency outline object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateDependOutline(    DependOutline : ADependOutline);
+
+
+
+END DependOutlines.
+

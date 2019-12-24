@@ -1,0 +1,19 @@
+DEFINITION MODULE NetBanners;
+
+    (*  MODIFICATION HISTORY
+        13-Jul-89 CMH   Improved display of new Pert/Tree view
+                        status lines to steal procedure vector instead of
+                        blanking Gantt view first and displaying Pert/Tree
+                        view banner next.
+    *)
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode,
+    (* PROC *)                  ValidateTreeNode;
+
+PROCEDURE ClearBanner();
+PROCEDURE ClearMessage();
+PROCEDURE DisplayBanner();        
+PROCEDURE NoGanttStatusBanner(DummyTaskTreeNode : ATreeNode);
+
+END NetBanners.

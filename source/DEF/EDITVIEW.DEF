@@ -1,0 +1,446 @@
+DEFINITION MODULE EditViews;        (*  a subclass of ListViews  *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AnEditViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM EditObjects            IMPORT
+    (* TYPE *)                  AnEditWorkspace, AnEditNode;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM LinkedListObjects      IMPORT
+    (* TYPE *)                  ALinkedList, ALinkedListNode;
+
+FROM ListViews              IMPORT
+    (* TYPE *)                  AListViewMethods;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+
+
+
+TYPE
+        (*  AnEditView is a subclass of AListView  *)
+
+    AnEditView              = POINTER TO AnEditViewRecord;
+
+    AnEditViewMethods       = POINTER TO AnEditViewMethodsRecord;
+
+    AnEditViewRecord        = RECORD
+                                Methods     : AnEditViewMethods;
+                              END;
+
+
+
+
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for EditViews
+        *)
+
+TYPE
+    AnEditViewStatus        = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn, CursorChanged,
+                               EditViewSpare6, 
+                               EditViewSpare7, EditViewSpare8, 
+                               EditViewSpare9);
+
+    AnEditViewStatusSet     = SET OF AnEditViewStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AnEditView to 
+        them.
+    *)
+
+TYPE
+    AnEditViewCloneProc     = PROCEDURE(    AnEditView,
+                                        VAR AnEditView)
+                                                       : BOOLEAN;
+
+    AnEditViewStoreOnProc   = PROCEDURE(    AnEditView,
+                                            AnObject );
+
+    AnEditViewDiscardProc   = PROCEDURE(VAR AnEditView);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AnEditView to
+        them.
+    *)
+
+TYPE
+    AnEditViewGetObjectProc = PROCEDURE(    AnEditView)
+                                                       : AnEditWorkspace;
+
+    AnEditViewSetObjectProc = PROCEDURE(    AnEditView,
+                                            AnEditWorkspace);
+
+    AnEditViewXYProc        = PROCEDURE(    AnEditView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+    AnEditViewTitleProc     = PROCEDURE(    AnEditView,
+                                        VAR ARRAY OF CHAR);
+
+    AnEditViewDisplayProc   = PROCEDURE(    AnEditView);
+
+    AnEditViewMoveProc      = PROCEDURE(    AnEditView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+    AnEditViewHelpProc      = PROCEDURE(    AnEditView);
+
+    AnEditViewHiddenProc    = PROCEDURE(    AnEditView);
+
+    AnEditViewRevealProc    = PROCEDURE(    AnEditView);
+
+    AnEditViewChangedProc   = PROCEDURE(    AnEditView);
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AnEditView to
+        them.
+    *)
+
+
+TYPE
+    AnEditViewRecordProc    = PROCEDURE(    AnEditView,
+                                            AnEvent   );
+
+    AnEditViewGetEventProc  = PROCEDURE(    AnEditView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+    AnEditViewActOnProc     = PROCEDURE(    AnEditView,
+                                            AnEvent,
+                                        VAR AnEvent   );
+
+    AnEditViewGetCursorProc = PROCEDURE(    AnEditView)        (* View *)
+                                                       : BOOLEAN;
+
+    AnEditViewSetCursorProc = PROCEDURE(    AnEditView,        (* View *)
+                                            BOOLEAN   );       (* Displaying *)
+
+    AnEditViewSetCursorModeProc = PROCEDURE(    AnEditView,
+                                                avidmode  );
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AnEditView to
+        them.
+    *)
+
+TYPE
+    AnEditViewSetNodeProc   = PROCEDURE(    AnEditView,
+                                            AnEditNode );
+
+    AnEditViewGetNodeProc   = PROCEDURE(    AnEditView)
+                                                       : AnEditNode;
+
+    AnEditViewSyncProc      = PROCEDURE(    AnEditView);
+
+    AnEditViewForceProc     = PROCEDURE(    AnEditView,
+                                            AnEditNode,
+                                            CARDINAL  );
+
+    AnEditViewInquireProc   = PROCEDURE(    AnEditView,
+                                            AnEditNode)
+                                                       : CARDINAL;
+
+
+
+    (*  Here are the methods that are specific to EditViews  *)
+
+
+
+
+
+    (*  These are the methods for AnEditView objects.  They inherit and
+        redefine methods from ObjectViews, ActiveViews, and ListViews, 
+        and add new methods of their own.
+    *)
+
+TYPE
+    AnEditViewMethodsRecord = RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AnEditViewCloneProc;
+                                StoreOn           : AnEditViewStoreOnProc;
+                                Discard           : AnEditViewDiscardProc;
+                                SuperclassMethods : AListViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AnEditViewXYProc;
+                                GetInternalXY     : AnEditViewXYProc;
+                                GetTitle          : AnEditViewTitleProc;
+                                SetObject         : AnEditViewSetObjectProc;
+                                GetObject         : AnEditViewGetObjectProc;
+                                Move              : AnEditViewMoveProc;
+                                Display           : AnEditViewDisplayProc;
+                                GetHelp           : AnEditViewHelpProc;
+                                HideView          : AnEditViewHiddenProc;
+                                RevealView        : AnEditViewRevealProc;
+                                NotifyOfChange    : AnEditViewChangedProc;
+                                ObjectViewTag     : CARDINAL;
+                                RecordEvent       : AnEditViewRecordProc;
+                                GetRecordedEvent  : AnEditViewGetEventProc;
+                                ActOnEvent        : AnEditViewActOnProc;
+                                GetCursor         : AnEditViewGetCursorProc;
+                                SetCursor         : AnEditViewSetCursorProc;
+
+
+        SetCursorMode       : AnEditViewSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnEditView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+
+        ActiveViewTag       : CARDINAL;
+
+        SetFirst            : AnEditViewSetNodeProc;
+        GetFirst            : AnEditViewGetNodeProc;
+        GetLast             : AnEditViewGetNodeProc;
+        SetCursorNode       : AnEditViewSetNodeProc;
+        GetCursorNode       : AnEditViewGetNodeProc;
+        Synchronize         : AnEditViewSyncProc;
+        ForceToPosition     : AnEditViewForceProc;
+        InquirePosition     : AnEditViewInquireProc;
+        NotifyNodeDeleted   : AnEditViewSetNodeProc;
+        ListViewTag         : CARDINAL;
+
+        GetCursorX          : PROCEDURE(    AnEditView): CARDINAL;
+    (*------------------------------------------------------------------------
+        Determine the current cursor position of the edit string being viewed.
+
+        Preconditions:
+            The view must be a valid edit view.
+
+        Postconditions:
+            The current cursor position will be returned.  This is a position
+            within the string of the associated edit node.
+    ------------------------------------------------------------------------*)
+
+
+        GetInsertMode       : PROCEDURE(    AnEditView): BOOLEAN;
+    (*------------------------------------------------------------------------
+        Determine if insert mode is on or off.
+
+        Preconditions:
+            The view must be a valid edit view.
+
+        Postconditions:
+            TRUE will be returned iff insert mode is currently on.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetLeftMargin       : PROCEDURE(    AnEditView): CARDINAL;
+    (*------------------------------------------------------------------------
+        Return the current left margin.
+
+        Preconditions:
+            The view must be a valid edit view.
+
+        Postconditions:
+            The left margin returned is the position with the data string
+            which is to be the leftmost character displayed in the edit view.
+    ------------------------------------------------------------------------*)
+
+
+        GetRightMargin      : PROCEDURE(    AnEditView): CARDINAL;
+    (*------------------------------------------------------------------------
+        Return the current right margin.
+
+        Preconditions:
+            The view must be a valid edit view.
+
+        Postconditions:
+            The right margin returned is the position with the data string
+            at which word wrap is to occur.  The data string must end at this
+            position.
+    ------------------------------------------------------------------------*)
+
+                                EditViewTag       : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsEditView --
+
+    Initialize the indicated object as an edit view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid edit view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsEditView(    EditView       : AnEditView;
+                             SuperView      : AnActiveView;
+                             Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                             Box            : ABoxType;
+                             VideoMode      : avidmode;
+                         VAR Title          : ARRAY OF CHAR;
+                             HelpKey        : CARDINAL;
+                             TakeRug        : BOOLEAN      );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateEditView --
+
+    Allocate storage for, and initialize the indicated object as an edit
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid edit view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateEditView(VAR EditView       : AnEditView;
+                             SuperView      : AnActiveView;
+                             Ulx            : ascreenx;
+                             Uly            : ascreeny;
+                             Lrx            : ascreenx;
+                             Lry            : ascreeny;
+                             Box            : ABoxType;
+                             VideoMode      : avidmode;
+                         VAR Title          : ARRAY OF CHAR;
+                             HelpKey        : CARDINAL;
+                             TakeRug        : BOOLEAN      ) 
+                                                            : BOOLEAN;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsEditView --
+
+    UnInitialize the indicated object as an edit view.
+
+    Preconditions:
+        The object must be a valid edit view object.
+
+    Postconditions:
+        The workspace associated with this view will be discarded, and the
+        view invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsEditView(    EditView     : AnEditView);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneEditViewMethods --
+
+    Make a copy of the edit view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The edit view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneEditViewMethods(    MethodObject : AnEditViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateEditView --
+
+    Determine that the indicated object is in fact a valid edit view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid edit view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateEditView(    EditView : AnEditView);
+
+
+
+END EditViews.
+

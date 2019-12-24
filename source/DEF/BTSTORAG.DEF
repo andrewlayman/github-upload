@@ -1,0 +1,99 @@
+DEFINITION MODULE BTStorage;
+
+(*  MODIFICATION HISTORY
+Title    : Storage for release 3.0
+Creation : 87/02/19
+Author   : A.Richard
+System   : LOGITECH MODULA-2/86
+
+Last Edit: 87.02.19
+        03-Feb-88 LAA   Created from Logitech storage module.  Added 
+                        CountOfFreeHeap procedure.
+         2-Aug-89 RSC   Made the ALLOCATE and DEALLOCATE into VECTORS
+                        and removed the DEBUGGING PROC.  This will make
+                        the non-debugging case more straightforward,
+                        and the debugging case easier too.
+*)
+
+(*
+   Standard dynamic storage management
+
+Storage management for dynamic variables. Calls to the
+Modula-2 standard procedures NEW and DISPOSE are
+translated into calls to ALLOCATE and DEALLOCATE. The
+standard way to provide these two procedures is to
+import them from this module 'Storage'.
+*)
+
+FROM SYSTEM IMPORT ADDRESS;
+
+
+
+TYPE
+    AStorageProc = PROCEDURE( VAR ADDRESS, CARDINAL );
+
+
+VAR
+    ALLOCATE    : AStorageProc;
+(*
+- Allocate some dynamic storage (contiguous memory area).
+
+in:     size    number of bytes to allocate,
+
+out:    a       ADDRESS of allocated storage.
+
+The actual number of bytes allocated may be slightly
+greater than 'size', due to administrative overhead.
+
+Errors: If not enough space is available, or when
+attempting to allocate more than 65520 (0FFF0H)
+bytes at once, then the calling program is terminated
+with the status 'heapovf'.
+*)
+
+
+    DEALLOCATE  : AStorageProc;
+(*
+- Release some dynamic storage (contiguous memory area).
+
+in:     a       ADDRESS of the area to release,
+        size    number of bytes to be released,
+
+out:    a       set to NIL.
+
+The storage area released is made available for subsequent
+calls to ALLOCATE.
+*)
+
+
+PROCEDURE Available (size: CARDINAL) : BOOLEAN;
+(*
+- Test whether some number of bytes could be allocated.
+
+in:     size    number of bytes
+
+out:    TRUE if ALLOCATE (p, size) would succeed.
+*)
+
+
+    (*  CountOfFreeHeap -- Returns a count of the number of blocks of 
+                           specified size which are available on the heap.
+                           Size must be at least 10 (bytes).               *)
+
+PROCEDURE CountOfFreeHeap(    BlockSize     : CARDINAL)
+                                                       : CARDINAL;
+
+
+PROCEDURE InstallHeap;
+(*
+- Used internally by the loader
+*)
+
+
+PROCEDURE RemoveHeap;
+(*
+- Used internally by the loader
+*)
+
+END BTStorage.
+

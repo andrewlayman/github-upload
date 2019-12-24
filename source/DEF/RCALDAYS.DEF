@@ -1,0 +1,87 @@
+DEFINITION MODULE RCalDays;
+
+(*  =========================================================================
+    Last Edit : July 9, 1990 5:32PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        This module displays a calendar for one resource on the
+        screen, and updates the resource's Calendar date list.
+
+
+    MODIFICATION HISTORY:
+
+        RSC  9-Jul-90  -First version.
+        AJL 13-Jul-90  -Added ULX,ULY,LRX and LRY parameters to  
+                        ChangeResourceCalendar.
+       18-Jan-91 TGS  ChangeResourceCalendar now takes a Title parameter.
+
+    =========================================================================
+*)
+
+
+
+FROM Kbio           IMPORT
+    (* TYPE *)          ascreenx, ascreeny;
+
+FROM ResCalUI       IMPORT
+    (* TYPE *)          AResourceCalendar;
+
+FROM Timei          IMPORT
+    (* TYPE *)          ADate;
+
+
+
+
+
+
+
+
+(* Change Resource Calendar - Run a calendar change for a resource calendar.
+
+    Preconditions -
+
+            The resource calendar must be valid, although its DateList
+            need not be non-NIL.
+
+    Postconditions -
+
+            The DateList in the resource calendar may have been changed.
+
+    InputParameters
+
+            ResourceCalendar    One calendar, initialized.  The DateList
+                                can be NIL or a valid list.
+
+            StartDate           The "cursor date" to start with on the
+                                calendar.
+
+            Title               Title to label the calendar box with.
+
+    OutputParameters
+
+            ResourceCalendar    May have been changed.
+
+            RETURN              TRUE if changes made, FALSE otherwise
+                                (either ESC pressed, F10 with no changes,
+                                or memory problems)
+
+
+                 ((AULX,AULY)(ALRX,ALRY)) define a region of the 
+                 screen to position the chart near, but AVOIDing.
+
+
+*)
+
+PROCEDURE ChangeResourceCalendar( VAR ResourceCalendar : AResourceCalendar;
+                                      StartDate        : ADate;                                      
+                                      AULX              : ascreenx;   
+                                      AULY              : ascreeny;   
+                                      ALRX              : ascreenx;
+                                      ALRY              : ascreeny;
+                                      Title             : ARRAY OF CHAR
+                                 ) : BOOLEAN;
+
+
+END RCalDays.

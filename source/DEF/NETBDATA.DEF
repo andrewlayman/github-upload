@@ -1,0 +1,50 @@
+DEFINITION MODULE NetBData;
+    (*  MODIFICATION HISTORY --
+        11-Mar-88 LAA   Moved arrays from NetBData to TSort.
+         8-Aug-89 CMH   Removed obsolete variables.
+    *)
+
+FROM FlexStor        IMPORT
+                            AnExtHandle;
+FROM Allocs          IMPORT
+                            ATaskPtr;
+FROM TreeObjects     IMPORT
+                            ATreeNode;                        
+FROM NetStatic       IMPORT taskdim;
+                        
+EXPORT QUALIFIED loopcnt,lowerloop,upperloop,
+                 endloop,leftopen,rightopen,infloopcount,
+                 maxloopsok,ufree,lfree,oldmaxtask,thisloop,
+                 ForkList,StackList,floodkey,
+                 NetFlags,NetFlagType,NetFlagSetType,
+                 inflooptaskhandle,
+                 inflooptask,ForkListHandle,StackListHandle,
+                 TaskCount,nextgroup,
+                 loopdim;
+                 
+CONST
+loopdim=300;
+
+                 
+TYPE
+
+NetFlagType= ( ForkListFlag,InMatrixFlag,ShouldDrawFlag,InStackFlag,
+               NetPhantomFlag,NetSummaryFlag,NetLeafFlag,NetBranchFlag);
+NetFlagSetType= SET OF NetFlagType;               
+                
+
+VAR
+    loopcnt,endloop,lowerloop,upperloop,nextgroup: INTEGER;
+    NetFlags: ARRAY [0..taskdim] OF NetFlagSetType;
+    leftopen,rightopen:  BOOLEAN;
+    ufree,lfree: BOOLEAN;
+    ForkList,StackList: ATaskPtr;
+    oldmaxtask,thisloop,infloopcount,inflooptask: INTEGER;
+    floodkey,TaskCount: INTEGER;
+    ForkListHandle,StackListHandle,inflooptaskhandle:AnExtHandle;
+
+CONST
+    maxloopsok=300;
+END NetBData.
+
+

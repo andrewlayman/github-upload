@@ -1,0 +1,200 @@
+DEFINITION MODULE FieldView;
+
+    (*  MODIFICATION HISTORY:
+
+        11-Mar-89  RSC  First version - a single form field for use by the
+                        SpreadSheet View.
+        20-Apr-89  RSC  Renamed to the FieldView, as per Andrew's request.
+        13-Dec-89  RSC  For Mouse support, pass events instead of codes.
+    *)
+
+
+FROM Codes      IMPORT
+    (* TYPE *)      ASetOfCodes;
+
+FROM Events     IMPORT
+    (* TYPE *)      AnEvent;
+
+FROM Kbio       IMPORT
+    (* TYPE *)      ascreenx, ascreeny, avidmode;
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+
+
+
+TYPE
+
+    (* A Form View Check Proc
+
+        This is the procedure passed to DoFieldView that is called to
+        process keycodes.  A check proc is provided in this module to
+        do some standard things like left and right arrows.
+
+        Preconditions
+
+            This is called from within "DoFieldView".
+
+            Event           is the keycode that was hit.
+            LastEventSeen   is the LAST keycode that was hit.  This allows
+                               for example, <HOME> to take you to the start
+                               of the line, and <HOME><HOME> to take you to
+                               the start of a form or form section.
+            StringToEdit    is the current string value, padded to
+                               FieldLength bytes.
+            InsertMode      is TRUE if insert mode is in effect.
+            FieldLength     is the width of the form window.
+            CursorPosition  is the current cursor position.  On entry it is
+                               ALWAYS in the range 1..FieldLength.
+            ValidCodes      is the set of keycodes that are valid for the
+                               application.  Does not need to include arrows
+                               or codes that are "command codes".  It is,
+                               in fact, just a convienience for the check
+                               proc.  The default check proc uses it as codes
+                               that can be placed into the StringToEdit.
+            TreatAsNumerics is whether we treat with numeric editing rules.
+            FieldViewContext is the context address passed to DoFieldView.
+
+        Postconditions
+
+            The check proc has handled the code in some manner, including
+            "Burp"ing or returning a quit code.
+
+            Event            is the code processed.  This can be changed
+                               from what was input in order to set the
+                               "LastEventSeen" to some code other than the
+                               actual code typed.  As "LastEventSeen" is passed
+                               down to the check proc on subsequent calls,
+                               this can be used as a kind of context area.
+                               Also, the LastEventSeen is passed back to the
+                               caller of DoFieldView, and so can be used to
+                               pass back a signal to the client.
+            StringToEdit    is the perhaps modified string.  It need not be
+                               exactly FieldLength bytes anymore.
+            InsertMode      is the NEW value of insert mode.  In other words,
+                               the check proc should flip this on receipt of
+                               an <Insert> key.
+            CursorPosition  is the desired cursor position.  This field is
+                               an integer so that it can be negative.  The
+                               Cursor position will be ajusted so that it is
+                               within the range 1..FieldLength.  This means
+                               that the check proc can INC or DEC the cursor
+                               position without worying about boundary
+                               conditions.
+
+            RETURN is TRUE  if more keystrokes should be processed,
+                      FALSE if DoFieldView should exit.
+    *)
+    AFieldViewCheckProc =
+
+        PROCEDURE ( VAR AnEvent,        (* Event           *)
+                        AnEvent,        (* LastEventSeen   *)
+                    VAR ARRAY OF CHAR,  (* StringToEdit    *)
+                    VAR BOOLEAN,        (* InsertMode      *)
+                        CARDINAL,       (* FieldLength     *)
+                    VAR INTEGER,        (* CursorPosition  *)
+                        ASetOfCodes,    (* ValidCodes      *)
+                        BOOLEAN,        (* TreatAsNumerics *)
+                        ADDRESS         (* FieldViewContext *)
+                  ) : BOOLEAN;          (* Go on?          *)
+
+
+
+
+
+
+
+
+(* Do Form View
+
+    Process a single form field.  This allows any field type except a Choice
+    field, given the right check proc.
+
+        Preconditions
+
+            StringToEdit    is the field's string value.
+            LastEventSeen   is the LAST keycode that was hit.  This allows
+                               for example, <HOME> to take you to the start
+                               of the line, and <HOME><HOME> to take you to
+                               the start of a form or form section.
+            x, y            is the starting screen coordinates.
+            FieldLength     is the width the form window should be.
+            InsertMode      is TRUE if insert mode is in effect.
+            PrecessKeys     is TRUE if you want keystrokes processed.
+            CheckFieldView   is the keystroke check proc.  See the description
+                               for "AFieldViewCheckProc".
+            ValidCodes      is the set of keycodes that are valid for the
+                               application.  Does not need to include arrows
+                               or codes that are "command codes".  It is,
+                               in fact, just a convienience for the check
+                               proc.  The default check proc uses it as codes
+                               that can be placed into the StringToEdit.
+            TreatAsNumerics is whether we treat with numeric editing rules.
+            FieldViewContext is the context address passed to DoFieldView.
+
+        Postconditions
+
+            StringToEdit    may have been modified by the check proc.  It is
+                                exactly FieldLength bytes long.
+            LastEventSeen   is the last code that was processed by the check
+                               proc, which could have been MODIFIED by the
+                               check proc for communication with itself or
+                               with the client.
+            InsertMode      is the way insert mode is currently set.
+
+        Note:  When "ProcessKeys" is FALSE, then only these fields are
+               relevant, the rest are ignored and unchanged:
+
+               > StringToEdit
+               > x, y
+               > FieldLength
+               > ProcessKeys
+
+*)
+PROCEDURE DoFieldView( VAR StringToEdit    : ARRAY OF CHAR;
+                       VAR LastEventSeen   : AnEvent;
+                           x               : ascreenx;
+                           y               : ascreeny;
+                           FieldLength     : CARDINAL;
+                       VAR InsertMode      : BOOLEAN;
+                           ProcessKeys     : BOOLEAN;
+                           CheckFieldView  : AFieldViewCheckProc;
+                           ValidCodes      : ASetOfCodes;
+                           TreatAsNumerics : BOOLEAN;
+                           FieldViewContext : ADDRESS
+                     );
+
+
+
+
+
+
+
+
+(* Default Form View Check Proc
+
+    A default check proc to handle the normal events.  See the description
+    for "AFieldViewCheckProc", above.
+
+    "ValidCodes" contains the codes that, if pressed, should be placed into
+                 "StringToEdit".
+*)
+PROCEDURE DefaultFieldViewCheckProc( VAR Event           : AnEvent;
+                                         LastEventSeen   : AnEvent;
+                                     VAR StringToEdit    : ARRAY OF CHAR;
+                                     VAR InsertMode      : BOOLEAN;
+                                         FieldLength     : CARDINAL;
+                                     VAR CursorPosition  : INTEGER;
+                                         ValidCodes      : ASetOfCodes;
+                                         TreatAsNumerics : BOOLEAN;
+                                         FieldViewContext : ADDRESS
+                                    ) : BOOLEAN;
+
+
+
+
+
+END FieldView.
+

@@ -1,0 +1,33 @@
+DEFINITION MODULE IV4Resources;
+
+(*  =========================================================================
+    Last Edit : September 12, 1990 6:26PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Import V4 and V3 resource records into V4.5
+
+
+
+    MODIFICATION HISTORY:
+
+        12-Sep-90 RSC First version, pulled from TLITL3 and TLITL4.
+
+    =========================================================================
+*)
+
+
+
+FROM FileSystem     IMPORT
+    (* TYPE *)          File;
+
+
+
+PROCEDURE GetResources(VAR f:File) : BOOLEAN;
+
+
+
+END IV4Resources.
+
+

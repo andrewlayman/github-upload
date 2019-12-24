@@ -1,0 +1,58 @@
+DEFINITION MODULE MouseInt;
+
+
+    (* Provides services to accumulate mouse events into a queue. *)
+    (* MODIFICATION HISTORY
+
+       30 May 90  AJL - Return raw mouse coordinates, rather than 
+                        screen coordinates.
+
+       28-Jun-91  RSC - Turn the cursor on or off.  Use these rather
+                        than HideCursor and ShowCursor from LMouse.
+     *)
+
+
+
+FROM Kbio       IMPORT
+    (* TYPE *)      ascreenx, ascreeny; 
+
+FROM LMouse     IMPORT
+    (* TYPE *)      Button, ButtonSet, Event, EventSet;
+
+FROM Mouse      IMPORT
+    (* TYPE *)      AMouseTime; 
+
+
+
+
+
+    (* Install this for the Logitech LMouse module's handler. *) 
+
+PROCEDURE MouseHandler(     TheEvents   : EventSet;
+                            TheButtons  : ButtonSet;
+                            MouseX      : INTEGER;
+                            MouseY      : INTEGER );
+
+
+    (* Dequeue's a mouse event and returns it, or else FALSE. *)
+
+
+PROCEDURE GetMouseEvent( VAR TheEvents   : EventSet;
+                         VAR TheButtons  : ButtonSet; 
+                         VAR MouseX      : INTEGER;
+                         VAR MouseY      : INTEGER;
+                         VAR Time        : AMouseTime ) : BOOLEAN;
+
+
+
+
+    (*  28-Jun-91 RSC
+
+        Turn the mouse cursor on or off.
+    *)
+PROCEDURE CursorOn();
+PROCEDURE CursorOff();
+
+
+END MouseInt.
+

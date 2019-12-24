@@ -1,0 +1,21 @@
+DEFINITION MODULE DoSwap;
+FROM SYSTEM                IMPORT
+    (* TYPE  *)                 ADDRESS;
+PROCEDURE KKCDosShell(
+                      VAR OverlayFile : ARRAY OF CHAR; 
+                      VAR TempFileDir : ARRAY OF CHAR;
+                             VAR done : BOOLEAN;
+                      VAR SwapStatus  : CARDINAL
+                     );
+PROCEDURE KKCExecute(
+                          programName   :   ADDRESS; 
+                          environment   :   CARDINAL;
+                       commandLineAdr   :   ADDRESS; 
+                     FCB1Adr, FCB2Adr   :   ADDRESS;
+                      VAR OverlayFile   :   ARRAY OF CHAR; 
+                      VAR TempFileDir   : ARRAY OF CHAR;
+                      VAR errorReturn   :   CARDINAL;
+                       VAR SwapStatus   : CARDINAL
+                    );
+END DoSwap.
+

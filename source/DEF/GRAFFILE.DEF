@@ -1,0 +1,219 @@
+DEFINITION MODULE GrafFile;
+
+    (*  MODIFICATION HISTORY
+        30-Mar-89 LAA   Created this module to support TLG/S device
+                        installation.
+
+         7-Apr-89 RSC   Added a context to the "For All" call.
+
+    *)
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+
+TYPE
+    AGrafFileProcessingProc = PROCEDURE(VAR File,         (* GrafFile *)
+                                            CARDINAL,     (* Section  *)
+                                            ADDRESS );    (* Context  *)
+
+
+
+    (*  StartGrafFileInput --
+
+        Call this procedure before using any procedure declared here 
+        which reads from the GrafFile.
+
+        Preconditions:
+            The file must already be opened.
+
+        Postconditions:
+            Whatever conditioning of the file for use of other input
+            procedure in this module will have been done.  TRUE will
+            be returned if the file is available for input, FALSE 
+            otherwise.
+    *)
+
+PROCEDURE StartGrafFileInput(VAR F          : File): BOOLEAN;
+
+
+
+
+    (*  ReadGrafFileLine --
+
+        Read a line from the GrafFile into the given LString.
+
+        Preconditions:
+            StartGrafFileInput must have been called and returned TRUE,
+            and EndGrafFileInput must not have yet been called.
+
+        Postconditions:
+            If TRUE is returned, a line of the GrafFile has been read, 
+            and the file left positioned to read the next line.  Otherwise,
+            there was either a file error, or there were no more lines
+            to read.
+    *)
+
+PROCEDURE ReadGrafFileLine(VAR F            : File;
+                           VAR Line         : ARRAY OF CHAR): BOOLEAN;
+
+
+
+
+
+    (*  ReadGrafFileSection --
+
+        Read the indicated GrafFile section, creating and returning 
+        a Text containing all the lines in that section.
+
+        Preconditions:
+            StartGrafFileInput must have been called and returned TRUE,
+            and EndGrafFileInput must not have yet been called.
+
+        Postconditions:
+            If TRUE is returned, all lines of the indicated
+            section will be in the returned Text, each in its own line.
+            If FALSE is returned, the Text will not have been created.
+    *)
+
+PROCEDURE ReadGrafFileSection(VAR F         : File;
+                                  Section   : CARDINAL;
+                              VAR Text      : AText   ): BOOLEAN;
+
+
+
+
+
+    (*  ForAllGrafFileSections --
+
+        Interate over all GrafFile sections, calling the supplied
+        processing proc for each.
+
+        Preconditions:
+            StartGrafFileInput must have been called on this file, and
+            this procedure must not previously have been called on the 
+            file.  The GrafFile must NOT be modified by the processing
+            proc.
+
+        Postconditions:
+            For each section of the GrafFile, the processing proc will
+            have been called once.
+    *)
+
+PROCEDURE ForAllGrafFileSections(VAR F        : File;
+                                     Process  : AGrafFileProcessingProc;
+                                     Context  : ADDRESS );
+
+
+
+
+
+    (*  EndGrafFileInput --
+
+        Terminate GrafFile access to the indicated file.  Do any clean-up
+        necessary.
+
+        Preconditions:
+            StartGrafFileInput must have been called on this file, and
+            this procedure must not previously have been called on the 
+            file.
+
+        Postconditions:
+            Whatever cleanup is necessary will have been done.
+    *)
+
+PROCEDURE EndGrafFileInput(VAR F            : File);
+
+
+
+
+
+
+    (*  StartGrafFileOutput --
+
+        Prepare the given file for later calls to procedures which write
+        sections to the GrafFile.
+
+        Preconditions:
+            The file must exist at the time this call is made.
+
+        Postconditions:
+            The file will be setup for writing, and for calls to procedures
+            defined here which write sections to a GrafFile.  TRUE will be
+            returned iff the file is ready to be written.
+    *)
+
+PROCEDURE StartGrafFileOutput(VAR F         : File): BOOLEAN;
+
+
+
+
+
+    (*  WriteGrafFileLine --
+
+        Write the given LString to the GrafFile at whatever the current
+        file position is.
+
+        Precondtions:
+            StartGrafFileOutput must have been called for this file.
+
+        Postconditions:
+            The given line will be written to the GrafFile.  TRUE will
+            be returned iff the line was written successfully.
+    *)
+
+PROCEDURE WriteGrafFileLine(VAR F           : File;
+                            VAR Line        : ARRAY OF CHAR): BOOLEAN;
+
+
+
+
+
+    (*  WriteGrafFileSection --
+
+        Write the given Text to the GrafFile, as the indicated section.
+
+        Preconditions:
+            StartGrafFileOutput must have been called for this file.
+
+        Postconditions:
+            The given Text will have each of its lines written, in order,
+            to the file, after the section identifier.  TRUE will be
+            returned iff the section was written successfully.
+    *)
+
+PROCEDURE WriteGrafFileSection(    Text     : AText;
+                                   Section  : CARDINAL;
+                               VAR F        : File    ): BOOLEAN;
+
+
+
+
+
+    (*  EndGrafFileOutput --
+
+        Terminate GrafFile access to the indicated file.  Do any clean-up
+        necessary.
+
+        Preconditions:
+            StartGrafFileOutput must have been called on this file, and
+            this procedure must not previously have been called on the 
+            file.
+
+        Postconditions:
+            Whatever cleanup is necessary will have been done.
+    *)
+
+PROCEDURE EndGrafFileOutput(VAR F           : File);
+
+
+
+END GrafFile.
+

@@ -1,0 +1,49 @@
+DEFINITION MODULE TaskFind;
+
+(*  Provides a temporary replacement for the normal "FindTaskByNumber"
+    procedure from Allocs.DEF.  Allows tasks to be located quickly
+    using an array of tree node pointers, rather than the usual
+    exhaustive tree search method.
+*)
+
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+    (* Call this once to initialize the data structures and synchronize with
+       the existing task tree.  *)
+PROCEDURE TaskFindBegin();
+
+
+
+    (* Call this to add one task with it's ID and TreeNode.
+       This is done here to avoid TaskFindBegin having to traverse the
+       task tree.
+
+       Do this AFTER TaskFindBegin!
+
+       24-Jan-91 RSC
+    *)
+PROCEDURE AddTaskByNumber  ( ID    : INTEGER; Node : ATreeNode );
+
+
+
+
+
+    (* This replaces the similarly-named procedure from Allocs.DEF, finding
+       tasks in much less time than the usual tree-search method. *)
+PROCEDURE FindTaskByNumber  ( ID    : INTEGER ) : ATreeNode;
+
+
+
+    (* Call this cleanup procedure after using the task finder. *)
+PROCEDURE TaskFindEnd();
+
+
+
+
+END TaskFind.
+

@@ -1,0 +1,59 @@
+DEFINITION MODULE TaskAssForms;
+
+(*
+    Task Assignment Forms.  Run the (up to 6) assignment form(s).
+
+    MODIFICATION HISTORY:
+
+        26-Apr-89 RSC  First version, code extracted from AssForms.
+        27-Aug-90 RSC  Took assignments out of the tree and put them
+                       back into the task record.
+         8-Feb-91 RSC  Made the overlay interface.
+
+*)
+
+
+
+FROM Assignments    IMPORT
+    (* TYPE *)          AnAssignmentPointer;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+TYPE
+        (* PRIVATE TYPE FOR COMMUNICATIONS WITH TLTAFORM
+        *)
+    AnOverlayContext = RECORD
+        TaskTreeNode    : ATreeNode;
+        Assignment      : AnAssignmentPointer;
+        ReturnValue     : BOOLEAN;
+    END;
+
+
+
+
+
+
+ (* Do Assignment Form - Do an assignment form and any subforms.
+
+    Preconditions
+                    TaskTreeNode    is the node of the task this assignment
+                                    belongs to.
+                    Assignment      The Assignment record's pointer.
+
+    Postconditions
+                    The assignment record may have been changed.  The task
+                    may have been recalc'd.
+
+                    IF FALSE, ESC was pressed on the form.
+ *)
+PROCEDURE DoAssignmentForm(     TaskTreeNode    : ATreeNode;
+                            VAR Assignment      : AnAssignmentPointer
+                          ) : BOOLEAN;
+
+
+
+
+END TaskAssForms.
+

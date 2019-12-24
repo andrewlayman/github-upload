@@ -1,0 +1,261 @@
+DEFINITION MODULE AssList;
+
+(*
+    AssList - Provide a QuickPick list of Assignments for a task.
+
+    Modification History:
+
+    21-Apr-89  RSC  First Version.  See "EDITRSRC.QA" for the documentation
+                    on the feature this implements.
+    18-May-89  RSC  Removed "ZeroAssignmentWork", which is not usefull now.
+                    Also "IsThereAssignmentWork" and "FindAssignmentErrors".
+    22-Aug-90  RSC  Ajusted calls to reflect no tree type and the fact that
+                    nodes do not point to actual records.
+    11-Jun-91  RSC  Removed "EditAssignmentList".  Placed it into
+                    AssListEdits.Def
+*)
+
+
+
+FROM Assignments    IMPORT
+    (* TYPE *)          AnAssignmentPointer, AnAssignmentRecord;
+
+FROM FlexStor       IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM Timei          IMPORT
+    (* TYPE *)          ADate;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATree, ATreeNode;
+
+
+
+
+
+TYPE
+    AnAssignmentTreeContext = RECORD
+        TaskNode            : ATreeNode;
+        AssignmentHandle    : AnExtHandle;
+    END;
+
+    AnAssignmentTreeContextPtr = POINTER TO AnAssignmentTreeContext;
+
+
+(* Put Assignments In A Tree
+
+        Put the assignments for a task into a tree for use with QuickPick
+        or whatever.
+
+    Preconditions
+                    TaskNode        A Non-Nill Tree Node of the task to use.
+                    AssTree         A Tree, from CreateTree, with no kids
+                                    (if there are kids, the assignments
+                                    are added on to the existing kids).
+
+
+    Postconditions
+                    Context         is the internal context needed by
+                                    other procedures in this module.
+
+                    RETURN          is TRUE  if it all worked,
+                                       FALSE if it did not.  Most likely
+                                             trouble is memory pressure.
+*)
+PROCEDURE PutAssignmentsInATree(     TaskNode   : ATreeNode;
+                                     AssTree    : ATree;
+                                 VAR Context    : AnAssignmentTreeContext
+                               ) : BOOLEAN;
+
+
+
+
+(* Get Assignment Info From Tree
+
+        Given a tree node from within an assignment tree, return the
+        flexstor handle and index of the actual record.
+
+    Preconditions
+
+            The node must be from within a tree built by
+            "PutAssignmentsInATree".  The context is the context
+            returned by that routine.
+
+    Postconditions
+
+            No data is changed in the tree, only information is
+            returned.
+
+    Input:
+        Node    The tree node from within an assignment tree built by
+                "PutAssignmentsInATree".
+        Context context returned by "PutAssignmentsInATree".
+
+    Output:
+        Handle  FlexStor handle of the assingment array
+        Index   index into that handle, starting with index 0.
+*)
+PROCEDURE GetAssignmentInfoFromTree(     Node       : ATreeNode;
+                                         Context    : AnAssignmentTreeContext;
+                                     VAR Handle     : AnExtHandle;
+                                     VAR Index      : CARDINAL;
+                                     VAR TaskNode   : ATreeNode
+                                   );
+
+
+
+
+(* Get Assignment Record From Tree
+
+        Given a tree node from within an assignment tree, return the
+        actual assignment record referenced.
+
+    Preconditions
+
+            The node must be from within a tree built by
+            "PutAssignmentsInATree".  The context is the context
+            returned by that routine.
+
+    Postconditions
+
+            No data is changed in the tree, only information is
+            returned.
+
+    Input:
+        Node    The tree node from within an assignment tree built by
+                "PutAssignmentsInATree".
+        Context context returned by "PutAssignmentsInATree".
+
+    Output:
+        Assignment    is the pointer to the assignment record.
+        ReleaseHandle is the FlexStor handle to release when done using
+                         the record.
+
+            DANGER!! The flexstor handle "ReleaseHandle" must be released
+                     soon, as this data is LOCKED DOWN.
+*)
+PROCEDURE GetAssignmentPointerFromTree(     Node          : ATreeNode;
+                                            Context       : AnAssignmentTreeContext;
+                                        VAR Assignment    : AnAssignmentPointer;
+                                        VAR ReleaseHandle : AnExtHandle );
+
+
+(*  Dispose Of Assignment Node
+
+    Dispose of a single tree node.
+
+    Preconditions
+                    Node    The tree node from within an assignment tree
+                            built by "PutAssignmentsInATree".
+                    Context context returned by "PutAssignmentsInATree",
+                            phrases as an address so that "ForAllNodes"
+                            works.
+    Postconditions
+                    TreeNode        Deallocated and Delisted.
+                                    Data object unchanged.
+*)
+PROCEDURE DisposeOfAssignmentNode( VAR TreeNode     : ATreeNode;
+     (* AnAssignmentTreeContext *)     Context      : ADDRESS );
+
+
+
+
+(* Dispose Of Assignment Nodes
+
+        Given a tree of assignment records, dispose of the nodes,
+        but not the tree, and NOT THE DATA.
+
+    Preconditions
+                    AssignmentTree  is the assignment tree.
+                    Context context returned by "PutAssignmentsInATree",
+
+    Postconditions
+                    AssignmentTree's nodes have been disposed of.
+*)
+PROCEDURE DisposeOfAssignmentNodes( AssignmentTree : ATree;
+                                    Context        : AnAssignmentTreeContext );
+
+
+
+
+
+
+
+(*  Dispose Of Assignment Node And Data
+
+    Dispose of a single tree node and its data node.
+
+    Preconditions
+                    Node    The tree node from within an assignment tree
+                            built by "PutAssignmentsInATree".
+                    Context context returned by "PutAssignmentsInATree",
+    Postconditions
+                    Data object DELETED.
+
+                    TreeNode        The NEXT (or PRIOR if no NEXT) node.
+                                    could be NIL.
+*)
+PROCEDURE DisposeOfAssignmentNodeAndData( VAR TreeNode     : ATreeNode;
+                                          VAR Context      : AnAssignmentTreeContext );
+
+
+
+
+
+
+
+
+
+
+
+  (* Check Resources - We are exiting the task form and want one last check
+                       of the resources.  Catch (Actual > Total) errors by
+                       looping through resources looking for negative
+                       to-go amounts.
+
+      Preconditions  - Assignments are in the tree.
+                       TaskNode refers to the task we are dealing with.
+
+      Postconditions - RETURN is TRUE iff all ok.
+  *)
+
+PROCEDURE CheckResources(     TaskNode      : ATreeNode;
+                              AssTree       : ATree;
+                              Context       : AnAssignmentTreeContext
+                              ) : BOOLEAN;
+
+
+
+
+
+
+
+(* Add A Default Assignment To Tree
+
+    Preconditions
+                    AssTree     May be nil, but is the assignment tree.
+                    RsrcNode    is the resource node to create the assignment
+                                for.
+                    Context     context returned by "PutAssignmentsInATree",
+                    AssNode     If non NIL, is the tree node just ABOVE where
+                                this tree node should be inserted.
+    Postconditions
+                    AssNode     is the assignment tree node created.
+                    TRUE        if assignment added.
+                    FALSE       if not.
+*)
+PROCEDURE AddADefaultAssignmentToTree(     AssTree      : ATree;
+                                           RsrcNode     : ATreeNode;
+                                       VAR Context      : AnAssignmentTreeContext;
+                                       VAR AssNode      : ATreeNode
+                                     ) : BOOLEAN;
+
+
+
+
+
+END AssList.
+

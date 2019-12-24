@@ -1,0 +1,33 @@
+DEFINITION MODULE SubfileOut;
+
+
+
+FROM FileSystem   IMPORT File;
+
+    (*  StartFileOutput -- Write a header to the file and reserve
+                           room for a subfile directory. *)
+
+PROCEDURE StartFileOutput     (VAR F               : File;
+                                   SubfileCount    : CARDINAL );
+
+    (*  EndFileOutput  -- Write an end of file marker. *)
+
+PROCEDURE EndFileOutput       (VAR F               : File );
+
+    (*  StartSubfileOutput -- Fill in a directory entry for the
+                              indicated subfile.  The position
+                              recorded is the current file position.
+                              Write a subfile header. *)
+
+PROCEDURE StartSubfileOutput  (VAR F               :File;
+                                   SubfileNumber   : CARDINAL;
+                                   Version         : CARDINAL);
+
+    (* EndSubfileOutput -- Write an end of subfile mark. *)
+
+PROCEDURE EndSubfileOutput  (VAR F               : File;
+                                 SubfileNumber   : CARDINAL  );
+
+
+END SubfileOut.
+

@@ -1,0 +1,73 @@
+    (* HotKeys -- This module manages a dictionary of Codes,
+                  in which each Code is associated with a procedure
+                  and a name.
+    *)
+
+DEFINITION MODULE HotKeys;
+
+
+FROM Codes IMPORT ACode;
+
+
+
+
+TYPE AHotKeyProcedure = PROCEDURE ( ACode );
+
+PROCEDURE RegisterHotKey  (     Code     : ACode;
+                            VAR Name     : ARRAY OF CHAR;
+                                HotProc  : AHotKeyProcedure )
+                          : BOOLEAN;
+
+
+    (* Precondition:  None
+       PostCondition: If KeyIsHot(Code,...) returns FALSE, then
+                      the Name (an LString) and the HotProc will
+                      be associated with the Code, and the procedure
+                      will return TRUE, or else the procedure will
+                      return FALSE and there will be no such association.
+
+                      Otherwise this
+                      procedure will not change any existing association
+                      and will return FALSE;
+    *)
+
+
+PROCEDURE KeyIsHot        (     Code     : ACode;
+                            VAR HotProc  : AHotKeyProcedure )
+                          : BOOLEAN;
+
+    (* Precondition:  None.
+       PostCondition: If a previous call to RegisterHotKey(Code,...)
+                      returned TRUE, and there have been no intervening
+                      calls to RemoveHotKey, then this will return TRUE,
+                      and return the HotProc that was previously associated
+                      with the Code.
+
+                      Otherwise, it will return FALSE.  The value of
+                      the parameter HotProc is undefined.
+    *)
+
+PROCEDURE HotKeyName      (     Code     : ACode;
+                            VAR Name     : ARRAY OF CHAR    )
+                          : BOOLEAN;
+
+    (* Precondition:  None.
+       PostCondition: If KeyIsHot(Code,..) would return TRUE,
+                      then this will return TRUE, and
+                      return the Name that was previously associated
+                      with the Code.
+
+                      Otherwise, it will return FALSE.  The value of
+                      the parameter Name is undefined.
+    *)
+
+
+PROCEDURE RemoveHotKey    (     Code     : ACode    );
+
+    (* Precondition:  None.
+       PostCondition: Calls to KeyIsHot(Code,...) will return FALSE.
+    *)
+
+
+END HotKeys.
+

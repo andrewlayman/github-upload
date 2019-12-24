@@ -1,0 +1,251 @@
+DEFINITION MODULE Edges;
+
+    (* MODIFICATION HISTORY:
+
+        1/10/88 EGK  -  Created this by removing parts of Allocs dealing
+                        with edges.
+        20 Mar 89 AJL  -Added AnEdgeType, ASetOfEdgeAttributes.
+                       -Added Type and Attributes fields to AnEdge.
+                       -Removed ToOffset.Dur, ToOffset.Scale.   
+                       -Made CheckEdgeValid a VAR PROC.
+        11 May 89 AJL  -Added "InvisibleEdge" flag to each edge. 
+        16 Jun 89 RSC  -Added "InitializeEdges".
+        30-Mar-90 RSC   Made Timeu to Timei conversions.
+        25-Jan-91 RSC   Added some no-lock versions of routines:
+                        FindEdgeInTask, CreateEdgeDammit, AddEdgeWithTasks.
+    *)
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADuration, ADurationUnit;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+TYPE
+
+    arectag   = CARDINAL;
+
+    AnEdgeType = ( Flexible,          (* Normal, "anywhere after" edge. *)
+                   Rigid );           (* If either task moves, both do. *)
+
+    AnEdgeAttribute = (    (* Any edge that is temporary was not entered by user. *)
+                        Temporary,          (* Created temporarily. *)
+                        Relocated,          (* Belongs to summary task. *)
+                        PhantomPredecessor, (* From Summary Start milestone. *)
+                        PhantomSuccessor,   (* From Summary End milestone. *)
+                        RolledUp,           (* Really to child task. *)
+                        Bridge,             (* Represents missing tasks. *)
+                        InvisibleEdge );    (* Not visible in current view.  Not reantrant, either! *)
+
+
+    ASetOfEdgeAttributes = SET OF AnEdgeAttribute;                        
+
+
+    AnEdgePtr = POINTER TO AnEdge;
+
+    AnEdge = RECORD
+                 rectag     : arectag;
+                     (*  These are adjustments to the dependency to allow
+                         each dependency to carry an implied time advance
+                         or delay.  Basically, it gives the attachment point of
+                         the arrow to the task bar, with the default being
+                         FromOffset.End(NOT Start) + 0 ------> ToOffset.Start + 0.
+                     *)
+                 FromOffset : RECORD
+                                  Start : BOOLEAN;
+                                  Plus  : BOOLEAN;
+                                  Dur   : ADuration;
+                                  Scale : ADurationUnit;
+                              END;
+                 ToOffset   : RECORD
+                                  Start : BOOLEAN;
+                              END;
+                 Type       : AnEdgeType;
+                 Attributes : ASetOfEdgeAttributes;
+                 Delta      : INTEGER;    (* Net effect of the From and To Offsets. *)
+                 Z          : CARDINAL;   (* Temporary storage.  Used by the Pert charter *)
+                 headtask   : ATreeNode;  (* The task that must occur first *)
+                 tailtask   : ATreeNode;  (* The dependent task. *)
+                 headlink   : AnEdgePtr;  (* The next edge from the head task.
+                                             Used to link dependent tasks of
+                                             the head task. *)
+                 taillink   : AnEdgePtr;  (* The next edge from the tail task.
+                                             Used to link antecedant tasks of
+                                             the tail task. *)
+            END;
+
+
+            (* Same as a task pointer, but we can't import Allocs to get
+               ATaskPtr, as Allocs imports us!
+            *)
+    AnEdgesTask;
+
+
+
+(*----------------------------------------------------------------------------
+    CreateEdge --
+
+    Create an edge record which establishes a precedence relationship between
+    the two tasks.  This procedure does not actually link the two tasks; to
+    record this edge, use AddEdge.
+
+    Preconditions:
+        The two parameters must be valid task nodes.
+
+    Postconditions:
+        If the two task nodes can be joined, a valid edge record will be
+        returned.  Otherwise the procedure returns NIL.
+----------------------------------------------------------------------------*)
+PROCEDURE CreateEdge    ( Prior     : ATreeNode;
+                          After     : ATreeNode )
+                                                 : AnEdgePtr;
+(* This does what CreateEdge does, but does less paranoia checking.
+   ONLY USE THIS WHEN FindEdge() has returned NIL!
+*)
+PROCEDURE CreateEdgeDammit ( Prior, After : ATreeNode ) : AnEdgePtr;
+
+
+
+(*----------------------------------------------------------------------------
+    AddEdge --
+
+    Link an edge record into the task tree to establish a join between two
+    tasks.
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record, created by
+        the CreateEdge procedure.
+
+    Postconditions:
+        The edge will be linked into the task tree, and the two appropriate
+        tasks will be joined.
+----------------------------------------------------------------------------*)
+PROCEDURE AddEdge( EdgePtr : AnEdgePtr; ChangeStatus : BOOLEAN );
+
+(* Same as AddEdge, but with the task pointers.  Both tasks are changed.
+*)
+PROCEDURE AddEdgeWithTasks( EdgePtr         : AnEdgePtr;
+                            PriorTask       : AnEdgesTask;
+                            AfterTask       : AnEdgesTask;
+                            ChangeStatus    : BOOLEAN );
+
+
+
+
+(*----------------------------------------------------------------------------
+    CopyEdgeContents --
+
+    Copy the data describing the edge, except the identity of the From and
+    To tasks, from the Source to the Destination Edge.
+
+    Preconditions:
+        The two parameters must be valid task nodes.
+
+    Postconditions:
+        The second edge will be the same type of edge, in all internal 
+        contents except the identification of the joined tasks. 
+----------------------------------------------------------------------------*)
+PROCEDURE CopyEdgeContents(     SourceEdge : AnEdge; 
+                            VAR DestEdge : AnEdge ); 
+
+
+
+(*----------------------------------------------------------------------------
+    RemoveEdge --
+
+    Remove an edge record, thus unjoining two tasks which were previously
+    joined.  The edge can be recovered if necessary with undo.
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record.
+
+    Postconditions:
+        The edge will be removed from the task tree, and the two appropriate
+        tasks will be unjoined.  The edge record will then be deleted.
+----------------------------------------------------------------------------*)
+PROCEDURE RemoveEdge    ( VAR Edge      : AnEdgePtr );
+
+
+
+
+(*----------------------------------------------------------------------------
+    DelEdge --
+
+    Discard an edge record, whether or not it is in use.
+
+    Preconditions:
+        The edge passed must be a pointer to a valid edge record.
+
+    Postconditions:
+        The storage for the edge will be deallocated.  No checking is done
+        to determine whether or not this edge is actually being used to join
+        two tasks;  to explicitly remove a join, use RemoveEdge.
+----------------------------------------------------------------------------*)
+PROCEDURE DelEdge   ( VAR Edge          : AnEdgePtr );
+
+
+
+(*----------------------------------------------------------------------------
+    FindEdge --
+
+    Return the edge which joins the two tasks, if it exists.
+
+    Preconditions:
+        The tasks must be valid task nodes.
+
+    Postconditions:
+        If there is a join between the two tasks, the corresponding edge
+        record will be returned.  Otherwise the procedure returns NIL.
+----------------------------------------------------------------------------*)
+PROCEDURE FindEdge      ( Prior     : ATreeNode;
+                          After     : ATreeNode )
+                                                 : AnEdgePtr;
+
+(* This is the same as FindEdge, but PriorTask is already locked.
+*)
+PROCEDURE FindEdgeInTask(   PriorTask : AnEdgesTask;
+                            After     : ATreeNode) : AnEdgePtr;
+
+
+(*----------------------------------------------------------------------------
+    ItDepends -
+
+    Determine whether or not there is a join between two tasks.
+
+    Preconditions:
+        The tasks must be valid task nodes.
+
+    Postconditions:
+        TRUE is returned iff there is a join between the two tasks.
+----------------------------------------------------------------------------*)
+PROCEDURE ItDepends     ( Prior     : ATreeNode;
+                          After     : ATreeNode )
+                                                 : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    CheckEdgeValid --
+
+    Determine whether or not an edge is a pointer to a valid edge record.
+
+    Preconditions:
+
+    Postconditions:
+        If the edge does not point to a valid edge record, the program stops.
+
+    PROCEDURE CheckEdgeValid    ( Edge      : AnEdgePtr );
+----------------------------------------------------------------------------*)
+VAR CheckEdgeValid : PROCEDURE( (* Edge: *) AnEdgePtr );
+
+
+    (* Do the initialization that we should defer until after the program
+       is safely running. *)
+
+PROCEDURE InitializeEdges();
+
+
+END Edges.
+

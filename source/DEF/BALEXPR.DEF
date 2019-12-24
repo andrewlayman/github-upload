@@ -1,0 +1,125 @@
+DEFINITION MODULE BalExpr;
+
+(*
+
+     Bal Expr - Balanced Expression manager
+
+        This module deals with LStrings that are "balanced".  That is, each
+        expression or subexpression has parens around it, like:
+
+            (1) ( ((1)(6)(1)) ((2)(2)(5.0)) )
+
+        Which is two expressions, the second with two subexpressions, each of
+        those with three subexpressions.
+
+        More formally:
+
+            Atom       :== <Any text string, NOT bounded by parens>
+            Expression :== Atom | "(" Expression ")"
+
+
+        Modification History:
+
+        31-Mar-89   RSC   First Version.
+*)
+
+
+
+
+
+
+
+(* LString To Expression - Add parens to an LString.
+
+    Preconditions:
+                    LString    is the string to make into an expression.
+                               It can be empty.
+
+    Postconditions:
+                    Expression is equivelent to LString, but with parens
+                                  around it.
+*)
+PROCEDURE LStringToExpression(  VAR LString     : ARRAY OF CHAR;
+                                VAR Expression  : ARRAY OF CHAR );
+
+
+
+
+
+
+
+(* This Is An Atom
+
+
+    Preconditions:
+                    Expression is the expression to test.  It can be empty.
+
+    Postconditions:
+                    RETURN     is TRUE  if the string is an atom.
+                                  FALSE if the string could be further parsed.
+
+                    If the string was empty, TRUE is returned.
+*)
+PROCEDURE ThisIsAnAtom( VAR Expression : ARRAY OF CHAR ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(* Parse Expression
+
+    Preconditions
+                    Expression        is the expression to be parsed.
+
+                    ExpressionNumber  is which expression you want.
+                                         Expressions start with 1, not 0.
+                                         ("Get me the Nth Expression")
+
+    Postconditions
+                    SubExpression     is the result.  It may be another
+                                         Expression.  If it is an atom,
+                                         it may have leading, trailing, or
+                                         imbedded blanks.  It may be empty.
+
+                    RETURN            is TRUE iff an expression was found,
+                                         even if the expression was empty.
+                                         FALSE means no expression found.
+*)
+PROCEDURE ParseExpression( VAR Expression        : ARRAY OF CHAR;
+                               ExpressionNumber  : CARDINAL;
+                           VAR SubExpression     : ARRAY OF CHAR
+                          ) : BOOLEAN;
+
+
+
+
+
+
+
+(* Parse Cardinal
+
+    Preconditions
+                    Expression        is the expression to be parsed.
+
+                    ExpressionNumber  is which expression you want.
+                                         Expressions start with 1, not 0.
+                                         ("Get me the Nth Expression")
+
+    Postconditions
+                    CardinalValue     is the returned cardinal, if TRUE.
+
+                    RETURN            is TRUE iff a cardinal was found.
+*)
+PROCEDURE ParseCardinal( VAR Expression        : ARRAY OF CHAR;
+                             ExpressionNumber  : CARDINAL;
+                         VAR CardinalValue     : CARDINAL
+                       ) : BOOLEAN;
+
+
+END BalExpr.
+
+

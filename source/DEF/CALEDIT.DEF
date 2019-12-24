@@ -1,0 +1,65 @@
+DEFINITION MODULE CalEdit;
+
+    (* Provides the generic procedures for editting a calendar, which
+       is a series of months that can be scrolled from month to month, 
+       and editted. *)
+
+    (* MODIFICATION HISTORY:
+
+       16-Jul-90 AJL  Initial version.
+       18-Jan-91 TGS  EditCalendar now requires a Title.
+       14-Aug-91 AJL  Client procedures documented to use Fiscal years.
+
+     *)
+
+FROM Codes IMPORT
+    (* TYPE *)  ACode;
+
+FROM Kbio IMPORT
+    (* TYPE *)  ascreenx, ascreeny;
+
+FROM SYSTEM IMPORT
+    (* TYPE *)  ADDRESS;
+
+FROM Timei  IMPORT
+    (* TYPE *)  ATimeInfo;
+
+TYPE
+        (* Draws the contents of a date within a month.
+           Year is fiscal. *)
+
+    ADateContentsProc = PROCEDURE( (* year, month, day *) CARDINAL, CARDINAL, CARDINAL,
+                                   (* ulx *)     ascreenx,
+                                   (* lry *)     ascreeny,   
+                                   (* ulx *)     ascreenx,
+                                   (* lry *)     ascreeny,
+                                   (* hilite *)  BOOLEAN,
+                                   (* context *) ADDRESS );
+
+
+
+        (* Handles events on particular days.
+           Year is fiscal. *)
+
+     ACalCodeHandler = PROCEDURE(   (* Code *)  VAR ACode,
+                                    (* year, month, day *) CARDINAL, CARDINAL, CARDINAL,
+                                    (* context *) ADDRESS 
+                                 ) : BOOLEAN;
+
+
+
+PROCEDURE EditCalendar(     ClientCodeHandler : ACalCodeHandler;
+                            DrawDateContents  : ADateContentsProc;
+                            Context           : ADDRESS;   
+                        VAR CursorDate        : ATimeInfo;                                      
+                            AULX              : ascreenx;   
+                            AULY              : ascreeny;   
+                            ALRX              : ascreenx;
+                            ALRY              : ascreeny;
+                            Title             : ARRAY OF CHAR (* 18-Jan-91 TGS *)
+                       );        
+
+
+
+END CalEdit.
+

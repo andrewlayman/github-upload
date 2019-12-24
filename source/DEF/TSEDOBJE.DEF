@@ -1,0 +1,41 @@
+DEFINITION MODULE TSEDObjectWrite;
+
+   (*
+    Modification History:
+         8-Sep-89 CMH   Added new WriteBoolean, WriteCardinal, WriteReal
+                        procedures. 
+    *)
+
+PROCEDURE WriteBoolean(BooleanValue : BOOLEAN);
+
+PROCEDURE WriteBox(x1, y1, x2, y2, frame : CARDINAL; 
+                   BoxContents           : ARRAY OF CHAR;
+                   FGColor,BGColor       : CARDINAL);
+
+PROCEDURE WriteCardinal(CardinalValue : CARDINAL);
+
+PROCEDURE WriteChartType(type : CARDINAL);
+
+PROCEDURE WriteCrateHeight(height:CARDINAL);
+
+PROCEDURE WriteDeviceInformation();
+
+(* for duration bar networks - not avaliable in TL version 4.0  
+ |PROCEDURE WriteDurationBar(x1Plan, x2Plan,
+ |			     x1Actual, x2Actual,
+ |			     yDBarCenterLine, complete,
+ |			     CompleteBarColor,
+ |			     FutureBarColor : CARDINAL);
+ *)
+ 
+PROCEDURE WritePipe(x1, y1, x2, y2, r1, r2, width, style, pattern, highlight, color:CARDINAL); 
+
+PROCEDURE WritePoint(x,y:CARDINAL);
+
+PROCEDURE WriteReal(RealValue : REAL);
+         
+PROCEDURE WriteText(string        : ARRAY OF CHAR; 
+                    color, height : CARDINAL);
+
+END TSEDObjectWrite.
+

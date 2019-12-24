@@ -1,0 +1,50 @@
+DEFINITION MODULE XResource;
+
+(*  =========================================================================
+    Last Edit : September 5, 1990 3:57PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Save Resources into a schedule file.
+
+        Save Resource Assignments into a schedule file.
+
+
+    MODIFICATION HISTORY:
+
+         5-Sep-90 RSC  From TLXTL45, which had too many identifiers.
+        26-Apr-91 AJL  Added count of number of resources saved to
+                       SaveResources.
+
+    =========================================================================
+*)
+
+FROM FileSystem     IMPORT
+    (* TYPE *)          File;
+
+FROM FlexStor       IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATree;
+
+
+
+
+
+PROCEDURE SaveResources( VAR F              : File;
+                             ResourceTree   : ATree;
+                             Type,
+                             VersionNumber  : CARDINAL;
+                         VAR NumberSaved    : LONGINT );
+
+
+
+PROCEDURE SaveOneAssignmentArray( VAR f      : File;
+                                      Handle : AnExtHandle;
+                                      Type   : CARDINAL );
+
+END XResource.
+
+

@@ -1,0 +1,158 @@
+DEFINITION MODULE PTaskList;
+
+    (* This module contains some procedures to manage a list of
+       tasks doubly linked through the nextlink and prevlink fields
+       in the task records.  It does not deal with the task tree.
+       These routines are for the use of the planning modules. *)
+
+    (* MODIFICATION HISTORY
+
+       Dec. 10, 87  AJL - Added FlexStor.
+       Jan. 28, 88  AJL - Added CountDown.
+       Feb. 8,  88  AJL - Added TaskCount.
+       Jun. 6,  88  AJL - Changed ACompareProc to use handles.
+       Jun. 26, 89  JES - Removed duncel CheckResourceUsageOnList.
+       Aug  2,  89  JES - Moved TlPlanDt.def variables to here
+       Sep 22,  89  AJL - ListInit returns a BOOLEAN.
+                        - Removed the InsertionSort procedure. 
+       30-Mar-90    RSC   Removed Timeu.
+       Aug 15, 90   AJL - Added ComputeEdgeDelta.
+       Oct 12, 90 - JES - Moved AddLowDate from ResBumpt to here.
+       Oct 29, 90 - AJL - Created AlreadyScheduled.
+       Nov 16, 90 - AJL - Added NeedLinkedScheduleRollin.
+       Nov 28, 90 - AJL - Added MaybeCountDown.
+       Jan. 3, 91 - AJL - Added AllLevel0TasksAreSummary and 
+                          SomeLevel0TaskIsSummary;
+       Jan. 23 92 - AJL - Added NoVacations flag.
+    *)
+
+
+FROM Allocs         IMPORT
+    (* TYPE *)          ATaskPtr, ATempTaskFlag;
+
+FROM Dialog         IMPORT
+    (* TYPE *)          ABoxHandle;
+
+FROM Edges          IMPORT
+    (* TYPE *)          AnEdgePtr; 
+
+FROM FlexStor       IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM RsrcMod        IMPORT
+    (* TYPE *)          AResourcePointer;
+
+FROM Timei          IMPORT
+    (* TYPE *)          ADate;
+
+
+CONST
+    Visited      = TempTaskFlag5;
+    TerminalFlag = TempTaskFlag6;
+    AlreadyScheduled = TempTaskFlag7;
+    NoVacationsFlag  = TempTaskFlag8; (* Task has no resources w/ vacations. *)
+
+(* these variables are for communication between tlcpm and tlplan *)
+VAR
+    BoxHandle      : ABoxHandle;
+    BoxShowing     : BOOLEAN;
+    SpaceReserved  : BOOLEAN;    (* Prevents further Messages. *)
+    NeedLinkedScheduleRollin : BOOLEAN;
+    AllLevel0TasksAreSummary : BOOLEAN;     (* Set if we should check for multiple
+                                               projects. *)
+    SomeLevel0TaskIsSummary  : BOOLEAN;
+
+
+
+VAR
+    PrivateTaskList         : AnExtHandle;
+
+    TaskCount               : CARDINAL;
+
+
+    (* ListInit -- Initialize a list.  The pointer passed to us will
+                   be converted into the head node of an empty list
+                   by allocating space for it and setting its forward
+                   and reverse links to itself. *)
+
+PROCEDURE ListInit (VAR List:AnExtHandle) : BOOLEAN;
+
+
+
+
+    (* AddBefore -- Add a new task to the list before the BeforeNode. *)
+
+PROCEDURE AddBefore (BeforeNode, NewNode : AnExtHandle);
+
+
+
+    (* DeList -- Remove the task from whichever circular list it is on. *)
+
+PROCEDURE DeList ( TaskHandle: AnExtHandle);
+
+
+    (* Move list -- Move all of the tasks from the source list to the
+                    target list, at the end.  *)
+
+PROCEDURE MoveList(TargetList, SourceList : AnExtHandle);
+
+
+    (* TaskResourceAmount -- Compute the amount of the resource
+                             used by the task. *)
+
+
+PROCEDURE TaskResourceAmount(    Task           : ATaskPtr;
+                                 Resource       : AResourcePointer;
+                             VAR Amount         : REAL );
+
+
+    (* CountDown --
+
+       Display a message line showing that ToGo out of Total things
+       need to be done.  phrase is the number of a MsgFile phrase
+       identifying what is being done. *)
+
+PROCEDURE CountDown(phrase:CARDINAL; Total, ToGo : CARDINAL);
+
+
+    (* MaybeCountDown --
+
+       If TaskCount (above) is greater than some (internal) limit,
+       call CountDown(phrase,TaskCount,togo);
+
+       *)
+
+
+
+PROCEDURE MaybeCountDown(phrase:CARDINAL; ToGo : CARDINAL);
+
+
+
+    (* Compute the effect of the partial join between the tasks in terms
+       of an bias that would have to be applied to an end-to-start
+       dependency in order to make it have equivalent effect.  Return an
+       edge record that has been updated to have its Delta field contain
+       this bias, and return the implied start date of the Descendant
+       task.
+       *)
+
+
+
+PROCEDURE ComputeEdgeDelta( Antecedant : ATaskPtr;
+                            Descendant : ATaskPtr;
+                            Edge       : AnEdgePtr ) : ADate;
+    (*  AddLowDate -- Add the task to the given list, after the list's
+                      headnode, but prior to any task with a greater
+                      early start date.  If the list is already
+                      sorted in order of increasing Plan.Dates.EarlyStart, this
+                      routine will keep the list so sorted.
+    *)
+
+PROCEDURE AddLowDate (HeadNode, TaskHandle : AnExtHandle; Task : ATaskPtr );
+
+
+
+END PTaskList.
+
+
+

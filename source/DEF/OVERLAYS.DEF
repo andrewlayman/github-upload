@@ -1,0 +1,508 @@
+    (*V1=OS2 OS2 code changes.	  *)
+    (*V2=DOS Regular DOS TL code. *)
+
+DEFINITION MODULE Overlays;
+
+  (* MODIFICATION HISTORY:
+
+        5 Sep 87  RSC - Added "CallOverlayWithContext" and associated
+                        procedures.
+       17 Sep 87  AJL - Added "InstallNewProcedureWithhUnset".
+                      - Removed the string "OverlayList".  Having
+                        a context now supercedes it.
+       19 Jan 88  RSC - Added 'Installable' overlay abilities ....
+       30 Dec 88  RSC - Added 'ImALockedOverlay' and its support.
+                        Added 'UnlockOverlay'.
+                        Added 'RemoveLockedOverlays' (for MAIN
+                        shutdown).
+        1-Mar-89  RSC   Treat stolen procedure vectors as a list, not as a
+                        tree.
+        4-Aug-89  WKH   Initial edits for OS/2.
+        9-Aug-89  WKH   Remove all non-essential imports.
+       20-Sep-89  RSC   Added yet another new procedure,
+                        CallOverlayWithDialog.
+
+       12-Nov-90 RSC    Export ReservedLayer
+       29-Jan-91 RSC    Removed export of ReservedLayer.
+
+
+
+   Lets talk about OVERLAYS .....
+
+        We support four kinds of overlays:
+
+        1) Overlays whose MAIN procedure does all the work, and the overlay
+           does not need to stay resident.
+        2) Overlays which have only one entry point (one MAIN procedure),
+           and may stay resident to save loading time.
+        3) Overlays with many entry points, which 'steal' procedure pointers.
+           These would typicly want to stay resident.
+        4) Overlays that become "Locked" in memory for a period of time.
+           Like resident overlays, but they cannot be removed, even if not
+           in use.  Candidates for this are speed-critical overlays, or
+           overlays used in Chainer.
+
+        All four kinds of overlays are initially invoked using
+        CallOverlay or CallOverlayWithContext.
+
+        No other special calls are needed for overlays of type 1.
+
+        Type 2 and 3 overlays need to call 'ImAnInstallableOverlay' to
+        tell this module to keep the overlay resident as possible.
+
+        Type 3 overlays may steal procedure vectors from the root, and
+        they can be unloaded by either the overlay's DeInstallProc or
+        by this module.
+
+        Type 4 overlays need to call 'ImALockedOverlay' to
+        tell this module to keep the overlay resident.  Call
+        'UnlockOverlay' to Change the status from a locked overlay
+        to a resident overlay.  Call 'RemoveLockedOverlays' to remove
+        all locked overlays from memory.
+
+        THIS IMPLIMENTATION DOES NOT PROPERLY BACK OUT MULTIPLY STOLEN
+        VECTORS UNLESS THE OVERLAYS ARE UNLOADED IN REVERSE ORDER, as
+        when using Chainer.  For this reason,
+
+        INSTALLABLE OVERLAYS MUST NOT SWIPE VECTORS THAT ANY OTHER OVERLAY
+        CAN SWIPE.
+  *)
+
+FROM Overlay    IMPORT
+    (* TYPE *)      ErrorCode, LayerId;
+
+FROM OvTree     IMPORT
+    (* TYPE *)      ADeinstallProc, AnOverlayProc;
+
+(*<DOS*)
+FROM RTSMain    IMPORT
+    (* VARS *)      Status;
+(*DOS>*)
+
+(*<OS2
+FROM RTSTypes   IMPORT
+    (* TYPE *)      Status;
+OS2>*)
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+
+
+TYPE
+    AnOverlayID;
+
+    (*  =====================================================================
+        
+        PROCEDURE - CouldntLoadProc
+
+            Preconditions :
+
+                An overlay could not load, probably due to lack of memory.
+
+                This is passed as a parameter to CallOverlayWithDialog.
+                Its job is to examine the Status and (on DOS) errorcode
+                and handle the error.  For example, it could put up a dialog
+                box.
+
+            Postconditions :
+
+                If appropriate, the error has been handled.
+
+            Parameters :
+                Input:
+
+                    OverlayName     The TString containing the full name
+                                    of the overlay file.
+
+                    st              status code from Logitek's Runtime.
+
+                    errorcode       DOS ONLY error code from Overlay.Mod.
+
+                    Context         For use by this procedure, passed in
+                                    from CallOverlayWithDialog.
+
+                Output:
+
+        =====================================================================
+    *)
+    ACouldntLoadProc    = PROCEDURE( VAR (* OverlayName *) ARRAY OF CHAR,
+                                         (* st          *) Status,
+(*<DOS*)
+                                         (* errorcode   *) ErrorCode,
+(*DOS>*)
+                                         (* Context     *) ADDRESS );
+
+
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - DisplayTheError
+
+            Preconditions :
+
+                This is passed as a parameter to CallOverlayWithDialog.
+                This is the DEFAULT parameter, and the one used when you call
+                CallOverlayWithContext.
+
+            Postconditions :
+
+            Parameters :
+                Input:
+
+                    OverlayName     The TString containing the full name
+                                    of the overlay file.
+
+                    st              status code from Logitek's Runtime.
+
+                    errorcode       DOS ONLY error code from Overlay.Mod.
+
+                    Context         Ignored.  Here for compatability with
+                                    ACouldntLoadProc.
+
+                Output:
+
+        =====================================================================
+    *)
+PROCEDURE DisplayTheError( VAR OverlayName : ARRAY OF CHAR;
+                               st          : Status;
+(*<DOS*)
+                               errorcode   : ErrorCode;
+(*DOS>*)
+                               Context     : ADDRESS  );
+
+
+
+
+
+
+
+    (*  OverlayPackage -- Call the series of programs indicated by the
+                          Package LString.  Its format is
+
+                          NAME[(params)] ....
+
+                          as in
+
+                          "TLPUTIT(xyz) TLFBASE(TLXFORM) TLXPORTS"
+
+                          Processing continues from left to right until the
+                          entire package has been processed, or until there
+                          is an error.
+
+                          The items in parens are REQUIRED for overlays
+                          except for the last overlay on the line.
+
+                          Besides overlays, you can specify
+
+                            @MenuName           Calls the menu with that name
+                            #Message number     Calls DisplayMessage with that #.
+
+                          Neither of these parameters get parameters in parens.
+                          
+                          RETURN is TRUE iff all overlays completed.
+
+                          ERROR communication is handled by "PackageOK",
+                                a BOOLEAN exported from Overlays.Def.
+                                Client overlays SET this flag if they have
+                                an error.
+
+                                A Side effect of this procedure is that it
+                                RESETS "PackageOK" to TRUE when it starts.
+    *)
+VAR
+    OverlayPackage : PROCEDURE ( VAR ARRAY OF CHAR ) : BOOLEAN;
+
+    PackageOK      : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - CallOverlayWithDialog
+
+            Preconditions :
+
+                TimeLine's root is running
+
+            Postconditions :
+
+                The named overlay is called if possible.
+
+            Parameters :
+                Input:
+
+                    FileName        The name of the overlay file, no
+                                    path or extension.  An LString.
+
+                    OverlayContext  The context address made available
+                                    to the overlay via OverlayContext();
+
+                    CouldntLoadProc The procedure to call to report errors
+                                    like "Insufficient Memory" or "Version
+                                    Conflict".
+
+                    CouldntLoadCntxt the context to be passed to the
+                                    CouldntLoadProc.
+
+                Output:
+
+                    RETURN is TRUE if the overlay ran.
+
+        =====================================================================
+    *)
+PROCEDURE CallOverlayWithDialog( VAR FileName        : ARRAY OF CHAR;
+                                     OverlayContext  : ADDRESS;
+                                     CouldntLoadProc : ACouldntLoadProc;
+                                     CouldntLoadCntxt: ADDRESS ) : BOOLEAN;
+
+
+
+    (*  CallOverlay  -- Call the program indicated by the string "FileName".
+                        (This is an L-string.)
+                        If all goes ok, return TRUE;
+                        Otherwise, report the error on the screen, and
+                        return FALSE.
+
+                        Any procedures installed via InstallNewProcedure
+                        (below) will be restored after the overlay exits.
+                        *)
+
+
+PROCEDURE CallOverlay( VAR FileName : ARRAY OF CHAR ) : BOOLEAN;
+
+
+
+
+  (* OverlayContext   - Return the current overlay's context pointer.
+     OverlayCallChain - Return the current overlay chain.
+
+        Preconditions - You MUST be an OVERLAY, Otherwise the context area
+                        will be toxic.
+
+        Postconditions - The current context address is returned to you.
+                         Remember that it could possibly be NIL, especially
+                         if someone called you with "CallOverlay" and not
+                         "CallOverlayWithContext".
+
+     The CallChain is the string in parens after the overlay name in the
+     call to CallOverlayWithContext.  So, if you CallOverlay with
+     "TLFBASE(TLCHANGE)", "TLCHANGE" is the overlay call chain.
+  *)
+PROCEDURE OverlayContext()   : ADDRESS;
+PROCEDURE OverlayCallChain() : ADDRESS;
+
+
+
+
+    (*  CallOverlayWithContext - CallOverlay with a context area.
+
+                This is identical to CallOverlay, but allows you to
+                specify a context address for the overlay to pick up.
+                This allows recursion of overlays and some easier
+                linkages between caller and callee.
+    *)
+
+PROCEDURE CallOverlayWithContext( VAR FileName : ARRAY OF CHAR;
+                                      Context  : ADDRESS       ) : BOOLEAN;
+
+
+    (* ------------------------------------------------------------
+
+       InstallNewProcedure
+
+       Installs a new procedure handler into a procedure variable
+       and returns the prior value.
+
+       SetThis                  is the vector to be stolen.
+       ToThis                   is the procedure to set it to.
+       WhereIKeepTheOldValue    is where you keep the one and only copy
+                                   of the prior value of the vector.
+                                   If NIL, you do not keep an old copy.
+                                   If non-NIL, it is the address of a
+                                   vector to the prior value of the
+                                   procedure being stolen.  This must
+                                   be a global (static) variable and
+                                   you must not make copies of it.
+
+                                   The old vector's contents may be changed
+                                   periodicly as overlays are removed.
+
+       There is no need to deinstall this vector, it will be deinstalled
+       automaticly.
+
+
+    ---------------------------------------------------------------*)
+
+
+PROCEDURE InstallNewProcedure(     SetThis                : ADDRESS;
+                                   ToThis                 : PROC;
+                                   WhereIKeepTheOldValue  : ADDRESS );
+
+    (* ------------------------------------------------------------
+
+       InstallNewProcedureWithUnset
+
+       Installs a new procedure handler into a procedure variable
+       and returns the prior value.  This also records a procedure
+       that will be called to reverse out the effect when the
+       overlay is finished (instead of the behavior of InstallNewProcedure,
+       which just puts back the "SetThis" value).  It is the
+       responsibility of the Deinstall proc to deinstall the procedure
+       when called.
+
+       SetThis                  is the vector to be stolen.
+       ToThis                   is the procedure to set it to.
+       WhereIKeepTheOldValue    is where you keep the one and only copy
+                                   of the prior value of the vector.
+                                   If NIL, you do not keep an old copy.
+                                   If non-NIL, it is the address of a
+                                   vector to the prior value of the
+                                   procedure being stolen.  This must
+                                   be a global (static) variable and
+                                   you must not make copies of it.
+
+                                   The old vector's contents may be changed
+                                   periodicly as overlays are removed.
+
+       Deinstall                is the procedure that deinstalls this
+                                   vector.  In this procedure, DO NOT
+                                   set the vector back to your old value.
+                                   instead, Overlays will do this for you.
+                                   This procedure provides a way for you to
+                                   do any needed cleanup.
+
+    ---------------------------------------------------------------*)
+
+
+PROCEDURE InstallNewProcedureWithUnset(     SetThis                : ADDRESS;
+                                            ToThis                 : PROC;
+                                            WhereIKeepTheOldValue  : ADDRESS;
+                                            Deinstall              : ADeinstallProc );
+
+
+    (* ------------------------------------------------------------
+
+       ImAnInstallableOverlay -
+
+       This procedure is called from an overlay in its main body to
+       identify it as a 'resident' overlay.  The overlay will remain
+       resident as long as it can, until this module decides to remove
+       it.  MainProcedure is the main procedure to call in the overlay
+       on second and subsequent requests for the overlay.  NIL is
+       acceptable.  DeInstallProc is a proc called just before the
+       overlay is unloaded.  NIL is acceptable.  The RETURN value
+       of AnOverlayID is used by EnteringOverlay and ExitingOverlay, below.
+
+       Please note that procedure vectors stolen with InstallNewProcedure
+       or InstallNewProcedureWithUnset should not be put back in the
+       DeInstallProc, but in the way they would normally be put back.
+       This allows the cleanup of the vector stack.
+
+    --------------------------------------------------------------- *)
+
+PROCEDURE ImAnInstallableOverlay( MainProcedure : AnOverlayProc;
+                                  DeInstallProc : AnOverlayProc
+                                ) : AnOverlayID;
+
+    (* ------------------------------------------------------------
+
+       ImALockedOverlay -
+
+       This procedure is called from an overlay in its main body to
+       identify it as a 'locked' overlay.  The overlay will remain
+       resident as long as Time Line is running.
+
+       MainProcedure is the main procedure to call in the overlay
+       on second and subsequent requests for the overlay.  NIL is
+       acceptable.
+
+       DeInstallProc is a proc called just before the
+       overlay is unloaded.  NIL is acceptable.  The RETURN value
+       of AnOverlayID is used by EnteringOverlay and ExitingOverlay, below.
+
+       Please note that procedure vectors stolen with InstallNewProcedure
+       or InstallNewProcedureWithUnset should not be put back in the
+       DeInstallProc, but in the way they would normally be put back.
+       This allows the cleanup of the vector stack.
+
+    --------------------------------------------------------------- *)
+
+PROCEDURE ImALockedOverlay( MainProcedure : AnOverlayProc;
+                            DeInstallProc : AnOverlayProc ) : AnOverlayID;
+
+
+
+
+    (* ------------------------------------------------------------
+
+      UnlockOverlay -
+
+        Given an overlay ID, change the status of the overlay from
+        "locked" to "resident", so that it could be removed if need
+        be.
+
+    --------------------------------------------------------------- *)
+
+PROCEDURE UnlockOverlay( ID : AnOverlayID );
+
+
+
+
+    (* ------------------------------------------------------------
+
+      RemoveLockedOverlays -
+
+
+        Remove ALL locked and resident overlays from memory.
+        This should only be used at shutdown of Time Line.
+
+    --------------------------------------------------------------- *)
+
+PROCEDURE RemoveLockedOverlays();
+
+
+
+
+    (* ------------------------------------------------------------
+
+       EnteringOverlay
+       ExitingOverlay
+
+       Tell this module that your stolen procedure is executing.
+
+       When a stolen procedure is entered in your overlay, call
+       'EnteringOverlay'.  When the procedure exits (for ANY reason),
+       call 'ExitingOverlay'.  Resident overlays are only unloaded
+       when their use count is 0, and these procedures manage that count.
+       'MyID' is the ID returned by ImAnInstallableOverlay.
+
+       For overlays that have not stolen procedure vectors, and so ALWAYS
+       enter the overlay via calls to CallOverlay or CallOverlayWithContext,
+       do not need to call these procedures.
+
+    --------------------------------------------------------------- *)
+
+PROCEDURE EnteringOverlay( MyID : AnOverlayID );
+PROCEDURE  ExitingOverlay( MyID : AnOverlayID );
+
+
+END Overlays.
+

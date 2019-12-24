@@ -1,0 +1,6 @@
+DEFINITION MODULE WBSBuild;
+
+PROCEDURE WBSMain();
+
+END WBSBuild.
+

@@ -1,0 +1,67 @@
+DEFINITION MODULE DataNetwork;
+   
+    (*  MODIFICATION HISTORY
+        15-Jun-89 CMH   New form changes 
+     *)
+     
+
+FROM IlsaStatic             IMPORT
+    (* TYPE *)                  ATLGSTaskArrangement;                                
+
+FROM NetLayouts             IMPORT
+    (* TYPE *)                  ANetworkLayout, NetLayoutTree;
+
+CONST
+ (* Crate Type *)
+    TASKVALUE = 0;	
+    LEGEND     = 1;  
+    
+
+
+VAR
+(* for duration bar networks - not avaliable in TL version 4.0  
+ | PlanBarThickness,		(* duration bar thickness *)
+ | ActualBarThickness,        
+ *)
+    VertOffset,
+    HorizOffset,
+    
+    NormalPipeWidth,
+    NormalPipeStyle,
+    NormalPipeHighlight,
+    NormalPipeRadius,
+    
+    CrateFramePipeWidth,
+    CrateFramePipeStyle,
+    CrateFramePipeHighlight,
+    CrateFramePipeRadius,
+    
+    CrateInteriorPipeWidth,
+    CrateInteriorPipeStyle,
+    CrateInteriorPipeHighlight,
+    CrateInteriorPipeRadius,
+    
+    MasterPipeWidth,
+    MasterPipeStyle,
+    MasterPipeHighlight,
+    MasterPipeRadius,
+    
+    LastRowPosition,
+    LastColPosition      : CARDINAL;
+    
+    ArrangeBy            : ATLGSTaskArrangement;
+    
+    NetworkDiagramLayout : ANetworkLayout;
+    
+    CompressAxis,
+    TimeScaleNetwork,
+    ShowDependencyLines  : BOOLEAN;
+
+PROCEDURE InitializeNetworkData();
+PROCEDURE WriteNodeChartData();
+
+(* for duration bar networks - not avaliable in TL version 4.0  
+ | PROCEDURE InitDurBarThickness();
+ *)
+    
+END DataNetwork.

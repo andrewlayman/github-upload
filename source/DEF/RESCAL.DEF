@@ -1,0 +1,194 @@
+DEFINITION MODULE ResCal;
+
+    (* Resource Residual Availabilities Data Structure
+
+       This data type contains the portions of the resource calendars
+       that identify vacations (non-work times) and changes in the resource's
+       availability in a combined format that merges the effects of
+       vacations, availabilities and the current schedule of tasks into
+       a single list.  This list shows, momemt by moment, how much of a
+       resource remains unconsumed after all tasks are scheduled.
+
+       There is one of these lists for each resource.
+
+       The list shows how much of each resource remains unused at all the
+       various times of the schedule.  Contrast this to the vacation calendar
+       and the availability list.  The vacation calendar does not show how much
+       of a resource is available; rather, it shows which days are work days
+       and which are not.  The availability calendar shows how much of each 
+       resource is available prior to scheduling (and as if there were no
+       vacations).
+
+       Although the user interface design calls for presenting changes in
+       availability separately from the vacations, the internal list is
+       a merged one, which speeds up resource levelling.  Presumably recalc
+       happens a lot more often than calendar changes.
+
+       Cells are doubly linked together through NextCell and PrevCell
+       and the head cell serves as a boundary.  They are in order
+       by increasing StartDate, and for each, EndDate > StartDate and
+       EndDate = NextCell^.StartDate. 
+       
+       Each cell represents the half-open interval of time 
+       [StartDate, EndDate). Notice that the StartDate
+       of a cell is contained in the interval represented by the cell, 
+       but the EndDate is not. 
+
+       AmountAvailable indicates the quantity of the resource during the
+       interval represented by the cell.
+
+       Non-working time is indicated by setting the ThisIsAVacation flag.
+
+       Overtime is indicated by the ThisIsExtraWorkTime flag.  (Overtime
+       is relative to the master calendar.)
+
+       User interface and recalc procedures guarantee that no cell has
+       exactly the same values as either of its neighbors.
+
+       The procedures to maintain and process this structure are in another
+       module (ResCalMg 10/26/90).
+
+
+       29 May 90  AJL  - Initial version, based on work by Janet Somers.
+       10-Jul-90  AJL  - Added AResAvailability, DisposeResAvailability,
+                         CopyResAvailability;
+       24-Jul-90  JES  - Moved procedures CreateNewCell and
+                         CellContainingDate from ResAvailability module
+                         to here.
+                       - Changed definition of AnAvailabilityCell as
+                         follows: (1) removed "ThisIsExtraWorkTime"                         
+                         field, since it is never used (we aren't doing                         
+                         shift scheduling, and we use an overtime kluge);                         
+                         (2) changed the name of "ThruDate" to "EndDate"
+                         to match the rest of Time Line.
+       10-Oct-90 AJL/CL - Add PrevCell and IsHeadCell to AnAvailabilityCell
+                          in order to make it a doubly linked with head cell
+                          and change the comments describing the linked list.
+       26-Oct-90 AJL    - Expanded documentation.
+       06-Dec-90 JES    - Added procedure BackCellContainingDate. This
+                          procedure is a backwards version of CellContaining
+                          Date (i.e., it searches backwards through the
+                          list instead of forwards). However, instead of
+                          finding the cell such that 
+                            cell start date <= given date  < cell end date,
+                          it finds the cell such that
+                            cell start date <  given date  <=cell end date.
+                          The procedure is useful when we have a given
+                          end date for some time period (and thus is not
+                          actually itself contained in the time period), and
+                          we want to find the cell representing it.
+
+                        - Expanded documentation explaining the StartDate
+                          and EndDate fields of availability cells.
+ *)														  
+
+
+
+
+FROM FlexStor  IMPORT
+    (* TYPE *)         AnExtHandle, AnExtStoragePreference;
+
+FROM Timei     IMPORT
+    (* TYPE *)         ADate;
+
+
+
+
+
+TYPE  AnAvailabilityCell =
+        RECORD
+            StartDate           : ADate;
+            EndDate             : ADate;
+            NextCell            : AnExtHandle;
+            PrevCell            : AnExtHandle;
+            AmountAvailable     : LONGINT;
+            ThisIsAVacation     : BOOLEAN;
+            IsHeadCell          : BOOLEAN; 
+        END;
+
+      AnAvailabilityCellPointer = POINTER TO AnAvailabilityCell;
+
+      AResAvailability = AnExtHandle;    (* Handle to head cell of list. *)
+
+
+      (* The AmountAvailable is stored as the number of people times 100,
+         times AvailScale.  This allows us to have some fractional accuracy,
+         though not as much as a real number or the varying assingment list
+         might permit.
+
+         For example, if AvailScale were 32, then one person working full
+         time would be stored as 1 * 100 * 32 or 3200.  A single person
+         working half-time would be 1600.
+
+         The tradeoffs on this are that, since any single assignment can
+         have up to (2*16) 100ths of a resource assigned, the maximum number
+         of tasks that can have the same resource assigned (at maximum amount) is 
+         2**31 / 2 * 16 / AvailScale or
+         2**15 / AvailScale
+
+         1 would mean no scaling.
+         *)
+
+CONST
+    ResScale      = 1L;
+    FloatResScale = 1.0;
+
+    (* Dispose of a doubly linked list with head cell *)
+
+PROCEDURE DisposeResAvailabilities( VAR HeadCell : AResAvailability );
+
+
+
+
+
+    (* Copy a doubly linked list with head cell.  The Target is created
+       to be a copy of the source, with the storage speed class given by
+       "Speed".
+    *)
+
+PROCEDURE CopyResAvailabilities( VAR Target : AResAvailability;
+                                     Source : AResAvailability;
+                                     Speed  : AnExtStoragePreference ) : BOOLEAN;
+
+
+
+    (* Allocate a new cell.  No initialization is performed.  The speed
+       class is ExtMedium.  *)
+
+PROCEDURE CreateNewCell() : AnExtHandle;
+
+
+    (* Search forward through availability cells starting at StartCellHandle
+       until we find the cell containing Date (i.e.,
+       cell StartDate <= Date < cell EndDate). 
+       If no such cell is located, the return value is AnExtHandle(NIL).    
+    *)
+
+
+PROCEDURE CellContainingDate ( StartCellHandle: AnExtHandle;
+                               Date           : ADate        ) : AnExtHandle;
+
+
+
+
+
+
+    (* Search backward through availability cells starting at StartCellHandle
+       until we find the cell such that
+       cell StartDate < Date <= cell EndDate. (Notice
+       that, unlike with the procedure CellContainingDate,
+       this is not necessarily the cell that actually contains
+       the date. Specifically, we could find the cell whose
+       end date is the given Date.)
+       If no such cell is located, the return value is AnExtHandle(NIL).    
+    *)
+
+PROCEDURE BackCellContainingDate ( StartCellHandle: AnExtHandle;
+                                   Date           : ADate        ) 
+                                                           : AnExtHandle;
+
+
+
+END ResCal.
+
+

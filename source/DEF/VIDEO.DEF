@@ -1,0 +1,189 @@
+DEFINITION  MODULE Video;
+
+    (* Video -- Low-level, probably not portable even in its
+                definition, video and sound interface to the
+                IBM PC computer.
+
+                (c) Copyright Andrew Layman, 1986
+                All Rights Reserved.
+
+       MODIFICATION HISTORY:
+       
+       6 April 88  AJL  -Removed the explicit qualified export.
+                        -Made all procedures var procs.
+      29 May   89  WKH  -Added procedure RestoreVideo to re-set video to 
+                         "the way it was."  This is used when we think that some 
+                         external force(e.g. TSR's, exiting to DOS, etc) may have
+                         confused the video adapter and we need to "re-educate" it.
+      12 Jun   89  WKH  -Added QueryAdapterType procedure
+                         Also added PrepareVideoForExit.
+      13 Jun   89  WKH   Added CheckForCompressedMode routine.
+      13 Jun   89  WKH   Removed CheckForCompressedMode and PrepareVideoForExit
+                         and moved it into KBIO.
+    *)
+
+FROM SYSTEM IMPORT ADDRESS;
+
+
+
+TYPE
+    AVideoOutputProc  = PROCEDURE ( VAR ARRAY OF CHAR, CARDINAL, CARDINAL, BITSET );
+    AVideoCaptureProc = PROCEDURE ( CARDINAL,CARDINAL,CARDINAL,ADDRESS );
+    AVideoPutAttributeProc = PROCEDURE( CARDINAL, CARDINAL, CARDINAL, BITSET );
+    A1CardProc        = PROCEDURE ( CARDINAL );
+    A1VCardProc       = PROCEDURE ( VAR CARDINAL );
+    A2CardProc        = PROCEDURE ( CARDINAL, CARDINAL );
+    A2VCardProc       = PROCEDURE ( VAR CARDINAL, VAR CARDINAL );
+    A2BoolProc        = PROCEDURE ( BOOLEAN, BOOLEAN );
+    AnAdapterType     = (None, MDA, CGA, EGAMono, EGAColor, VGAMono,
+                         VGAColor, MCGAMono, MCGAColor);
+
+
+(*-------------------------------------------------------------------
+
+            These are the templates for the output and capture
+            procedures.  They are exported as PROC variables so
+            that they can be replaced, or intercepted.
+
+            PutStringWithAttribute takes a string with a length
+            byte at its beginning (an LString) and writes each of
+            its characters to the screen with the same attribute.
+
+            GetImageLine and PutImageLine read image areas off the
+            screen and restore them.  This is low-level support
+            for cheap overlapping windows.
+
+            (0,0) is upper left on screen.
+
+    (* PutStringWithAttribute -- Display the string on the screen with the
+                                 absolute attribute indicated by "a".  This
+                                 is specific to IBM PC type computers, and 
+                                 avoids use of the vidctrl array. *)
+
+
+PROCEDURE PutStringWithAttribute ( VAR s : ARRAY OF CHAR;
+                                       x : CARDINAL;
+                                       y : CARDINAL;
+                                       a : BITSET );
+
+PROCEDURE PutAttribute ( x     : CARDINAL;
+                         y     : CARDINAL;
+                         Count : CARDINAL;
+                         a     : BITSET );
+
+    (* GetImageLine -- Read the characters from the screen at
+                       positions (x,y) through (x+Count-1,y)
+                       into Line.  Each character takes 1 word. *)
+
+PROCEDURE GetImageLine(x:CARDINAL; y:CARDINAL; Count:CARDINAL;
+                        Line : ADDRESS);
+
+    (* PutImageLine -- Inverse of GetImageLine.   *)
+
+PROCEDURE PutImageLine(x:CARDINAL; y:CARDINAL; Count:CARDINAL;
+                        Line : ADDRESS);
+------------------------------------------------------------------------
+
+
+    (* SetCursorType --
+                        Set the hardware cursor style.
+                        0 :: No Cursor
+                        1 :: Underline
+                        2 :: Block
+                        *)
+
+PROCEDURE SetCursorType ( CursorType : CARDINAL );
+
+    (* GetCursorType --
+                        Return the cursor style in use.
+                        *)
+
+PROCEDURE GetCursorType ( VAR CursorType : CARDINAL );
+
+    (* SetCursorLocation --
+                         Move the hardware cursor to the screen
+                         address.
+                         *)
+
+PROCEDURE SetCursorLocation ( X, Y : CARDINAL );
+
+    (* GetCursorLocation --
+                         Return the current hardware cursor location.
+                         *)
+
+PROCEDURE GetCursorLocation ( VAR X, Y : CARDINAL );
+
+    (* MakeTone --
+                         Make a noise on the speaker.
+                         *)
+
+PROCEDURE MakeTone  ( Pitch, Duration : CARDINAL );
+
+
+PROCEDURE GetScreenSize( VAR Columns, Rows : CARDINAL );
+
+
+
+    (* InitializeVideoHardware --
+                         Modify certain default settings of two
+                         important options.
+                         Blink : (default TRUE) If reset will
+                                 reprogram the 6845 video
+                                 controller chip to make the high-
+                                 order attribute bit control background
+                                 brightness.
+                         Clean:  (default TRUE) if set will use
+                                 BIOS INT 10H to effect video ops.
+                                 If reset, operations will go
+                                 directly to video memory.
+                         *)
+
+PROCEDURE InitializeVideoHardware(     Blink : BOOLEAN;
+                                       Clean : BOOLEAN  );
+
+    (* TerminateVideoHardware -- Please call this when you are
+                                 done.  It will restore things,
+                                 more-or-less.
+                                 *)
+
+PROCEDURE TerminateVideoHardware;
+
+    (* ResetVideo -- This procedure will restore things,
+                     more-or-less.
+                     *)
+PROCEDURE ResetVideo;
+
+*)
+
+
+    (*
+        QueryAdapterType - Determine what type of adapter and display we're
+                           using.
+
+                           Adapted from a routine in the 2/89 issue of 
+                           Dr. Dobb's Journal
+    *)
+PROCEDURE QueryAdapterType() : AnAdapterType;
+
+VAR
+    VideoAddress : ADDRESS;
+    VideoPort    : CARDINAL;
+    VidMaxRow    : CARDINAL;
+
+    PutStringWithAttribute  : AVideoOutputProc;
+    PutAttribute            : AVideoPutAttributeProc;
+    GetImageLine            : AVideoCaptureProc;
+    PutImageLine            : AVideoCaptureProc;
+    SetCursorType           : A1CardProc;
+    GetCursorType           : A1VCardProc;
+    SetCursorLocation       : A2CardProc;
+    GetCursorLocation       : A2VCardProc;
+    MakeTone                : A2CardProc;
+    GetScreenSize           : A2VCardProc;
+    InitializeVideoHardware : A2BoolProc;
+    TerminateVideoHardware  : PROC; 
+    ResetVideo              : PROC;   (* 5/29/89 WKH *)
+
+
+END Video.
+

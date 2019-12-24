@@ -1,0 +1,51 @@
+DEFINITION MODULE EffDone;
+
+    (* ----------------------------------------------------------------
+
+       EffDone -- Procedure(s) to help update the effort spent on tasks
+                  automatically to equal the percent of work accomplished.
+    
+       MODIFICATION HISTORY:
+
+       14-Nov-90  AJL -Initial version.
+       13-Aug-91  AJL -Add Task parameter to UpdateEffortToMatchRatio. 
+                       Update both the assignment efforts and the task
+                       summaries.
+
+
+       -----------------------------------------------------------------*)
+
+
+FROM Allocs        IMPORT
+    (* TYPE *)        ATask;
+
+
+
+    (*--------------------------------------------------------------
+
+    UpdateEffortToMatchRatio
+
+    Update each of the assignments in the Task's assignment
+    array so that the amount of spent effort relative to the 
+    total effort is equal to the passed Ratio, as closely as
+    possible.
+
+    Also update the CompletedSummary and ToGoSummary in the task.
+
+    If the total effort is zero, the spent will also be zero.
+
+    Input:  Task             -- Task to be updated.
+            Ratio            -- Desired Spent/Total Effort ratio.
+
+
+    --------------------------------------------------------------*)
+
+
+PROCEDURE UpdateEffortToMatchRatio   ( VAR Task         : ATask;
+                                           Ratio            : REAL );
+
+
+
+END EffDone.
+
+

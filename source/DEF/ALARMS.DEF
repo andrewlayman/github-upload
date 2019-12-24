@@ -1,0 +1,29 @@
+DEFINITION MODULE Alarms;
+
+(* MODIFICATION HISTORY
+
+    14-May-89   AJL  Removed CompareDates, CheckAlarms;
+    23-Jan-91   AJL  Add AsOf parameter to AppropriateStartStatus;
+
+*)
+
+
+
+
+FROM Allocs     IMPORT ATask, AStartStatus;
+
+FROM Timei      IMPORT ADate;
+
+
+
+
+
+VAR
+    AlarmOn : BOOLEAN;
+
+
+
+PROCEDURE AppropriateStartStatus(VAR Task:ATask; AsOf:ADate):AStartStatus;
+
+END Alarms.
+

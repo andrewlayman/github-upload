@@ -1,0 +1,75 @@
+DEFINITION MODULE IResource;
+
+(*  =========================================================================
+    Last Edit : May 7, 1991 4:03PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        
+
+
+
+    MODIFICATION HISTORY:
+
+    11-Apr-91 AJL -Added Count parm to GetResources.
+     7-May-91 RSC -Added DuplicateAssignments parameter.
+    25-Sep-91 AJL -Add BOOLEAN return value to ReadAssignmentArray.
+    19-Mar-92 LAA -Added a global boolean to indicate whether a new
+                   varying assignment record format was found, so that if
+                   not we can set up recalc correctly.  This is a hack!
+                   If this wasn't the last version of Time Line, I'd NEVER
+                   put in such a kludge!  Sorry.
+    =========================================================================
+*)
+
+
+FROM FileSystem IMPORT
+    (* TYPE *)      File;
+
+FROM FlexStor   IMPORT
+    (* TYPE *)      AnExtHandle;
+
+
+
+TYPE
+    ADuplicateAction = (DontKnow, Ignore, Override);
+
+    AGetDupeActionProc = PROCEDURE (VAR ARRAY OF CHAR ) : ADuplicateAction;
+
+
+    (*  Was a record of the new format found while reading the assignment
+        array?
+    *)
+
+VAR
+    NewVaryingAssgnFormatFound  : BOOLEAN;
+
+
+PROCEDURE ReadAssignmentArray  (VAR f                   : File;
+                                    Length              : CARDINAL;
+                                VAR Handle              : AnExtHandle;
+                                VAR BadAssignmentCount  : CARDINAL;
+                                VAR DuplicateAssignments: BOOLEAN ):BOOLEAN;
+
+
+    (* ----------------------------------------------------------
+
+    GetResources:
+
+        f: the file to read from.
+        GetDuplicateAction : tells what to do with duplicates.
+        Count              : input: how many resources are expected.
+
+    --------------------------------------------------------------- *)
+
+PROCEDURE GetResources(VAR f                  : File;
+                           GetDuplicateAction : AGetDupeActionProc;
+                           Count : CARDINAL 
+                           ) : BOOLEAN;
+
+
+
+END IResource.
+
+

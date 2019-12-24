@@ -1,0 +1,83 @@
+DEFINITION MODULE LongDuration;
+
+(*  =========================================================================
+    Last Edit : January 22, 1991 9:12PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        LongDurationToString
+
+
+
+    MODIFICATION HISTORY:
+
+    22-Jan-91 RSC First version from TimeFormat to get it out of the root.
+    18-Sep-91 AJL Correct documentation for LongDurationToString.
+     3-Apr-92 TGS Add parameter to LongDurationToString to help align.
+    =========================================================================
+*)
+
+
+FROM Timei     IMPORT ADuration, ADurationUnit;
+
+
+
+
+   (* LongDurationToString  -  Convert a REAL number into a printable string.
+
+          Preconditions  - WorkHours is a REAL number which can be huge.
+                           It is a number of Man Hours.
+
+                           SuggestedDurationUnit is the desired minimum time unit.
+                           If it seems appropriate, I may scale this up.
+
+                           MinDecimalPlaces is the minimum number of decimal
+                           places to include.  It may be zero.
+
+                           MaxDecimalPlaces is the maximum number of decimal
+                           places to include.  It may be zero.
+
+                           MaxLength is the maximum length to fill the string
+                           with.  This allows FormValues, which are 80 bytes,
+                           to be filled in for, say, 25 bytes.
+
+          Postconditions - The string "s" is filled in up to MaxLength.
+                           Internally, the string may be filled a little
+                           longer than MaxLength (say, around 10 bytes).
+
+                           SuggestedDurationUnit may have been changed to reflect
+                                         a better fit into the number scales.
+    *)
+
+PROCEDURE LongDurationToString(     WorkHours             : REAL;
+                                VAR SuggestedDurationUnit : ADurationUnit;
+                                    MinDecimalPlaces,
+                                    MaxDecimalPlaces  : CARDINAL;
+                                    MaxLength         : CARDINAL;
+                                VAR s                 : ARRAY OF CHAR;
+                                VAR EndOfNumber       : CARDINAL);
+
+
+    (*  AppendDurationUnit -- Append to the string the name of the time unit
+                          specified (either singular or plural.  *)
+
+
+PROCEDURE AppendDurationUnit(VAR String         : ARRAY OF CHAR;
+                             Units          : ADurationUnit;
+                             Plural         : BOOLEAN      );
+
+
+    (*  NameScale -- Given a duration and a unit of measure, return
+                     a printable description of the duration. *)
+
+PROCEDURE NameScale(    N        : ADuration;
+                        DurationUnit : ADurationUnit;
+                    VAR S        : ARRAY OF CHAR);
+
+
+
+
+END LongDuration.
+
+

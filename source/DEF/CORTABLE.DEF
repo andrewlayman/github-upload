@@ -1,0 +1,119 @@
+DEFINITION MODULE CorTable;
+
+    (*  Modification History --
+        10-Mar-92   LAA Initial version.  This module provides a correlation
+                        table between CARDINAL Id's and tree nodes.  It's 
+                        initial use is for the Rocky importer.
+    *)
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+TYPE
+    ACorrelationTable;
+    ACorrelationProc        = PROCEDURE( CARDINAL, ATreeNode, ADDRESS )
+                                                                    : BOOLEAN;
+
+
+    (*  CreateCorrelationTable --
+        Create a new Correlation Table and return the hidden type pointer
+        for it.  This will be returned as NIL if there's insufficient room
+        to create a table of the indicated size.  Size is in terms of 
+        number of entries.
+
+        Preconditions:  None.
+
+        Postconditions: Table created, or NIL returned.
+    *)
+
+PROCEDURE CreateCorrelationTable( TableSize : CARDINAL ) : ACorrelationTable;
+
+
+
+    (*  DisposeCorrelationTable --
+        Dispose of a previously created Correlation Table, freeing it's
+        memory.
+
+        Preconditions:  The table must have been created via a call to
+                        CreateCorrelationTable, and not previously disposed.
+
+        Postconditions: The Table handle will be returned NIL, and the 
+                        memory for this table freed up.
+    *)
+
+PROCEDURE DisposeCorrelationTable( VAR Table    : ACorrelationTable );
+
+
+
+    (*  AddTableEntry --
+        Add a new entry to an existing Correlation Table.  TRUE will be
+        returned if the addition is successful, FALSE otherwise.
+
+        Preconditions:  The table must have been created via a call to
+                        CreateCorrelationTable, and not disposed of.
+
+        Postconditions: The entry will be added to the table, or FALSE
+                        will be returned.
+    *)
+
+PROCEDURE AddTableEntry(     Table          : ACorrelationTable;
+                             Id             : CARDINAL;
+                             Node           : ATreeNode         ) : BOOLEAN;
+
+
+
+    (*  FindEntryByID --
+        Find an entry in the table identified by Id.  If one exists, Node
+        is updated with the associated tree node and TRUE are returned.  
+        If none exists, FALSE is returned.
+
+        Preconditions:  The table must have been created via a call to
+                        CreateCorrelationTable, and not disposed of.
+
+        Postconditions: None.
+    *)
+
+PROCEDURE FindEntryByID(     Table          : ACorrelationTable;
+                             Id             : CARDINAL;
+                         VAR Node           : ATreeNode          ) : BOOLEAN;
+
+
+
+    (*  FindEntryByNode --
+        Find an entry in the table identified by Node.  If one exists, 
+        update Id with the associated Id and return TRUE.  If no entry
+        exists for this Node, return FALSE.
+
+        Preconditions:  The table must have been created via a call to
+                        CreateCorrelationTable, and not disposed of.
+
+        Postconditions: None.
+    *)
+
+PROCEDURE FindEntryByNode(     Table        : ACorrelationTable;
+                               Node         : ATreeNode;
+                           VAR Id           : CARDINAL           ) : BOOLEAN;
+
+
+
+    (*  ForAllEntries --
+        Iterate through the table, calling the processing proc for each
+        entry.  Iteration will continue so long as the processing proc
+        returns TRUE.  The Context is just passed from caller to the 
+        processing proc.
+
+        Preconditions:  The table must have been created via a call to
+                        CreateCorrelationTable, and not disposed of.
+
+        Postconditions: None.
+    *)
+
+PROCEDURE ForAllEntries(     Table          : ACorrelationTable;
+                             ProcessProc    : ACorrelationProc;
+                             Context        : ADDRESS           );
+
+END CorTable.
+

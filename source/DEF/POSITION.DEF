@@ -1,0 +1,11 @@
+DEFINITION MODULE PositionTLGS;
+
+CONST
+    TL = 0;
+    TC = 1;
+    TR = 2;
+    BL = 3;
+    BC = 4;
+    BR = 5;
+    
+END PositionTLGS.

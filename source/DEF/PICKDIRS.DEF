@@ -1,0 +1,39 @@
+
+    (*****************************************************************)
+    (*                                                               *)
+    (*    Pick Dirs.                                                 *)
+    (*                                                               *)
+    (*    Pick a directory from a picklist.                          *)
+    (*                                                               *)
+    (*    This module was added after Time Line 3.0 was released,    *)
+    (*    and it should be a part of DIRECT411.  But isn't.          *)
+    (*    Keep this in mind, as the interface to TLDIR411 is a real  *)
+    (*    Kluge.  But that is what you have come to expect from me.  *)
+    (*                                                               *)
+    (*****************************************************************)
+
+DEFINITION MODULE PickDirs;
+
+
+FROM Kbio                   IMPORT
+        (* TYPE *)              ascreeny;
+
+
+    (*  Input: FirstRow, LastRow : Rows to use for display.
+               Title             : Caption for box, and for Help.
+               Template          : Device:\Directory\ mask.
+
+        Output:Template          : The actual device and directory.
+
+         Returns TRUE iff a dir was chosen.
+
+    *)
+
+PROCEDURE PickDirectory( FirstRow,
+                         LastRow       : ascreeny;
+                     VAR TitleIn,
+                         Template      : ARRAY OF CHAR ):BOOLEAN;
+
+
+END PickDirs.
+

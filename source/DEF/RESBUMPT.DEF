@@ -1,0 +1,167 @@
+DEFINITION MODULE ResBumpTasks;
+
+(* Procedures that determine priorities of tasks and bump tasks.
+ 
+
+   MODIFICATION HISTORY:
+
+   Feb 27, 89 - JES - created by cutting procedures out of TlrPlan and
+                      pasting them here.
+
+   Dec 3,  89 - JES - changed "WeCanSteal" to "TryToBumpTasks". No
+                      has a return value (etc - see notes in .mod)
+   Oct 12, 90 - JES - moved AddLowDate out of here and into PTaskList.
+                      Also, removed procedure MustStartOnTime that
+                      just returned TRUE iff the tast is Started or Done.
+   Nov 15, 90 - JES - Added "BumpForContourTask" parameter to BumpTasks,
+                        to support bumping for contour tasks.
+   Jan 14, 91 - JES - Added "DoWe" prefixes to some BOOLEANS.
+   Apr  3, 91 - JES - Removed parameter "DoWeBumpForContourTask" from
+                        procedure BumpTasks.
+   Apr  8, 91 - JES - Moved procedure BPreemptA out of this module (and into
+                        ResUtilities).
+   Apr 10, 91 - JES - Changed name of BumpTasks parameter "EnoughToBump" to
+                        "BumpingSucceeded".
+   Apr 24, 91 - JES - Added procedures FinishBumpingTasks and UnbumpTasks, and
+                        renamed BumpTasks to TentativelyBumpTasks. The
+                        new procedure TentativelyBumpTasks simply finds
+                        what tasks can profitably be bumped (as before)
+                        and updates the resource availabilities accordingly;
+                        it does not remove the varying assignments. The
+                        procedure FinishBumping completes the bumping by
+                        removing the varying assignments, and the procedure
+                        UnbumpTasks undoes the effects of TentativelyBumpTasks
+                        by updating the resource availabilities to what they
+                        were before.
+   Apr 26, 91  JES      Added VAR parameter WeStartedTheBumping to
+                        procedure TentativelyBumpTasks.
+   May 20, 91  JES      Changed comments to coincide with new funtion of
+                        TentativelyBumpTasks (namely, has the capability
+                        to add to a list of Bumpees, not just create it).
+                        Added procedure "TentativelyBumpAllMuchLowerPriorityTasks".
+   Jun 18, 91  JES      Changed name of parameter UnscheduledList to
+                         PreCandidatesList in FinishBumpingTasks.
+   Nov 13, 91  JES      Changed BumpeeList to be an array of elements of
+                         the new type Bumpee, which consists of a task handle
+                         and a boolean to indicate whether or not the task's
+                         resources have been freed. (Previously, it was just
+                         a list of task handles.) To fix bug 5351A.
+*)
+
+FROM Allocs     IMPORT
+    (* TYPE *)          ATaskPtr;
+
+FROM FlexStor   IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM Timei      IMPORT
+    (* TYPE *)          ADate;
+
+CONST
+    MaxTasksToBump = 50;
+
+TYPE
+    ABumpee = RECORD
+                TaskToBump             : AnExtHandle;
+                ResourcesHaveBeenFreed : BOOLEAN;
+              END;
+
+    ABumpeeArray = ARRAY[1..MaxTasksToBump] OF ABumpee;
+
+
+
+(* -- TentativelyBumpTasks ----------------
+
+        Try to tentatively bump (see last paragraph for definition of
+        "tentatively bump") enough active tasks to remove the (first-order)
+        obstacles to OurTask being able to start on Date.
+        
+        Only tasks with lower
+        priority (determined by the procedure "BPreemptsA")
+        can be bumped.
+
+        The procedure first determines the first-order (i.e., first-found)
+        obstacles to feasibility on Date. If enough active tasks can be 
+        bumped to remove ALL first-order obstacles, then BumpingSucceeded 
+        is returned as TRUE. TASKS ARE ACTUALLY BUMPED ONLY IF EITHER 
+        (a) BumpingSucceeded turns out to be true or (b) the procedure is 
+        invoked with ForceBump set to TRUE. Otherwise, no tasks are 
+        actually bumped. If any tasks are actually bumped, the parameter
+        WeStartedBumping is returned as TRUE.
+
+        Note that removing all first-order obstacles does not
+        guarantee that OurTask can feasibly start on Date
+        (there may be more obstacles further down the line),
+        but it gives us a fighting chance that it can.
+
+        Also note that if any first-order obstacle is due 
+        to a resource's vacation (as opposed to a resource shortage), then
+        no amount of bumping can remove that particular obstacle (so
+        BumpingSucceeded will always be FALSE in that case).
+
+        Since this procedure is "TentativelyBumpTasks", we do not actually
+        completely bump the tasks in the sense of moving them to the
+        unscheduled list and removing their varying assignments (that is
+        done in "FinishBumpingTasks"); all we do here is free their 
+        resources by updating the resource availabilities.
+
+        NOTE: THIS PROCEDURE ASSUMES THAT "NumBumpees" HAS ALREADY
+        BEEN INITIALIZED.
+
+
+*)
+
+PROCEDURE TentativelyBumpTasks (ActiveList         : AnExtHandle;
+                                OurTaskHandle      : AnExtHandle;
+                                Date               : ADate;
+                                DoWeForceBump      : BOOLEAN;
+                            VAR Bumpees            : ABumpeeArray;
+                            VAR NumBumpees         : CARDINAL;
+                            VAR WeStartedBumping   : BOOLEAN;
+                            VAR BumpingSucceeded   : BOOLEAN);
+
+(* ------ FinishBumpingTasks ------------------------------
+
+   For every task in the bumpee array: remove the task's varying
+   assignments, and move the task from the active to the precandidates
+   list. (The task's resources were presumably already freed by
+   TentativelyBumpTasks.)
+*)
+
+PROCEDURE FinishBumpingTasks (Bumpees         : ABumpeeArray;
+                              NumBumpees      : CARDINAL;
+                              PreCandidatesList : AnExtHandle);
+
+
+(* ------- UnbumpTasks ---------------------------------------
+   
+   For every task in the bumpee array, update the resource availabilities
+   to undo the effects of TentativelyBumpTasks, i.e., to reflect
+   the original scheduling (by levelling) of the task.
+*)
+
+PROCEDURE UnbumpTasks (Bumpees    : ABumpeeArray;
+                       NumBumpees : CARDINAL);
+
+
+
+
+
+(* --- TentativelyBumpAllMuchLowerPriorityTasks --------------------------------
+   Find any tasks on the active list such that they have (a) "much lower
+   priority" than our tasks and (b) some resource in common with our task.
+   For all such tasks, "tentatively bump them", i.e.: free their resources
+   and put them on the bumpee list.
+
+   NOTE: THIS PROCEDURE ASSUMES THAT "NumBumpees" HAS ALREADY
+   BEEN INITIALIZED.
+*)
+
+PROCEDURE TentativelyBumpAllMuchLowerPriorityTasks (Bumper           : ATaskPtr;
+                                                    ActiveList       : AnExtHandle;
+                                                VAR Bumpees          : ABumpeeArray;
+                                                VAR NumBumpees       : CARDINAL);
+
+
+END ResBumpTasks.
+

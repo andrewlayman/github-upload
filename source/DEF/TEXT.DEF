@@ -1,0 +1,219 @@
+(*----------------------------------------------------------------------------
+    Text --
+
+    This module defines an opaque type which may be used to store text strings
+    of varying lengths.  When a new text is created, it is empty.  You may 
+    then copy a string into it.  If you copy something into it again, the old 
+    data will be lost and replaced by the new.
+
+    Lines of text are numbered starting with 0.
+
+
+    MODIFICATION HISTORY:
+
+     9-Jan-91 AJL -Corrected the definition of AssignLine.
+    23-Jan-91 RSC -Added AppendManyLines.
+    11-Apr-91 AJL -Added more documentation.
+
+-----------------------------------------------------------------------------*)
+
+DEFINITION MODULE Text;
+
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+TYPE
+    AText;
+
+
+(*----------------------------------------------------------------------------
+    CreateText --
+
+    Create an instance of AText, with it's length set to zero.  That means
+    that there is no storage allocated for the 'string' part of the record.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateText() : AText;
+
+
+
+(*----------------------------------------------------------------------------
+    DiscardText --
+
+    Discard a previously created instance of AText.  Storage will be 
+    deallocated, and the string stored in this text will be lost.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DiscardText(VAR Text              : AText);             (* in/out *)
+
+
+
+(*----------------------------------------------------------------------------
+    SizeOfText --
+
+    Return the length of the specified text in bytes;
+----------------------------------------------------------------------------*)
+
+PROCEDURE SizeOfText(    Text               : AText)              (* in     *)
+                                                    : CARDINAL;
+
+
+
+(*----------------------------------------------------------------------------
+    TextExists --
+
+    Determine if the given text exists, i.e. is not NIL.
+----------------------------------------------------------------------------*)
+
+PROCEDURE TextExists(    Text               : AText)              (* in     *)
+                                                    : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    Compress --
+
+    Compress the Text so it consumes the minimum possible space.
+----------------------------------------------------------------------------*)
+
+PROCEDURE Compress(VAR Text                 : AText);             (* in/out *)
+
+
+
+(*----------------------------------------------------------------------------
+    AssignText --
+
+    Copy one text onto another.  If the destination text does not exist,
+    it will be created.  If it does exist, it's current contents will be
+    lost.
+----------------------------------------------------------------------------*)
+
+PROCEDURE AssignText(    SourceText         : AText;              (* in     *)
+                     VAR DestinationText    : AText)              (* in/out *)
+                                                    : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    LineExists --
+
+    Determine if line N exists in the Text.
+
+    N >= 0.
+----------------------------------------------------------------------------*)
+
+PROCEDURE LineExists(    Text               : AText;              (* in     *)
+                         N                  : CARDINAL)           (* in     *)
+                                                       : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    CopyLine --
+
+    Make a copy of line N of the Text, as an LString.  
+
+    N >= 0.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CopyLine(    Text                 : AText;              (* in     *)
+                       N                    : CARDINAL;           (* in     *)
+                   VAR Line                 : ARRAY OF CHAR);     (*    out *)
+
+
+
+(*----------------------------------------------------------------------------
+    AssignLine --
+
+    Assign the String to line N of the specified text.  If N is greater than
+    the number of lines in the text, blank lines are inserted up to line N-1, 
+    then the String is appended at line N.
+
+    N >= 0.
+----------------------------------------------------------------------------*)
+
+PROCEDURE AssignLine(VAR String             : ARRAY OF CHAR;      (* in     *)
+                         N                  : CARDINAL;           (* in     *)
+                         Text               : AText)              (* in/out *)
+                                                    : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    AppendLine --
+
+    Append the line to the end of the specified text.
+----------------------------------------------------------------------------*)
+
+PROCEDURE AppendLine(VAR Line               : ARRAY OF CHAR;      (* in     *)
+                         Text               : AText)              (*    out *)
+                                                    : BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    FindLine --
+
+    Find the line containing the pattern specified.  The search begins on the
+    specified line N, and N will return with the line found.  Return FALSE if 
+    no matching line can be found.
+
+    N >= 0.
+----------------------------------------------------------------------------*)
+
+PROCEDURE FindLine(    Text                 : AText;              (* in     *)
+                   VAR Pattern              : ARRAY OF CHAR;      (* in     *)
+                   VAR N                    : CARDINAL)           (* in/out *)
+                                                       : BOOLEAN;
+
+
+
+
+
+(* 23-Jan-91 RSC Added this to help speed loading schedules and
+                 other mass-updates.
+
+    AGetLineProc is passed in by the client to pass back lines of text.
+    The array of chars is the line to add, and the ADDRESS is a client
+    supplied context.
+*)
+TYPE
+    AGetLineProc = PROCEDURE ( VAR ARRAY OF CHAR, ADDRESS ) : BOOLEAN;
+
+
+(*----------------------------------------------------------------------------
+    AppendManyLines --
+
+    Append many lines to the end of the specified text.
+    If the text is NIL, it is created first.
+----------------------------------------------------------------------------*)
+
+PROCEDURE AppendManyLines(     GetLineProc        : AGetLineProc;
+                               GetLineContext     : ADDRESS;
+                           VAR Text               : AText
+                         ) : BOOLEAN;
+
+
+
+
+(* 23-Jan-91 RSC Added this to help speed saving schedules.
+*)
+
+
+(*----------------------------------------------------------------------------
+    For Each Line --
+
+    Send each line of the text out to the PutLineProc.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ForEachLine(       PutLineProc        : AGetLineProc;
+                             PutLineContext     : ADDRESS;
+                             Text               : AText
+                     ) : BOOLEAN;
+
+
+
+END Text.
+

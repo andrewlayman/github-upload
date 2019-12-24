@@ -1,0 +1,200 @@
+DEFINITION MODULE EdgeAcquire;
+
+
+
+    (*
+        Edge Acquire - Acquire an edge record
+
+            This module, given "columns" of information, attempts to find
+            an existing edge record or create a new record with appropriate
+            defaults.
+
+
+        Procedure Overview:
+
+            AnalyzeEdgeColumn()
+
+                    Look at each column being read in from a file to see if
+                    we have the columns needed to determine if the record
+                    exists.
+
+            AcquireEdge()
+
+                    Once "AnalyzeEdgeColumn" is called for each available
+                    column, this is used to actually create or find an edge.
+
+            ResetDefaultEdgeColumns()
+
+                    Resets the user-defined default columns.  When a record
+                    is created, SYSTEM defaults are applied, then any user-
+                    defined columns are applied.
+
+            DefaultEdgeColumn()
+
+                    Set a default edge column.  The next time an edge
+                    record is created, all default columns are applied first,
+                    and then the edge is ready for changes.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module uses Undo to add and change records.  It does not begin
+            or end the undo transaction.  The intent is that clients will:
+
+                Begin Undo Transaction
+                    Call EdgeAquire   to get    the edge
+                    Call EdgeChange   to change the edge
+                End Undo Transaction.
+
+
+        Modification History:
+
+
+         17-Feb-89  RSC  First version.
+          6-Sep-89  MWP  Added proc to test whether a column is needed
+                         for editing. Does not grab the column value.
+
+
+    *)
+
+
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+
+(*
+    Analyze Edge Column
+
+        Preconditions
+                        > ColumnID is within range for an edge column.
+                        > ColumnData contains the data to be changed.
+
+        Postconditions
+                        > The data has been analized for usability in
+                          defining an edge record to edit.
+*)
+PROCEDURE AnalyzeEdgeColumn(     ColumnID    : CARDINAL;
+                             VAR ColumnData  : AColumnDataRecord );
+
+
+
+PROCEDURE IsControllingColumn ( ColumnID    : CARDINAL ) : BOOLEAN;  (* 6-Sep-89 MWP *)
+
+
+PROCEDURE AreAllControlsPresent () : BOOLEAN;
+
+
+
+
+
+(*
+    Acquire Edge
+
+        Preconditions
+                        > All columns have been passed through
+                          "AnalyzeEdgeColumn"
+
+        Postconditions
+                        > If TRUE is returned, FromNode and ToNode
+                          are the predecessor and successor tasks,
+                          respectively.
+
+                        > If there was a system error, or if the two
+                          joined tasks could not be found, then the
+                          ErrorHandler is called, and FALSE is returned.
+
+                        > Undo is called to notify it of the Add or Change.
+                          The client must start and end the Undo transaction.
+*)
+PROCEDURE AcquireEdge( VAR FromNode,
+                           ToNode            : ATreeNode;
+                           ErrorHandler      : AnErrorHandlerProc;
+                           HandlersContext   : ADDRESS          )  : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*
+    Reset Default Edge Columns
+
+        Reset the default values for edge columns.
+
+        Preconditions
+                        > none.
+
+        Postconditions
+                        > The next edge that is created will have all
+                          of its fields set to the system defaults, not
+                          any client defaults.
+*)
+PROCEDURE ResetDefaultEdgeColumns();
+
+
+
+
+
+
+(*
+    Default Edge Column
+
+        Sets up defaults for edge columns.  These defaults are used
+        whenever creating a new edge.
+
+        Preconditions
+                        > Column ID is within range
+
+                        > ColumnData is properly formatted for the column
+                          being defined.
+
+        Postconditions
+                        > Any edge that is created has values applied
+                          in this order:
+
+                                System defaults
+                                Client defaults, defined with this procedure
+                                Any edits given to EdgeEdit.
+
+                        > Reset this action with "ResetDefaultEdgeColumns"
+*)
+PROCEDURE DefaultEdgeColumn(     ColumnID    : CARDINAL;
+                             VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+END EdgeAcquire.
+

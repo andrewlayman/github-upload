@@ -1,0 +1,49 @@
+DEFINITION MODULE InText;
+
+     (* InText -- Read in a text file and add its tasks, parsed
+                  from the text, to the current schedule. *)
+
+FROM FileSystem IMPORT File;
+
+
+     (* A Procedure that will read the next line of text from the
+        file, skipping non-text lines, determining the tasks indentation
+        level and returning also the name of the task.
+
+        This procedure must (MUST) call TextStack.PopText to
+        obtain text before actually reading it, since the
+        interior of this module calls TextStack.PushText in order
+        to reread text.
+     *)
+
+TYPE AReadATaskDataProc= PROCEDURE ( VAR File,           (* File to read *)
+                                     VAR ARRAY OF CHAR,  (* Task data string read *)
+                                     VAR CARDINAL,       (* Indent level *)
+                                     VAR BOOLEAN  );     (* End of File flag *)
+
+
+
+    (* ErrorFlag -- Reset to FALSE before using this module.
+                    Will be set to TRUE if any internal errors
+                    are detected.  Eternally setting to TRUE
+                    will cause the ReadTextFile procedure to exit. *)
+
+VAR
+    ErrorFlag : BOOLEAN;
+
+
+    (* ReadTextFile --  By using repeated calls to ReadATaskData,
+                        from file "f", read in lines of text that
+                        describe a hierarchical series of tasks.
+                        Create a schedule containing these tasks.
+                            "Indent," if set, will cause tasks to
+                        be indented.
+                        *)
+
+
+PROCEDURE ReadTextFile ( VAR f     : File;
+                             ReadATaskData : AReadATaskDataProc;
+                             Indent        : BOOLEAN );
+
+END InText.
+

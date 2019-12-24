@@ -1,0 +1,52 @@
+DEFINITION MODULE FileOpen;
+
+FROM FileSystem  IMPORT File;
+
+
+     (*  RequestFileOpen -- Attempt to open the file using the
+                            given path.  If the file cannot
+                            be found, put up a dialog box asking the
+                            user to insert the disk.
+
+                            FALSE is returned if the user cancels the
+                            operation or if a serious error occurs.
+
+                            The ReadOnly version of the call only allows
+                            read access to a file.
+      *)
+
+PROCEDURE RequestFileOpen(VAR Path        : ARRAY OF CHAR;
+                          VAR FileName    : ARRAY OF CHAR;
+                          VAR Description : ARRAY OF CHAR;
+                          VAR f           : File
+                         ):BOOLEAN;
+
+PROCEDURE RequestFileOpenReadOnly(VAR Path        : ARRAY OF CHAR;
+                                  VAR FileName    : ARRAY OF CHAR;
+                                  VAR Description : ARRAY OF CHAR;
+                                  VAR f           : File
+                                 ):BOOLEAN;
+
+
+     (*  RequestFileFind -- Attempt to find the file using the
+                            given path.  If the file cannot
+                            be found, put up a dialog box asking the
+                            user to insert the disk.
+
+                            FALSE is returned if the user cancels the
+                            operation or if a serious error occurs.
+
+                            TRUE means that the file was found.  The
+                            directory and file names found are
+                            returned in DirectoryIn and FileNameIn.
+                            *)
+
+
+PROCEDURE RequestFileFind(VAR Path        : ARRAY OF CHAR;
+                          VAR FileName    : ARRAY OF CHAR;
+                          VAR Description : ARRAY OF CHAR;
+                          VAR DirectoryIn : ARRAY OF CHAR;
+                          VAR FileNameIn  : ARRAY OF CHAR
+                         ):BOOLEAN;
+END FileOpen.
+

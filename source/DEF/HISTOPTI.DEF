@@ -1,0 +1,31 @@
+DEFINITION MODULE HistOptions;
+
+TYPE
+    ADimensionSpec          = RECORD
+                                Paged           : BOOLEAN;
+                                RepeatHeaders   : BOOLEAN;
+                                RepeatFooters   : BOOLEAN;
+                                RepeatTitles    : BOOLEAN;
+                                RepeatHeadings  : BOOLEAN;
+                                Spacing         : CARDINAL;
+                                Precision       : REAL;
+                                GridStep        : CARDINAL;
+                                BreakEach       : BOOLEAN;
+                              END;
+
+    AReportSetting          = RECORD
+                                RowSpec         : ADimensionSpec;
+                                ColumnSpec      : ADimensionSpec;
+                              END;
+
+    AReportSettingPointer   = POINTER TO AReportSetting;
+
+VAR
+    ReportSettings          : AReportSettingPointer;
+
+
+PROCEDURE DoPrintDialog () : BOOLEAN;
+
+
+END HistOptions.
+

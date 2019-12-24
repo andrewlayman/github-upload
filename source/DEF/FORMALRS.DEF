@@ -1,0 +1,23 @@
+DEFINITION MODULE FormalRsrcName;
+
+  (* Formal Rsrc Name - Routines to manage a cache of resource information.
+
+        Modification History:
+
+        30-Aug-89 MWP Creation.
+  *)
+
+
+PROCEDURE SetupResourceCache () : BOOLEAN;
+
+
+PROCEDURE CheckResourceName ( VAR RangeName  : ARRAY OF CHAR;
+                              VAR DataFormat : CARDINAL;
+                              VAR ID         : CARDINAL      ) : BOOLEAN;
+
+PROCEDURE FindResourceName (     ID         : CARDINAL;               (* 29-Aug-89 MWP *)
+                             VAR ColumnName : ARRAY OF CHAR ) : BOOLEAN;
+
+
+END FormalRsrcName.
+

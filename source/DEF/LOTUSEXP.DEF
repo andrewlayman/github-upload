@@ -1,0 +1,110 @@
+DEFINITION MODULE LotusExport;
+
+(*  Defines the primitive operations involved with writing data to a Lotus
+    spreadsheet file.
+
+        MODIFICATION HISTORY
+         8-Jul-89 MWP   Added support for percentage records.
+         1-Sep-89 MWP   Added parameter to WriteTextRecord which tells whether
+                        we are writing a header record or not.
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+        17-Sep-91 AJL   Add WriteBooleanRecord.
+*)
+
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADuration;
+
+
+
+
+PROCEDURE OpenFile  (   VAR Name        : ARRAY OF CHAR )   : BOOLEAN;
+
+    (*  Name is the full file name including directory and extension.
+        Returns TRUE iff file was successfully opened for writing.
+    *)
+
+
+PROCEDURE CloseFile;
+
+    (*  Closes the file that was opened with the OpenFile command.      *)
+
+
+PROCEDURE CheckFileStatus ()    : BOOLEAN;
+
+    (*  Returns FALSE iff there were any problems writing to the file.  *)
+
+
+
+
+
+PROCEDURE WriteTextRecord       (     Col, Row  : CARDINAL;
+                                  VAR s         : ARRAY OF CHAR;
+                                      RightJust : BOOLEAN;
+                                      Protect   : BOOLEAN;
+                                      Header    : BOOLEAN  );
+
+PROCEDURE WriteBooleanRecord    (     Col, Row  : CARDINAL;
+                                  VAR Value     : BOOLEAN;
+                                      RightJust : BOOLEAN;
+                                      Protect   : BOOLEAN;
+                                      Header    : BOOLEAN  );
+
+PROCEDURE WriteIntegerRecord    (     Col, Row  : CARDINAL;
+                                      Number    : INTEGER;
+                                      WriteZero : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteRealRecord       (     Col, Row  : CARDINAL;
+                                      Number    : REAL;
+                                      Decimals  : CARDINAL;
+                                      WriteZero : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteCurrencyRecord   (     Col, Row  : CARDINAL;
+                                      Amount    : REAL;
+                                      WriteZero : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WritePercentageRecord   (     Col, Row  : CARDINAL;
+                                        Amount    : REAL;
+                                        WriteZero : BOOLEAN;
+                                        Protect   : BOOLEAN       );
+
+PROCEDURE WriteDateRecord       (     Col, Row  : CARDINAL;
+                                      Date      : ADate;
+                                      End       : BOOLEAN;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteDurationRecord   (     Col, Row  : CARDINAL;
+                                      Dur       : ADuration;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteBigTimeRecord    (     Col, Row  : CARDINAL;
+                                      Time      : ABigTime;
+                                      Protect   : BOOLEAN       );
+
+PROCEDURE WriteBlankRecord      (     Col, Row  : CARDINAL;
+                                      Protect   : BOOLEAN       );
+
+
+
+PROCEDURE WriteActiveRange      (     FromCol   : CARDINAL;
+                                      FromRow   : CARDINAL;
+                                      ToCol     : CARDINAL;
+                                      ToRow     : CARDINAL      );
+
+PROCEDURE WriteNameRange        ( VAR Name      : ARRAY OF CHAR;
+                                      FromCol   : CARDINAL;
+                                      FromRow   : CARDINAL;
+                                      ToCol     : CARDINAL;
+                                      ToRow     : CARDINAL      );
+
+PROCEDURE WriteColumnWidth      (     Column    : CARDINAL;
+                                      Width     : CARDINAL      );
+
+END LotusExport.
+

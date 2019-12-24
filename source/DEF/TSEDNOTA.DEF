@@ -1,0 +1,20 @@
+DEFINITION MODULE TSEDNotation;
+
+    (*  MODIFICATION HISTORY
+        14-Aug-89 CMH   Made a constant for the gap between the notation 
+                        area and Gantt chart graph area. 
+        23-Aug-89 AJL   Changed GAP_FOR_NOTATION to GAPFORNOTATION. 
+     *)
+
+CONST
+   GAPFORNOTATION = 166; (* one channel height, 
+                        RealCharacterHeight+RealVerticalGap in Sedona Units *)
+
+PROCEDURE NotateAChart(LegendHeight:CARDINAL);
+PROCEDURE BorderSizeCalc(LegendHeight:CARDINAL;VAR TotalTopHeight,TotalBottomHeight:CARDINAL);
+PROCEDURE CheckForTitle():BOOLEAN;
+PROCEDURE CheckForNotes():BOOLEAN;
+PROCEDURE CheckForLegend():BOOLEAN;
+
+END TSEDNotation.
+

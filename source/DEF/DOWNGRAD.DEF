@@ -1,0 +1,26 @@
+DEFINITION MODULE DownGrade;
+
+(*  Routines to save version 3 data in version 2 format.    *)
+
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+
+
+PROCEDURE SaveProjectDetails(   VAR f   : File  );
+
+    (* Schedule name, author, etc. *)
+
+
+
+PROCEDURE SaveCalendar      (   VAR f   : File  );
+
+PROCEDURE SaveTasks         (   VAR f   : File  );
+
+PROCEDURE SaveEdges         (   VAR f   : File  );
+
+
+
+END DownGrade.
+

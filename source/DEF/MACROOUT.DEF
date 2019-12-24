@@ -1,0 +1,424 @@
+DEFINITION MODULE MacroOutlines;     (* A Subclass of OutlineViews *)
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AMacroOutlineStatus to 16 bits.
+    *)
+
+
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+EXPORT QUALIFIED
+    (* OBJECT TYPE *)       AMacroOutline, 
+                            AMacroOutlineMethods, AMacroOutlineMethodsRecord,
+    (* TYPE *)              AMacroOutlineStatus, AMacroOutlineStatusSet,
+    (* PROC *)              InitAsMacroOutline, CreateMacroOutline, 
+                            CloneMacroOutlineMethods, ValidateMacroOutline,
+                            UnInitAsMacroOutline;
+
+
+
+TYPE
+
+        (*  AMacroOutline is a subclass of AnOutlineView  *)
+
+    AMacroOutline          = POINTER TO AMacroOutlineRecord;
+
+    AMacroOutlineMethods   = POINTER TO AMacroOutlineMethodsRecord;
+
+    AMacroOutlineRecord    = RECORD
+                                Methods     : AMacroOutlineMethods;
+                              END;
+
+
+
+
+
+    (*  These types are re-definitions of types exported from OutlineViews. *)
+
+
+    AMacroOutlineStatus    = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               MacroOutlineSpare5, MacroOutlineSpare6, 
+                               MacroOutlineSpare7, MacroOutlineSpare8, 
+                               MacroOutlineSpare9);
+
+    AMacroOutlineStatusSet = SET OF AMacroOutlineStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AMacroOutline to
+        them.
+    *)
+
+
+    AMacroOutlineCloneProc   = PROCEDURE(    AMacroOutline,
+                                          VAR AMacroOutline)
+                                                             : BOOLEAN;
+
+    AMacroOutlineStoreOnProc = PROCEDURE(    AMacroOutline,
+                                              AnObject       );
+
+    AMacroOutlineDiscardProc = PROCEDURE(VAR AMacroOutline);
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AMacroOutline
+        to them.
+    *)
+
+
+    AMacroOutlineGetObjectProc = PROCEDURE(    AMacroOutline)
+                                                               : ATree;
+
+    AMacroOutlineSetObjectProc = PROCEDURE(    AMacroOutline,
+                                                ATree          );
+
+    AMacroOutlineXYProc        = PROCEDURE(    AMacroOutline,
+                                            VAR ascreenx,
+                                            VAR ascreeny,
+                                            VAR ascreenx,
+                                            VAR ascreeny       );
+
+    AMacroOutlineTitleProc     = PROCEDURE(    AMacroOutline,
+                                            VAR ARRAY OF CHAR  );
+
+    AMacroOutlineProc          = PROCEDURE(    AMacroOutline );
+
+    AMacroOutlineMoveProc      = PROCEDURE(    AMacroOutline,    
+                                                ascreenx,        
+                                                ascreeny       );
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AMacroOutline 
+        to them.
+    *)
+
+
+
+    AMacroOutlineRecordProc    = PROCEDURE(    AMacroOutline,
+                                                AnEvent        );
+
+    AMacroOutlineGetEventProc  = PROCEDURE(    AMacroOutline,
+                                               CARDINAL,
+                                           VAR AnEvent         );
+
+    AMacroOutlineActOnProc     = PROCEDURE(    AMacroOutline,
+                                                AnEvent,
+                                            VAR AnEvent        );
+
+    AMacroOutlineGetCursorProc = PROCEDURE(    AMacroOutline )
+                                                                : BOOLEAN;
+
+    AMacroOutlineSetCursorProc = PROCEDURE(    AMacroOutline,
+                                                BOOLEAN        );
+
+    AMacroOutlineSetCursorModeProc = PROCEDURE(    AMacroOutline,
+                                                    avidmode      );
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AMacroOutline to
+        them.
+    *)
+
+
+
+    AMacroOutlineSetNodeProc   = PROCEDURE(    AMacroOutline,
+                                                ATreeNode      );
+
+    AMacroOutlineGetNodeProc   = PROCEDURE(    AMacroOutline )
+                                                                : ATreeNode;
+
+    AMacroOutlineForceProc     = PROCEDURE(    AMacroOutline,    (* View *)
+                                                ATreeNode,         (* Node *)
+                                                CARDINAL       );  (* Position *)
+
+    AMacroOutlineInquireProc   = PROCEDURE(    AMacroOutline,
+                                                ATreeNode      )
+                                                                : CARDINAL;
+
+    AMacroOutlineGetCountProc  = PROCEDURE(    AMacroOutline )
+                                                                : CARDINAL;
+
+    AMacroOutlineFindCharProc  = PROCEDURE(    AMacroOutline,
+                                                CHAR           )
+                                                                : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+
+    These are the methods for AMacroOutline objects.  They inherit and
+    redefine methods from OutlineViews, but do not add any new methods
+    of their own.
+
+----------------------------------------------------------------------------*)
+
+
+    AMacroOutlineMethodsRecord = RECORD
+
+        Methods                 : AnObjectMethods;
+        Clone                   : AMacroOutlineCloneProc;
+        StoreOn                 : AMacroOutlineStoreOnProc;
+        Discard                 : AMacroOutlineDiscardProc;
+        SuperclassMethods       : AnOutlineViewMethods;
+        MethodSize              : CARDINAL;
+        ObjectMethodsTag        : CARDINAL;
+
+        GetExternalXY           : AMacroOutlineXYProc;
+        GetInternalXY           : AMacroOutlineXYProc;
+        GetTitle                : AMacroOutlineTitleProc;
+        SetObject               : AMacroOutlineSetObjectProc;
+        GetObject               : AMacroOutlineGetObjectProc;
+        Move                    : AMacroOutlineMoveProc;
+        Display                 : AMacroOutlineProc;
+        GetHelp                 : AMacroOutlineProc;
+        HideView                : AMacroOutlineProc;
+        RevealView              : AMacroOutlineProc;
+        NotifyOfChange          : AMacroOutlineProc;
+        ObjectViewTag           : CARDINAL;
+
+        RecordEvent             : AMacroOutlineRecordProc;
+        GetRecordedEvent        : AMacroOutlineGetEventProc;
+        ActOnEvent              : AMacroOutlineActOnProc;
+        GetCursor               : AMacroOutlineGetCursorProc;
+        SetCursor               : AMacroOutlineSetCursorProc;
+        SetCursorMode           : AMacroOutlineSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AMacroOutline.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag           : CARDINAL;
+
+        SetFirst                : AMacroOutlineSetNodeProc;
+        GetFirst                : AMacroOutlineGetNodeProc;
+        GetLast                 : AMacroOutlineGetNodeProc;
+        SetCursorNode           : AMacroOutlineSetNodeProc;
+        GetCursorNode           : AMacroOutlineGetNodeProc;
+        Synchronize             : AMacroOutlineProc;
+        ForceToPosition         : AMacroOutlineForceProc;
+        InquirePosition         : AMacroOutlineInquireProc;
+        NotifyNodeDeleted       : AMacroOutlineSetNodeProc;
+        ListViewTag             : CARDINAL;
+
+        ResetMatching           : AMacroOutlineProc;
+        GetMatchCount           : AMacroOutlineGetCountProc;
+        FindChar                : AMacroOutlineFindCharProc;
+        OutlineViewTag          : CARDINAL;
+
+        MacroOutlineTag        : CARDINAL;
+
+                                  END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsMacroOutline --
+
+    Initialize the indicated object as a macro outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid macro outline view object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsMacroOutline(    MacroOutline : AMacroOutline;
+                                  SuperView     : AnActiveView;
+                                  Ulx           : ascreenx;
+                                  Uly           : ascreeny;
+                                  Lrx           : ascreenx;
+                                  Lry           : ascreeny;
+                                  Box           : ABoxType;
+                                  VideoMode     : avidmode;
+                              VAR Title         : ARRAY OF CHAR;
+                                  HelpKey       : CARDINAL;
+                                  TakeRug       : BOOLEAN       );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateMacroOutline --
+
+    Allocate storage for, and initialize the indicated object as a macro 
+    outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid macro outline view object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateMacroOutline(VAR MacroOutline : AMacroOutline;
+                                  SuperView     : AnActiveView;
+                                  Ulx           : ascreenx;
+                                  Uly           : ascreeny;
+                                  Lrx           : ascreenx;
+                                  Lry           : ascreeny;
+                                  Box           : ABoxType;
+                                  VideoMode     : avidmode;
+                              VAR Title         : ARRAY OF CHAR;
+                                  HelpKey       : CARDINAL;
+                                  TakeRug       : BOOLEAN      ) 
+                                                                : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsMacroOutline --
+
+    UnInitialize the indicated object as a macro outline view.
+
+    Preconditions:
+        The object will be a valid macro outline view object. 
+
+    Postconditions:
+        The outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsMacroOutline(    MacroOutline : AMacroOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneMacroOutlineMethods --
+
+    Make a copy of the macro outline view methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The taks outline view methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneMacroOutlineMethods(    MethodObject : AMacroOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateMacroOutline --
+
+    Determine that the indicated object is in fact a valid outline view 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid macro outline view object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateMacroOutline(    MacroOutline : AMacroOutline);
+
+
+
+END MacroOutlines.
+

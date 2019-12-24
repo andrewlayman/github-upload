@@ -1,0 +1,480 @@
+DEFINITION MODULE VaryAssgnment;
+
+(* Data structures and procedures to manage varying assignment
+   structures. 
+
+   MODIFICATION HISTORY:
+
+   15-Jun-90 - AJL - Created.
+    6-Jul-90 - AJL - Added CheckAssgnListValid.
+   14-Aug-90 - JES - Fixed some comments; also changed
+                     the name "ThruDate" to "EndDate" to conform with
+                     the conventions in other modules.
+   17-Aug-90 - AJL - Added CreateVaryingAssgnListRange.
+    9-Oct-90 - AJL - Added LocateRateAtDate.
+   18-Oct-90 - JES - Clarified a comment.
+   26-Jun-91 - AJL - Made CreateVaryingAssgListEntry return BOOLEAN.
+   28-Jan-92 - LAA - In those procedures which deal with the rates of varying
+                     assignment lists, I changed the Rate parameter to be a
+                     REAL.  This number must always be in the range 0..65535.
+*)
+
+FROM Timei  IMPORT 
+    (* TYPE *)         ADate, ADuration;
+
+FROM FlexStor  IMPORT
+    (* TYPE *)         AnExtHandle, AnExtStoragePreference;
+
+IMPORT Filing;
+
+FROM SYSTEM    IMPORT
+    (* TYPE *)         ADDRESS;
+
+CONST
+    MaxIntervals = 512;		     (* Maximum number of changes. *)
+    MaxVaryAssgnListRate    = 65535.0;
+    MinVaryAssgnListRate    = 0.0;
+
+TYPE
+
+    AVaryingAssgnListIndex = [0..MaxIntervals];     (* 0 is a sentinal value *)
+
+    AVaryingAssgnList = AnExtHandle;      (* Hidden type representing an array of dates and rates. *)
+
+
+
+(*   CONVENTIONS:
+
+     1.   There is no entry 0.
+
+     2.   For all entries i and i + 1, StartDate[i] < StartDate[i + 1] and
+          EndDate[i] = StartDate[i + 1].
+          (I.e.: entries are sorted by start date and are contiguous.)
+
+*)
+
+    (*---------------------------------------------------------------
+
+    CreateVaryingAssgnList 
+
+    Purpose : Creates a VaryingAssgnList.
+
+    Inputs:   InitialRate : Starting point for rates. From 0.0 to 65535.0
+
+    Outputs:  RETURNS : AVaryingAssgnList;
+
+    Preconditions : None.
+
+    Postconditions : The created rate list has a single entry, number 1,
+                     which specifies the half open interval 
+                     [StartDate..MaxDate) with rate InitialRate.
+
+    ------------------------------------------------------------------ *)
+
+PROCEDURE CreateVaryingAssgnList( InitialRate : REAL;
+                                  PStartDate  : ADate;
+                                  Speed  : AnExtStoragePreference
+                                  ) : AVaryingAssgnList;
+
+
+    (*---------------------------------------------------------------
+
+    DisposeVaryingAssgnList 
+
+    Purpose : Discards a VaryingAssgnList, deallocating any storage used.
+
+    Inputs:   VaryingAssgnList : AVaryingAssgnList.
+
+    Outputs:  VaryingAssgnList : An invalid VaryingAssgnList;
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList and not disposed.
+
+    Postconditions : The VaryingAssgnList is no longer valid.
+
+    ------------------------------------------------------------------ *)
+
+PROCEDURE DisposeVaryingAssgnList(VAR VaryingAssgnList : AVaryingAssgnList);
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+    CopyVaryingAssgnList 
+
+    Purpose : Copies the contents of one varying assignment list to another. 
+
+    Inputs:   Source : AVaryingAssgnList.
+
+    Outputs:  Target : AVaryingAssgnList;
+
+    Preconditions : Source was created by CreateVaryingAssgnList
+                    and not disposed.
+
+    Postconditions : Source is unchanged and Target = Source.
+
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE CopyVaryingAssgnList( VAR Target : AVaryingAssgnList;
+                                    Source : AVaryingAssgnList;
+                                    Speed  : AnExtStoragePreference );
+
+    (*---------------------------------------------------------------
+
+    VaryingAssgnListsAreEqual 
+
+    Purpose : Determines whether two lists are equivalent.
+
+    Inputs:   A, B : AVaryingAssgnList.
+
+    Outputs:  TRUE iff each component of A is equal to the corresponding
+              component of B.
+
+    Preconditions : A and B were created by CreateVaryingAssgnList
+                    and not disposed.
+
+    Postconditions : A and B are unaffected.
+
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE VaryingAssgnListsAreEqual( A, B  : AVaryingAssgnList ) : BOOLEAN;
+
+
+
+    (*---------------------------------------------------------------
+
+    CheckAssgnListValid
+
+    Purpose : Checks that the putative varying assignment list really
+              is a varying assignment list.  Calls FatalErr.FatalError
+              if not.
+
+    Inputs:   
+              VaryingAssgnList    : AVaryingAssgnList;
+
+    ------------------------------------------------------------------ *)
+
+
+VAR CheckAssgnListValid : PROCEDURE ( (* VaryingAssgnList :*) AVaryingAssgnList);
+
+
+    (*---------------------------------------------------------------
+
+    GetVaryingAssgnListEntry
+
+    Purpose : Returns one of the many intervals of time during a varying
+              assignment list,
+              or indicates that no such interval exists.  Which interval
+              is given by N.
+
+    Inputs:   
+              VaryingAssgnList    : AVaryingAssgnList;
+              N           : The interval number.
+
+    Outputs:  
+              StartDate   : The date of the beginning of this period.
+              EndDate     : The smallest date > StartDate that is not
+                            in this period.  I.E. the beginning (first 
+                            moment) of the next period.     
+              Rate        : The rate in effect during this period.  
+                            From 0.0 to 65535.0
+	      RETURNS     : TRUE if this is a defined interval.  Else
+                            returns FALSE.  Note: if period n is not 
+                            defined, then periods n+i are undefined, for 
+                            all i >= 0.
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList and not disposed.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE GetVaryingAssgnListEntry(    VaryingAssgnList     : AVaryingAssgnList;
+                                        N            : AVaryingAssgnListIndex;
+                                    VAR StartDate,
+                                        EndDate      : ADate;
+                                    VAR Rate         : REAL
+                                   ) : BOOLEAN;
+
+    (*---------------------------------------------------------------
+
+    SetVaryingAssgnListEntryN 
+
+    Purpose : Resets the rate in the Nth entry of a rate list.
+
+    Inputs:   
+              VaryingAssgnList    : AVaryingAssgnList;
+              N           : The interval number.
+              Rate        : The rate to be in effect during the period
+                            specified by the N'th entry.  From 0.0 to 65535.0
+    Outputs:   
+              RETURNS     : FALSE if there is no N'th entry.
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList 
+                    and not disposed.
+
+    Postconditions: 
+                    Rate[N] is set as passed in.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE SetVaryingAssgnListEntryN( VAR VaryingAssgnList : AVaryingAssgnList;
+                                         N        : AVaryingAssgnListIndex;
+                                         Rate     : REAL
+                                   ) : BOOLEAN;
+
+
+    (*---------------------------------------------------------------
+
+    CreateVaryingAssgnListEntry 
+
+    Purpose : Creates a new entry in a rate list and returns its index
+              in the list.
+
+    Inputs:   
+              VaryingAssgnList    : AVaryingAssgnList;
+              StartDate   : The date of the beginning of this period.
+              Rate        : The rate in effect during this period.
+                            From 0.0 to 65535.0
+
+    Outputs:   
+              RETURNS     : TRUE usually, except FALSE
+                            if too many entries to record have
+                            been defined.
+
+    Preconditions : VaryingAssgnList was created by 
+                    CreateVaryingAssgnList and not disposed.
+
+    Postconditions: 
+		    There is an entry with StartDate = the passed 
+                    value, EndDate = the end date of the original
+                    entry whose interval contained StartDate, and Rate = 
+                    the passed value.
+
+		    The total number of entries may less than it was
+                    before.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE CreateVaryingAssgnListEntry( VAR VaryingAssgnList   : AVaryingAssgnList;
+                                           StartDate  : ADate;
+                                           Rate       : REAL
+                                      ) : BOOLEAN;
+
+
+    (*---------------------------------------------------------------
+
+    DisposeVaryingAssgnListEntry 
+
+    Purpose : Removes the Nth entry in a rate list.
+
+    Inputs:   
+              VaryingAssgnList    : AVaryingAssgnList;
+              N                   : The interval number.
+          
+    Outputs:   
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList 
+                    and not disposed.
+
+    Postconditions: 
+                    All previous intervals N+j+1, for j > 0, will now
+                    be numbered N+j.
+		    The total number of intervals will be reduced by 1,
+                    unless it was already 1 (in which case no action
+                    is taken).
+    ------------------------------------------------------------------ *)
+
+PROCEDURE DisposeVaryingAssgnListEntry( VAR VaryingAssgnList : AVaryingAssgnList;
+                                            N        : AVaryingAssgnListIndex   );
+
+
+
+
+    (*---------------------------------------------------------------
+
+    CreateVaryingAssgnListRange 
+
+    Purpose : Adjusts a varying assignment list so that the passed
+              Rate is in effect from StartDate through EndDate.
+
+    Inputs:   
+              VaryingAssgnList    : AVaryingAssgnList;
+              StartDate           : StartingDate
+              EndDate             : End of the range.
+              Rate                : The rate in effect during this period.
+                                    From 0.0 to 65535.0
+
+    Outputs:  TRUE if successful. 
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList 
+                    and not disposed, or else is = AVaryingAssgnList(NIL).
+
+    Postconditions: 
+                    If VaryingAssgnList was NIL, it has been created.
+                    All previously existing  intervals in the date 
+                    range [Start,End) have been removed.
+                    There are two entries in the list, i and i+1,
+                    such that the date of entry i is <= Start and the date
+                    of entry i+1 is >= End.
+    ------------------------------------------------------------------ *)
+
+PROCEDURE CreateVaryingAssgnListRange( VAR VaryingAssgnList   : AVaryingAssgnList;
+                                           StartDate,
+                                           EndDate            : ADate;
+                                           Rate               : REAL
+                                      ) : BOOLEAN;
+
+
+
+
+    (*---------------------------------------------------------------
+
+    LocateDateInVaryingAssgnList 
+
+    Purpose : Given a Date, finds the index number, N, of the half-open
+              interval [StartDate..EndDate) containing Date.
+
+    Inputs:   VaryingAssgnList       : A VaryingAssgnList;
+              Date           : A date.
+
+    Outputs:  
+   	      N           :  Index to the interval containing Date.
+                         If 0, then there is no interval containing the
+                         date.  That is, the date is less than the date
+                         of the first entry.
+
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList and not disposed.
+                    Date is within the range of the calendar. 
+
+    Postconditions: N is returned as noted above. 
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE LocateDateInVaryingAssgnList(    VaryingAssgnList   : AVaryingAssgnList;
+                                           Date       : ADate;
+                                       VAR N          : AVaryingAssgnListIndex);
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+    LocateRateAtDate 
+
+    Purpose : Given a Date, finds the rate in effect at that date.
+
+              Equivalent to
+
+              LocateDate(VaryingAssgnList, Date, N );
+          
+              IF (NOT GetVaryingAssgnListEntry(VaryingAssgnList, N,
+                                               StartDate, EndDate,
+                                               Rate)) THEN
+                  Rate := 0.0;
+              END;
+
+              but (perhaps) faster.
+
+
+
+    Inputs:   VaryingAssgnList       : A VaryingAssgnList;
+              Date           : A date.
+
+    Outputs:  
+              Rate        : The rate in effect during this period.
+                            From 0.0 to 65535.0
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList and not disposed.
+                    Date is within the range of the calendar. 
+
+    Postconditions: If the date is in the list, Rate is returned as noted
+                    above. 
+                    If the date is not in the list, 0.0 is returned.
+    ------------------------------------------------------------------ *)
+
+
+PROCEDURE LocateRateAtDate(    VaryingAssgnList   : AVaryingAssgnList;
+                               Date       : ADate
+                          ) : REAL;
+
+
+
+
+
+
+    (*---------------------------------------------------------------
+
+    Number Of Rates In List
+
+    Purpose : Given a Rate List, returns the number of entries in the list.
+
+    Inputs:   VaryingAssgnList       : A VaryingAssgnList;
+
+    Outputs:  
+   	          RETURN         : Number of entries.
+
+
+    Preconditions : VaryingAssgnList was created by CreateVaryingAssgnList and not disposed.
+
+    Postconditions: RETURN as noted above.
+
+    ------------------------------------------------------------------ *)
+PROCEDURE NumberOfRatesInList(  VaryingAssgnList   : AVaryingAssgnList ) : CARDINAL;
+
+
+
+
+
+    (* ----- LOAD AND STORE -----------------------------
+        Procedures for use when loading and storing the lists.
+        See the Filing module.
+       -------------------------------------------------- *)
+
+
+PROCEDURE StoreVaryingAssgnList(     VaryingAssgnList    : AVaryingAssgnList;
+                                     StorageProc : Filing.AStoreProc;
+                                     Context     : ADDRESS );
+
+    (*  StoreVaryingAssgnListOldFormat --
+        This stores the varying assignment list in the "old" 5.0.0 format,
+        where each entry has a CARDINAL rate.  The regular Store proc deals
+        with the new LONGINT rate.
+    *)
+
+PROCEDURE StoreVaryingAssgnListOldFormat(  VaryingAssgnList  : AVaryingAssgnList;
+                                           StorageProc       : Filing.AStoreProc;
+                                           Context           : ADDRESS );
+
+
+PROCEDURE LoadVaryingAssgnList ( VAR VaryingAssgnList    : AVaryingAssgnList;
+                                     StoragePref : AnExtStoragePreference;
+                                     PredictSize : Filing.APredictSizeProc;
+                                     LoadProc    : Filing.ALoadProc;
+                                     ReadNext    : Filing.AReadNextProc;
+                                     Context     : ADDRESS
+                                ) : BOOLEAN;
+
+    (*  LoadVaryingAssgnListOldFormat --
+        Load a varying assignment list from a file, where it has been
+        stored in the old (5.0.0) format in which Rate is a CARDINAL.
+        The regular Load proc deals with Rates which are in the new format
+        of LONGINT's.
+    *)
+
+PROCEDURE LoadVaryingAssgnListOldFormat ( VAR VaryingAssgnList    : AVaryingAssgnList;
+                                              StoragePref : AnExtStoragePreference;
+                                              PredictSize : Filing.APredictSizeProc;
+                                              LoadProc    : Filing.ALoadProc;
+                                              ReadNext    : Filing.AReadNextProc;
+                                              Context     : ADDRESS
+                                         ) : BOOLEAN;
+
+
+
+
+
+END VaryAssgnment.
+
+
+

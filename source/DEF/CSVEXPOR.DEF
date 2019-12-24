@@ -1,0 +1,58 @@
+DEFINITION MODULE CSVExport;
+
+    (*  MODIFICATION HISTORY
+
+         5-Sep-89 MWP   Allow writing out of true null fields. ( ',,' )
+         6-Sep-89 MWP   Added boolean LastFieldNull to allow tracking
+                        of whether the last field written was a null field.
+        30-Mar-90 RSC   Made Timeu to Timei conversions.
+        17-Sep-91 AJL   Add WriteBoolean.
+    *)
+
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADuration, ADate;
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+VAR
+    FieldDelimiter  : CHAR;
+    LastFieldNull   : BOOLEAN;                                    (* 6-Sep-89 MWP *)
+
+
+PROCEDURE OpenFile      ( VAR   Name        : ARRAY OF CHAR;
+                                LineLength  : CARDINAL      ) : BOOLEAN;
+
+PROCEDURE CloseFile();
+
+
+
+PROCEDURE StartRecord();
+
+PROCEDURE EndRecord();
+
+
+
+PROCEDURE WriteText     ( VAR   Text        : ARRAY OF CHAR );
+
+PROCEDURE WriteBoolean  ( VAR   Value       : BOOLEAN );
+
+PROCEDURE WriteEmpty    ( NumberOfFields    : CARDINAL      );
+
+PROCEDURE WriteCardinal (       Number      : CARDINAL      );
+
+PROCEDURE WriteReal     (       Number      : REAL;
+                                Digits      : CARDINAL      );
+
+PROCEDURE WriteStartDate    (   Date        : ADate         );
+
+PROCEDURE WriteEndDate      (   Date        : ADate         );
+
+PROCEDURE WriteBigTime      (   Time        : ABigTime      );
+
+PROCEDURE WriteDuration     (   Dur         : ADuration     );
+
+
+END CSVExport.
+

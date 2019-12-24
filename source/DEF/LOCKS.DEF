@@ -1,0 +1,92 @@
+DEFINITION MODULE Locks;
+
+
+    (* Locks - Provides general file locking facilites.
+
+       MODIFICATION HISTORY
+       ====================
+       05-Mar-89 WKH   Initial version.
+       20-Apr-89 WKH   Changed LockFile to return an enumerated type so we
+                       can more accurately determine reason for failure.
+
+    *)
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File, AFileAccessRightSet;
+
+TYPE
+    AFileLockResult         = (ReadLock,      (* ReadOnly lock established    *)
+                               FullLock,      (* ReadWrite lock established   *)
+                               AlreadyLocked, (* File already locked          *)
+                               UnLockable,    (* Maybe device write protected *)
+                               NoSuchFile,    (* File not found               *) 
+                               UnknownError);
+
+(*
+    PROCEDURE LockFile:
+    Attempts to lock a file so that other programs/processes can't
+    write to the designated file.
+
+    Preconditions:
+    FileName must contain a valid DOS filename.
+    Privileges must contain the desired access rights for the file
+    (i.e. {BTSFullAccess} or {}).
+
+    Postconditions:
+    If possible, FileName will be locked.  If it is, then LockFile
+    will return TRUE and Handle will be initialized appropriately.
+    If a lock could not be established, then false will be returned
+    and Handle will be unchanged.
+
+    Description:
+    Depending on the Privileges requested, LockFile does different
+    things.
+
+    If BTSFullAccess is requested, then LockFile attempts to open
+    the file in ReadOnlyAccessMode + ReadWriteMode.  This mode
+    designation is used in the Logitech filesystem so I am using it
+    here for a common frame of reference.  If successful, Handle
+    will contain the File record that points to the file and the
+    FileAccessRight field of Handle will be set to {BTSLocked,
+    BTSFullAccess}.  If the designated file doesn't exist, it will
+    be created and locked.  If the designated file is locked by
+    another process, LockFile will fail and return AlreadyLocked.
+
+    If BTSFullAccess is not requested, the LockFile attempts to open
+    the file in ReadOnlyAccessMode + ReadOnlyMode.  If successful,
+    Handle will contain the File record that points to the file and
+    the FileAccessRight field of Handle will be set to {BTSLocked,
+    BTSReadOnly}.  This means that the file is locked, the process
+    that requested the lock may not write to the file, and neither
+    can any other process.  If the designated file doesn't exist, it
+    WILL NOT be created since there would be nothing to read anyway.
+    This will result in LockFile returning NoSuchFile.  If the designated
+    file is locked by another process LockFile will fail and return
+    AlreadyLocked.
+
+    LockFile should always be called either prior to or instead of
+    opening the file.
+*)
+PROCEDURE LockFile(VAR FileName   : ARRAY OF CHAR;
+                   VAR Handle     : File;
+                       Privileges : AFileAccessRightSet) : AFileLockResult;
+
+
+(*
+    PROCEDURE UnLockFile:
+    Attempts to unlock a file.
+
+    Preconditions:
+    Handle should contain a previously locked handle.
+
+    Postconditions:
+    The file pointed to by Handle will be unlocked.
+
+    Description:
+    UnLockFile attempts to close the designated Handle.
+*)
+PROCEDURE UnLockFile(VAR Handle : File);
+
+END Locks.
+
+

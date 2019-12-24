@@ -1,0 +1,35 @@
+DEFINITION MODULE TSEDTimescale;
+
+    (*  MODIFICATION HISTORY
+        01-Jun-89 CMH   Removed obsolete variable. 
+         1-Aug-89 CMH   Added variables to indicate whether or not a 
+                        date range was input. 
+         5-Sep-89 CMH   Moved UnitsForScaling, CharactersForScaling,
+                        UnitsForGrouping and MilitaryTime to 
+                        TimeUnitsTLGS.DEF from TSEDTimescale.DEF so 
+                        TLNBUILD would not import from TSEDTimescale 
+                        since it has 1.6k bytes of data.
+         6-Sep-89 CMH   Moved GanttTimescaling and GetDurationBarDates
+                        from TSEDTimescale to GanttTimescale.  Moved 
+                        AddTimescaling and AddTimeScalingVert from 
+                        TSEDTimescale to PertTimescale.
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+    *)
+
+FROM Timei          IMPORT 
+     (* TYPE *)         ADate;
+     
+VAR
+    AxisXorg,
+    AxisYorg,
+    AxisLength,
+    AxisHeight             : CARDINAL;
+    MinAxisDate,
+    MaxAxisDate            : ADate;
+    
+PROCEDURE GetAxisChannels() : CARDINAL;
+PROCEDURE SaveCalendar;
+PROCEDURE WriteScaleDates;
+    
+END TSEDTimescale.
+

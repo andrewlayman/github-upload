@@ -1,0 +1,23 @@
+DEFINITION MODULE FormalAssName;
+
+  (* Formal Ass Name - Routines to manage a cache of assignment information.
+
+        Modification History:
+
+        1-Sep-89 MWP Created.
+  *)
+
+
+PROCEDURE SetupAssCache () : BOOLEAN;
+
+
+PROCEDURE CheckAssName ( VAR RangeName  : ARRAY OF CHAR;
+                         VAR DataFormat : CARDINAL;
+                         VAR ID         : CARDINAL      ) : BOOLEAN;
+
+PROCEDURE FindAssName (     ID         : CARDINAL;               (* 29-Aug-89 MWP *)
+                        VAR ColumnName : ARRAY OF CHAR ) : BOOLEAN;
+
+
+END FormalAssName.
+

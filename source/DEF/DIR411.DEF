@@ -1,0 +1,77 @@
+DEFINITION MODULE Dir411;
+
+(*  =========================================================================
+    Last Edit : February 21, 1991 1:51PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        This module allows communication between TLDir411 and TLD411FM,
+        its form.
+
+
+
+    MODIFICATION HISTORY:
+
+        21-Feb-91 RSC   First version.
+
+    =========================================================================
+*)
+
+FROM Codes                  IMPORT ACode;
+
+FROM Direct411              IMPORT
+        (* TYPES *)             AQualificationProcedure;
+
+FROM Directory              IMPORT
+        (* TYPES *)             AFileNameRecord;
+
+FROM Kbio                   IMPORT ascreeny, ascreenx;
+
+
+
+    (* Give Directory Assistance - Get a file name from the customer.
+
+        Input: FirstRow, LastRow : Rows to use for display.
+               Title             : Caption for box, and for Help.
+               Template          : Device:\Directory\filename.ext mask.
+               FileName          : Name to highlight if on list.
+               Qualifies         : Check for approved files.
+               AllowForm         : Allow the path form?
+
+        Output:Template          : The actual file name and extension,
+                                   preceded by the device and directory.
+               FileName          : The time of last update to the file.
+                                   DD-MMM-YY HH:MMam
+
+         Returns TRUE iff a file name was chosen.
+
+        CAUTION:  Both Template and FileName are both input and output!
+
+    *)
+TYPE
+    AGiveDirectoryAssistanceProc = PROCEDURE ((* FirstRow,  *) ascreeny,
+                                              (* LastRow    *) ascreeny,
+                                          VAR (* Title      *) ARRAY OF CHAR,
+                                          VAR (* Template   *) AFileNameRecord,
+                                          VAR (* Filename   *) ARRAY OF CHAR,
+                                              (* Qualifies  *) AQualificationProcedure,
+                                              (* OnlyDirectories*) BOOLEAN,
+                                              (* AllowForm  *) BOOLEAN
+                                          ) : BOOLEAN;
+
+
+    (* This is for private communication between TLDir411 and TLD411FM.
+    *)
+    AnOverlayContext = RECORD
+        TheFileNameRecordPtr    : POINTER TO AFileNameRecord;
+        DirectoryAssistanceProc : AGiveDirectoryAssistanceProc;
+        ReturnValue             : ACode;
+        DoWeAllowWildcards,
+        DoWeGiveAssistance,
+        DoPathForm              : BOOLEAN;
+    END;
+
+END Dir411.
+
+

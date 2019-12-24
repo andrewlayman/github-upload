@@ -1,0 +1,39 @@
+DEFINITION MODULE AssListEdit;
+
+(*
+    AssList - Provide a QuickPick list of Assignments for a task.
+
+    Modification History:
+
+    10-Jun-91  RSC  First Version, from AssList.
+*)
+
+
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+
+(* Edit Assignment List
+
+        Edit the list of assignments for a task.  This does all the needed
+        management of creating the assignment tree, calling GoTo, etc.
+
+    Preconditions
+                    TaskNode        Is the task the assignments belong to.
+
+    Postconditions
+                    The task's list of assignments has been edited,
+                    TRUE  means that the changes were accepted,
+                    FALSE means that they were not.
+*)
+PROCEDURE EditAssignmentList(     TaskNode      : ATreeNode
+                            ) : BOOLEAN;
+
+
+END AssListEdit.
+

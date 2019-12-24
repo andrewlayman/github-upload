@@ -1,0 +1,7 @@
+DEFINITION MODULE TSEDGantt;
+
+PROCEDURE CalcTLGSGanttChart();
+PROCEDURE WriteGanttGraphicsFile();
+
+END TSEDGantt.
+

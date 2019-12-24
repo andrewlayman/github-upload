@@ -1,0 +1,212 @@
+DEFINITION MODULE TaskColNumbers;
+
+(*  Column numbers for Task Columns.
+
+    MODIFICATION HISTORY:
+
+     5-Apr-91 TGS   Moved here from MagicNum, which once again got too big.
+     9-Apr-91 TGS   Forgot BaselineTotalDollarsLessExtras.
+     9-May-91 TGS   Rename some columns to match their functions.
+    10-May-91 TGS   Anticipating that OT feature may be removed, moved all
+                    related fields to the end of the Non-coding column list,
+                    where they can more easily be excised (I think just by
+                    changing the LastNonCodingTaskColumn constant).
+                    Made it "MathematicalEAC" instead of "MathmaticalEAC".
+    16-Aug-91 PFG   Moved the WBSErrors column back to a value of 123, as it
+                    was in previous releases to limit the number of adjust-
+                    ments we have to make as we import old layouts.  
+*)
+
+CONST
+
+    (* This is the list of the column numbers in use by the root at the time
+       that this list was put together.
+
+       IT IS NOT, AND IS NOT INTENDED TO BE, A COMPLETE LIST OF ALL COLUMNS.
+
+       COLUMNS CAN BE ADDED AT ANY TIME BY OVERLAYS.
+
+    *)
+
+
+
+
+    (* TASK COLUMNS *)
+
+    TaskModuleNumber                = 19200;  (* TLCAPTION *)
+
+    TaskNameColumn                  = 1;
+    NotesColumn                     = 2;
+    ResourceColumn                  = 3;
+    EarlyStartColumn                = 4;
+    EarlyEndColumn                  = 5;
+    DurationColumn                  = 6;
+    DurationDays                    = 7;
+    DurationWeeks                   = 8;
+    DurationMonths                  = 9;
+    TotalEffort                     = 10;
+    EffortDays                      = 11;
+    EffortWeeks                     = 12;
+    EffortMonths                    = 13;
+    AUXColumn                       = 14;
+    WBSColumn                       = 15;
+    OBSColumn                       = 16;
+    TaskTypeColumn                  = 17;
+    StatusColumn                    = 18;
+    StartStatusColumn               = 19;
+    DurationMethodColumn            = 20;
+    PercentAchieved                 = 21;
+    PriorityColumn                  = 22;
+    Summarizes                      = 23;
+    UserEnteredStartColumn          = 24;   (* 17-Sep-90 PFG changed from FixedStartColumn *)
+    LateStartColumn                 = 25;
+    LateEndColumn                   = 26;
+    FreeSlackColumn                 = 27;
+    LateTotalStartColumn            = 28;
+    LateTotalEndColumn              = 29;
+    TotalSlackColumn                = 30;
+    Highlight1Column                = 31;
+    Highlight2Column                = 32;
+    Highlight3Column                = 33;
+    PredSuccColumn                  = 34;
+    BaselineDuration                = 35;
+    BaselineDollars                 = 36;
+    BaselineEffort                  = 37;
+    BaselineDollarsToGo             = 38;
+    BaselineStartDate               = 39;
+    BaselineEndDate                 = 40;
+    BaselineBCWS                    = 41;
+    DurationDIVBase                 = 42;
+    TotalDollars                    = 43;
+    MathematicalEAC                 = 44; (* 10-May-91 TGS *)
+    SpentDollars                    = 45;
+    SpentDollarsDIVBase             = 46;
+    ToGoDollars                     = 47;
+    CompletedDuration               = 48;
+    CompletedDurationDIVBase        = 49;
+    ToGoDuration                    = 50;
+    ToGoDurationDIVBase             = 51;
+    CompletedEffort                 = 52;
+    ToGoEffort                      = 53;
+    AchievedDollars                 = 54;
+    CostPerformanceRatio            = 55; (* 9-May-91 TGS *)
+    SchedulePerformanceRatio        = 56; (* 9-May-91 TGS *)
+    BurnRateDollars                 = 57;
+    ScheduleVariance                = 58;
+    CostVariance                    = 59;
+    VarianceAtCompletion            = 60;
+    CostVariancePercent             = 61;
+    ScheduleVariancePercent         = 62;
+    EACVariancePercent              = 63;
+
+    (* Changed by RSC 3-Mar-89, was "Blanks1": *)
+
+    BlanksColumn                    = 64;
+
+    (* Added by RSC 3-Mar-89, removing "Blanks2" through "Blanks9": *)
+
+    TotalSlackHours                 = 65;
+    TotalSlackPercent               = 66;
+    StartElapsedDays                = 67;
+    StartElapsedWeeks               = 68;
+    EndElapsedDays                  = 69;
+    EndElapsedWeeks                 = 70;
+    DelayPastBaselineStartDays      = 71;
+    DelayPastBaselineEndDays        = 72;
+    EffortVariance                  = 73; (* 29-Nov-89 RSC used vacant slot. *)
+    IndentationLevel                = 74;
+
+    (* Added by RSC 3-Mar-89: *)
+
+    ParentWBS                       = 75;
+    PredecessorWBS                  = 76;
+    SuccessorWBS                    = 77;
+    AbbreviatedTaskName             = 78;
+    AbbrevParentage                 = 79;
+    EffortHours                     = 80;
+    DurationHours                   = 81;
+    FreeSlackHours                  = 82;
+    FreeSlackPercent                = 83;
+    SpentEffortPercent              = 84;
+    PropPctComplete                 = 85;
+    BaselinePropPctComplete         = 86;
+    ResourceLevelingDelay           = 87;
+    DurationVarianceDays            = 88;
+    CostColumn                      = 89;
+    CostAmount                      = 90;
+    ResourceAmount                  = 91;
+    FixedTaskDelay                  = 92; (* 9-May-91 TGS *)
+    LinkStatus                      = 93;
+    SortSequenceNumber              = 94;
+    IsItLate                        = 95;
+
+    (* Added by RSC 13-Mar-89: *)
+
+    TotalDollarsAsPctOfBase         = 96;
+    SpentDollarsAsPctOfTotal        = 97;
+    CurrentCostEfficiency           = 98;
+    ProjectedDuration               = 99;
+    ProjectedEndDate                = 100;
+    ProjectedCost                   = 101;
+    TimeElapsedPct                  = 102;
+    SplittingRuleColumn             = 103;      (* 14-Sep-90 PFG *)
+
+        (* 17-Sep-90 PFG Added the next four new columns: *)
+
+    SupposedToStartColumn           = 104;
+    UserEnteredEndColumn            = 105;
+    LateIndStartColumn              = 106;
+    LateIndEndColumn                = 107;
+
+    IndSlackHours                   = 108;
+    IndSlackDays                    = 109;
+    IndSlackPct                     = 110;
+    SeqNumColumn                    = 111;
+    AllowSlackColumn                = 112;
+    RequiredStartColumn             = 113;
+
+        (* 3-Apr-91 TGS Added the next 20 columns: *)
+        (* 10-May-91 TGS Moved OT columns to end   *)
+
+    SpentEffortStartDate            = 114;
+    SpentEffortEndDate              = 115;
+    LinkedTaskWBS                   = 116;
+    ExtraExpenses                   = 117;
+
+    (* 16-Aug-91 PFG  Moved this here to preserve its value from previous
+                      releases.  *)
+    WBSErrors                       = 123;
+
+    (* 20-May-91 TGS
+    OvertimeDollars                 = 118;
+    SpentOvertimeDollars            = 119;
+    ToGoOvertimeDollars             = 120;
+    OvertimeEffortHours             = 121;
+    SpentOvertimeEffortHours        = 122;
+    ToGoOvertimeEffortHours         = 123;
+    BaselineOvertimeDollars         = 124;
+    BaselineOvertimeEffortHours     = 125;
+    TotalDollarsLessExtras          = 126;
+    SpentTotalDollarsLessExtras     = 127;
+    ToGoTotalDollarsLessExtras      = 128;
+    TotalEffortWithOvertime         = 129;
+    SpentEffortWithOvertime         = 130;
+    ToGoEffortWithOvertime          = 131;
+    BaselineTotalEffortWithOvertime = 132;
+    BaselineTotalDollarsLessExtras  = 133;
+    *)
+
+        (*  There can be a gap in numbers between the column numbers before
+            the coding fields in order to leave room for more fields in
+            the future. *)
+
+    LastNonCodingTaskColumn         = 117;
+
+    CodingField1                    = 139;
+
+    NumberOfCodingFields            = 50;
+
+    HighestRootColumn               = CodingField1+NumberOfCodingFields;  (* >>> LAST ROOT COLUMN <<< *)
+
+END TaskColNumbers.
+

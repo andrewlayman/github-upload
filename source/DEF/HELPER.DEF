@@ -1,0 +1,90 @@
+DEFINITION MODULE Helper;
+
+    (* MODIFICATION HISTORY
+
+        6-Sep-89  AJL  Made the Context.Subject much larger. 
+       12-May-91  AJL  Add HelpExists.
+
+    *)
+
+
+
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType, ABoxAttribute;
+
+FROM FileSystem             IMPORT
+    (* TYPE *)                  File;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreeny, ascreenx;
+
+
+
+TYPE
+    AScreenAction = (JustDisplayTheText,    (* Display and return immediately. *)
+                     LeaveTheText,          (* Wait for user to confirm done.  *)
+                     RestoreTheScreen);     (* Wait for user; Restore screen.  *)
+    AHelpBox;     (* Opaque *)
+
+
+    AContextPointer = POINTER TO AContextRecord;
+
+    AContextRecord = RECORD
+                        Action          : CARDINAL;
+                        Reaction        : CARDINAL;
+                        Depth           : CARDINAL;
+                        Subject         : ARRAY [0..255] OF CHAR;
+                        ULX             : ascreenx;
+                        ULY             : ascreeny;
+                        LRX             : ascreenx;
+                        LRY             : ascreeny;
+                        ScreenAction    : AScreenAction;
+                     END;
+
+
+
+    (*  GiveHelp -- Using screen lines First through Last, present
+                    help about Subject.  Subject is a name of at
+                    most 8 characters, please. *)
+
+    (* GiveHelp -- Display help with no box, full screen width.
+                   No post help operations possible. *)
+
+PROCEDURE GiveHelp (Subject:ARRAY OF CHAR; First, Last: ascreeny;
+                    ScreenAction : AScreenAction);
+
+    (* HelpExists -- Returns TRUE iff there is help about the subject. *)
+
+PROCEDURE HelpExists (Subject:ARRAY OF CHAR):BOOLEAN;
+
+
+    (* OpenHelpBox -- Open a help box on the screen.  *)
+
+PROCEDURE OpenHelpBox(     Subject : ARRAY OF CHAR;
+                           BoxType : ABoxType;
+                           ULX     : ascreenx;
+                           ULY     : ascreeny;
+                           LRX     : ascreenx;
+                           LRY     : ascreeny;
+                           ScreenAction : AScreenAction;
+                       VAR HelpBox : AHelpBox    )  : BOOLEAN;
+
+
+PROCEDURE CloseHelpBox( VAR HelpBox : AHelpBox );
+
+PROCEDURE MoveHelpBox( VAR HelpBox : AHelpBox;
+                           ULX     : ascreenx;
+                           ULY     : ascreeny;
+                           LRX     : ascreenx;
+                           LRY     : ascreeny );
+
+PROCEDURE MoveToAvoid( VAR HelpBox : AHelpBox;
+                           ULX     : ascreenx;
+                           ULY     : ascreeny;
+                           LRX     : ascreenx;
+                           LRY     : ascreeny );
+
+
+END Helper.
+

@@ -1,0 +1,104 @@
+DEFINITION MODULE InitMenu;
+
+    (*   MODIFICATION HISTORY:
+
+            This module is from RunMenu.  It provides all the setup code to
+            build the list of menu items.
+
+         3-Feb-89 RSC   Cloned from RunMenu.
+
+    *)
+
+
+
+
+
+FROM RunMenu    IMPORT
+    (* Type *)      AnItem;
+
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+        SetMenuItem
+
+        Preconditions:
+            Index > 0.
+            Item record is filled in.
+
+        Postconditions:
+            If there is an item in the Class with the indicated
+            index number, its information will be changed to the
+            new (passed) information.
+
+
+    -----------------------------------------------------------------*)
+
+
+PROCEDURE SetMenuItem ( VAR Item    : AnItem;
+                            Index   : CARDINAL );
+
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+        AddMenuItem
+
+        Preconditions:
+            Item record is filled in.
+
+        Postconditions:
+            If there is an item in the Class with the indicated
+            index number a new item will be added to the class in
+            ordinal position prior to the pre-existing one.  Otherwise
+            a new item will be added as the last in the class.
+
+            Note that passing an index of zero adds the item at the
+            end of the class.
+
+
+    -----------------------------------------------------------------*)
+
+
+PROCEDURE AddMenuItem ( VAR Item    : AnItem;
+                            Index   : CARDINAL );
+
+
+
+
+
+
+
+
+
+    (*-----------------------------------------------------------------
+
+        DeleteMenuItem
+
+        Preconditions:
+            Index > 0
+            Class is an LString with length > 0.
+
+        Postconditions:
+            If there is an item in the Class with the indicated
+            index number, it will be deleted.
+
+    -----------------------------------------------------------------*)
+
+
+PROCEDURE DeleteMenuItem (  Class : ARRAY OF CHAR;
+                            Index : CARDINAL       );
+
+
+
+
+
+END InitMenu.
+
+

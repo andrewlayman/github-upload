@@ -1,0 +1,107 @@
+DEFINITION MODULE TempFile;
+
+  (* Temp File - Implement a cheesy temporary file scheme.
+
+        17-Jun-88 RSC Initial version.
+        21-Jun-88 EGK Changed RenameTempFile to accept a different directory.
+
+      HISTORY:
+      ========
+
+                The Logitech Create() call from FileSystem used to be used
+                for File/Save and File/Export because:
+
+                        1) When the file was created, it was created with
+                           a dummy name, and so would not clobber existing
+                           files.
+                        2) When the file was closed (explicitly or by an
+                           overlay exit) it was deleted.
+                        3) If the file was RENAMED, and then closed, it
+                           stayed permanent.
+
+                Thus we could create the file temporarily, and then, if all
+                was done properly, we would rename/delete any old file with
+                the target name, and then rename the TEMP (created) file to
+                the target name.
+
+      PROBLEM:
+      ========
+
+                After we shipped the product, we discovered that some network
+                users had errors because of the following:
+
+                        1) Create() puts the temp file in the CURRENT
+                           directory of the target drive, not the TARGET
+                           directory of the target drive.
+
+                        2) Some network users do not bother to set their
+                           CURRENT network directory to the directory
+                           they have access to.
+
+                        For example:
+
+                           Kris logs into the network and is given a new
+                           drive F: to use.  She does not change the default
+                           path of F:\ to the path she has access to,
+                           F:\USERS\KGOMPPER\
+
+                           The Create() call tries to create the temp file on
+                           F:\ and fails, even though Kris wanted the saved
+                           file to end up on F:\USERS\KGOMPPER\.
+
+      THIS MODULE:
+      ============
+
+                We can't patch the Create() call, because it is in the ROOT
+                and we can't change that yet.
+
+                We can't put global data in the root or in TLPUTIT, because
+                we can't change that yet.
+
+                Ta ta!  Enter this module!
+
+                        > Creates temp files in a specified directory.
+                        > Deletes and closes in one step.
+                        > Rename and closes in one step.
+                        > Context is saved in HOLDER, so this module does
+                          not have to have its data shared across the file
+                          creator/renamer (as in the case of the exporters).
+
+  *)
+
+FROM FileSystem         IMPORT
+        (* TYPE *)         File;
+
+  (* Create Temp File - Create a temporary file in the specified directory.
+
+        Preconditions  - FilePath contains a directory path (DK: is ok).
+        Postconditions - FileHandle is opened, file must be closed via
+                         either RenameTempFile or DeleteTempFile.
+                         TRUE means "ok".
+  *)
+PROCEDURE CreateTempFile( VAR FilePath   : ARRAY OF CHAR;
+                          VAR FileHandle : File           ) : BOOLEAN;
+
+  (* Rename Temp File  -  Rename and close the temp file to a new name.
+
+        Preconditions  - FileName is what to rename the file to, including
+                                  device, directory, filename, and extension.
+                         FileHandle is the active handle returned from the
+                                  CreateTempFile call.
+        Postconditions - File has been renamed and closed, or else FALSE
+                                  is returned.
+  *)
+PROCEDURE RenameTempFile( VAR FileName   : ARRAY OF CHAR;
+                          VAR FileHandle : File           ) : BOOLEAN;
+
+  (* Delete Temp File - Delete and close the temp file.
+
+        Preconditions  - FileHandle is the active handle returned by the
+                                  CreateTempFile call.
+        Postconditions - File is deleted and closed.
+  *)
+PROCEDURE DeleteTempFile( VAR FileHandle : File           );
+
+
+END TempFile.
+

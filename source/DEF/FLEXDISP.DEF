@@ -1,0 +1,22 @@
+DEFINITION MODULE FlexDisp;
+
+
+FROM FlexStor       IMPORT AnExtHandle;
+
+
+FROM SYSTEM  IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+PROCEDURE CtoH     (Card:CARDINAL; VAR String:ARRAY OF CHAR);
+
+PROCEDURE AtoS( A : ADDRESS; VAR S : ARRAY OF CHAR);
+
+PROCEDURE HandleToString( H : AnExtHandle; VAR S : ARRAY OF CHAR );
+
+
+
+
+END FlexDisp.
+
+

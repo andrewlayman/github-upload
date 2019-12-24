@@ -1,0 +1,56 @@
+DEFINITION MODULE Bind;
+
+(*  =========================================================================
+    Last Edit : August 6, 1989 2:53PM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+         Simulates Overlay calls in OS/2.
+
+    MODIFICATION HISTORY:
+        04-Aug-89 WKH   First version for Time Line V4.
+    =========================================================================
+*)
+
+CONST 
+    MaxBindCount            = 10;
+    MaxNameSize             = 13;
+
+TYPE
+    BindProc                = PROCEDURE();
+
+
+    (*  =====================================================================
+        
+        BindInit - 
+            Preconditions :
+
+            Postconditions :
+
+            Parameters :
+                Input:
+
+                Output:
+
+        =====================================================================
+    *)
+PROCEDURE BindInit ();
+
+
+    (*  =====================================================================
+        
+        ExecuteBindProc - 
+            Preconditions :
+
+            Postconditions :
+
+            Parameters :
+                Input:
+
+                Output:
+
+        =====================================================================
+    *)
+PROCEDURE ExecuteBindProc( VAR BindName : ARRAY OF CHAR );
+
+END Bind.

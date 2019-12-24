@@ -1,0 +1,66 @@
+DEFINITION MODULE CpmActivate;
+
+    (* CpmActivate 
+
+       Helps to locate the start and end dates of tasks in the Critical
+       Path Method (precedence network) calculations by adjusting start
+       dates to take into account restrictions on the start dates of 
+       tasks and the effects on end dates of the resources assigned.
+
+       These procedures can respect vacation calendars, but they ignore
+       resource availability.
+
+
+       MODIFICATION HISTORY:
+
+       9-Sep-90  AJL - Moved code here from TLCPM.
+      20-Nov-90  CL  - Created procedure BackFindTaskStart.
+      29-Nov-90  AJL - Removed FindAStartDate.  Its function is now 
+                       included into ActivateTask.
+      06-Dec-90  JES - Fixed a comment.
+      31-Dec-90  AJL - Removed BackFindTaskStart;
+      12-Jan-91  AJL - Added ActivateSummaryTask.
+
+    *) 
+
+
+FROM Allocs     IMPORT 
+    (* TYPE *)      ATaskPtr;
+
+
+
+    (*--------------------------------------------------------------------
+
+        ActivateTask
+
+        Purpose: Put the task into the schedule at its EarlyStartDate.
+                 Schedule any resources assigned by creating a varying
+                 assignment. Compute EarlyEndDate.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE ActivateTask( Task : ATaskPtr );
+
+
+
+    (*--------------------------------------------------------------------
+
+        ActivateSummaryTask
+
+        Purpose: Schedule any resources assigned by creating a varying
+                 assignment, using the start date and end date are 
+                 already in the Task^.Plan.Dates.  Split varying assignments
+                 around any vacations.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE ActivateSummaryTask( Task : ATaskPtr );
+
+
+
+
+END CpmActivate.
+
+

@@ -1,0 +1,316 @@
+DEFINITION MODULE RsrcViews;              (* Subclass of ActiveViews *)
+
+    (*  RsrcViews provides an object which is a view of a tree node.
+        The data object of the tree node is a resource.  The resource name is
+        displayed using indentation to reflect depth in the tree, and "+"
+        and "-" symbols to show whether or not it has children.  If the
+        resource has no children, its resource type and long name will also
+        be displayed.  The resource name is displayed in reverse video if the
+        cursor is on it.
+    *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AResourceViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+TYPE
+        (*  AResourceView is a subclass of AnActiveView  *)
+
+    AResourceView               = POINTER TO AResourceViewRecord;
+
+    AResourceViewMethods        = POINTER TO AResourceViewMethodsRecord;
+
+    AResourceViewRecord         = RECORD
+                                    Methods        : AResourceViewMethods;
+                                  END;
+
+
+
+
+
+TYPE
+
+        (*  These types are re-definitions of types exported from ActiveViews. *)
+
+
+    AResourceViewStatus         = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                                   CursorOn,
+                                   ResourceViewSpare5, ResourceViewSpare6, 
+                                   ResourceViewSpare7, ResourceViewSpare8, 
+                                   ResourceViewSpare9);
+
+    AResourceViewStatusSet      = SET OF AResourceViewStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  These are the methods for AResourceView objects.  They inherit and
+        redefine methods from ActiveViews, but do not add any new methods
+        of their own.
+    *)
+
+TYPE
+    AResourceViewMethodsRecord  = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    AResourceView,
+                                        VAR AResourceView )
+                                                           : BOOLEAN;
+          StoreOn           : PROCEDURE(    AResourceView,
+                                            AnObject      );
+
+          Discard           : PROCEDURE(VAR AResourceView );
+
+          SuperclassMethods : AnObjectMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    AResourceView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny      );
+
+          GetInternalXY     : PROCEDURE(    AResourceView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny      );
+
+          (*------------------------------------------------------------------
+            GetTitle --
+
+                In this module, GetTitle returns the name of the viewed
+                resource, NOT the title of this view's box, which may or may
+                not be displaying.
+
+            Preconditions:
+                The view must be a valid Resource view object.
+
+            Postconditions:
+                If the view object of this view is not NIL, the resource name
+                associated with this view will be returned.  Otherwise, a
+                zero-length string will be returned.
+          ------------------------------------------------------------------*)
+
+          GetTitle          : PROCEDURE(    AResourceView,
+                                        VAR ARRAY OF CHAR );
+
+          SetObject         : PROCEDURE(    AResourceView,
+                                            ATreeNode     );
+
+          GetObject         : PROCEDURE(    AResourceView )
+                                                           : ATreeNode;
+
+          Move              : PROCEDURE(    AResourceView,    
+                                            ascreenx,        
+                                            ascreeny      );
+
+          Display           : PROCEDURE(    AResourceView );
+
+          GetHelp           : PROCEDURE(    AResourceView );
+
+          HideView          : PROCEDURE(    AResourceView );
+
+          RevealView        : PROCEDURE(    AResourceView );
+
+          NotifyOfChange    : PROCEDURE(    AResourceView );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    AResourceView,
+                                            AnEvent       );
+
+          GetRecordedEvent  : PROCEDURE(    AResourceView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    AResourceView,
+                                            AnEvent,
+                                        VAR AnEvent       );
+
+          GetCursor         : PROCEDURE(    AResourceView )   
+                                                           : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    AResourceView,   
+                                            BOOLEAN       );
+
+          SetCursorMode     : PROCEDURE(    AResourceView,
+                                            avidmode      );
+
+
+          ActiveViewTag     : CARDINAL;
+
+
+          ResourceViewTag   : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsResourceView --
+
+    Initialize the indicated object as a resource view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid resource view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsResourceView(  ResourceView : AResourceView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL      );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateResourceView --
+
+    Allocate storage for, and initialize the indicated object as a resource 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid resource view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateResourceView(VAR ResourceView : AResourceView;
+                                 SuperView    : AnActiveView;
+                                 Ulx          : ascreenx;
+                                 Uly          : ascreeny;
+                                 Lrx          : ascreenx;
+                                 Lry          : ascreeny;
+                                 Box          : ABoxType;
+                                 VideoMode    : avidmode;
+                                 HelpKey      : CARDINAL )
+                                                          : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsResourceView --
+
+    UnInitialize the indicated object as a resource view.
+
+    Preconditions:
+        The object will be a valid resource view object.
+
+    Postconditions:
+        The resource view will no longer be a valid resource view object, and
+        any side-effects of InitAsResourceView will be undone.  This procedure
+        does not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsResourceView(    ResourceView : AResourceView);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneResourceViewMethods --
+
+    Make a copy of the resource view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The resource view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneResourceViewMethods(    MethodObject : AResourceViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateResourceView --
+
+    Determine that the indicated object is in fact a valid resource view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid resource view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateResourceView(    ResourceView : AResourceView);
+
+
+
+END RsrcViews.
+

@@ -1,0 +1,46 @@
+DEFINITION MODULE Logo;
+
+(* Logo - Do Time Line's startup logo.
+
+    This was a part of TLStart, but was moved here so that other stand-alone
+    Time Line programs can use the logo code.
+
+    Modification History:
+
+    16-May-89 RSC First Version from TLSTART.
+*)
+
+
+
+
+(* Banner - run the banner, including refrehing the logo.
+*)
+PROCEDURE Banner();
+
+
+
+  (* RefreshLogo - refresh the logo on the screen, as appropriate.
+  *)
+PROCEDURE RefreshLogo();
+
+
+
+
+
+
+
+
+ (* StartLogo - Setup the logo screens for displaying.
+
+    Parse the phrases in TLPHRASE.TXT for the initial and final logo screens.
+    Set up the global data structure used by the incremental logo display
+    routine.  Our intention is to animate the screen in N steps.
+
+    Remember that here, KbioInit() has NOT YET BEEN CALLED!, so be carefull
+    which which features you invoke!
+ *)
+
+PROCEDURE StartLogo();
+
+END Logo.
+

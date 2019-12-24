@@ -1,0 +1,40 @@
+DEFINITION MODULE Clock;
+
+    (* Clock -- Interface to hardware clock and timer. *)
+
+TYPE
+    ASystemTime         =   RECORD
+        SysYear     :   CARDINAL;
+        SysMonth    :   CARDINAL;
+        SysDay      :   CARDINAL;
+        SysHour     :   CARDINAL;
+        SysMinute   :   CARDINAL;
+        SysSecond   :   CARDINAL;
+    END;
+
+     (*  GetDateAndTime returns the current clock time.  *)
+
+PROCEDURE GetDateAndTime(VAR SystemTime : ASystemTime );
+
+    (*  Set the current date and time.  Sets the system clock. *)
+
+PROCEDURE SetDateAndTime( VAR SystemTime : ASystemTime );
+
+    (*  Delay within this procedure for a period of time measured in
+        tenths of a second.  Maximum delay is therefore a little
+        over 109 minutes.
+
+        The delay will end prematurely whenever EarlyExit returns
+        TRUE during the wait.
+
+    *)
+
+TYPE
+    ATestProcedure = PROCEDURE () : BOOLEAN;
+
+PROCEDURE Delay(Centiseconds:CARDINAL; EarlyExit : ATestProcedure );
+
+PROCEDURE NoEarlyExit () : BOOLEAN;
+
+END Clock.
+

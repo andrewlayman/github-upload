@@ -1,0 +1,73 @@
+DEFINITION MODULE NormalExport;
+
+
+FROM IntFileIO              IMPORT
+    (* TYPE *)                  ADataType, AFormat, AnIntDataRecord;
+
+
+
+TYPE
+    AnOpenFileProc      = PROCEDURE ( VAR ARRAY OF CHAR ) : BOOLEAN;
+
+    ACloseFileProc      = PROCEDURE ();
+
+    ABeginRecordProc    = PROCEDURE ();
+
+    AnEndRecordProc     = PROCEDURE ();
+
+    ADefineColumnProc   = PROCEDURE ( VAR ARRAY OF CHAR,
+                                          ADataType,
+                                          AFormat,
+                                          CARDINAL      );
+
+    AWriteDataProc      = PROCEDURE (     ADataType,
+                                      VAR AnIntDataRecord,
+                                          AFormat         );
+
+    AWriteNullProc      = PROCEDURE (     ADataType,
+                                          AFormat         );
+ 
+VAR
+    ErrorFlag           : BOOLEAN;
+
+
+
+(*  ExportNormalData --
+
+    This procedure normalizes an intermediate file (of any dimension and
+    with any number of predicates) and exports the data using the procedures
+    passed here as actual parameters.
+
+
+    The procedures will be called in the following order:
+
+    OpenFile
+
+    FOR (the number of heading identifiers + predicates) DO
+        DefineColumn
+    END
+
+    FOR the number of data values DO
+        BeginRecord
+        FOR (the number of heading identifiers + predicates) DO
+            WriteData or WriteNull
+        END
+        EndRecord
+    END
+
+    CloseFile
+
+*)
+
+    
+PROCEDURE ExportNormalData  (   OpenFile        : AnOpenFileProc;
+                                CloseFile       : ACloseFileProc;
+                                BeginRecord     : ABeginRecordProc;
+                                EndRecord       : AnEndRecordProc;
+                                DefineColumn    : ADefineColumnProc;
+                                WriteData       : AWriteDataProc;
+                                WriteNull       : AWriteNullProc    );
+
+
+END NormalExport.
+

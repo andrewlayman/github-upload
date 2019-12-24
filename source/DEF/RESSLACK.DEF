@@ -1,0 +1,52 @@
+DEFINITION MODULE ResSlack;
+
+    (* Procedures to find late free and total start dates in resource
+       levelling.
+
+
+    MODIFICATION HISTORY:
+
+    Feb. 28, 89 - JES -created.
+    30-Mar-90  RSC   Made Timeu to Timei/TimeForm conversions.
+    21-Dec-90  JES   This module was renamed ResSlack from ResLateDates.
+                     (ResLateDates is now a new module that computes
+                     late start dates.)
+    28-Dec-90  JES   Changed name of FindLate to ComputeSlack.
+    25-Mar-91  AJL   Removed reference to ActiveList and ToGo.
+                     Added documentation.
+    26-Mar-91  JES   Changed parameter name "LateDate" to "EndOfSchedule".
+    *)
+
+
+
+FROM FlexStor       IMPORT AnExtHandle;
+    (* TYPE *)
+
+FROM Timei          IMPORT ADate;
+    (* TYPE *)
+
+    
+    (* ----------------------------------------------------------------
+
+       ComputeSlack
+
+       Purpose: Compute the Resource-levelled total, free and independent
+       total slack, plus associated late start and end dates for all the
+       tasks in the schedule.
+
+       Input:  ScheduledList--List of all tasks, sorted into topological
+                              order with all early start and end dates 
+                              already computed.
+               LateDate     --The end date of the schedule.
+               TaskCount    --Number of tasks in the ScheduledList.
+
+     ------------------------------------------------------------------ *)
+
+    
+PROCEDURE ComputeSlack (ScheduledList : AnExtHandle; 
+                        EndOfSchedule : ADate;
+                        TaskCount     : CARDINAL);
+
+
+END ResSlack.
+

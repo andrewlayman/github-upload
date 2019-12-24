@@ -1,0 +1,46 @@
+DEFINITION MODULE OBigTimeU;
+
+(*  =========================================================================
+    Last Edit : August 20, 1990 5:13PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Old version of BigTimeU, for importing version 3.0..4.0 schedules.
+
+
+
+    MODIFICATION HISTORY:
+
+        20-Aug-90 RSC  First version, from the old BigTimeU module.
+
+    =========================================================================
+*)
+
+FROM BigTimeU   IMPORT
+    (* TYPE *)      ABigTime;
+
+
+
+  (* BigTimeToTime - Convert out of BigTime units.
+
+     Preconditions  - BigTime is from a version 3.0..4.0 call
+                      to TimeToBigTime (from a schedule file).
+
+     Postconditions - Year, Month, Day, Hour, Minute, Second are returned.
+  *)
+
+
+PROCEDURE BigTimeToTime(     BigTime     : ABigTime;
+                         VAR Year,
+                             Month,
+                             Day,
+                             Hour,
+                             Minute,
+                             Second      : CARDINAL );
+
+
+
+END OBigTimeU.
+
+

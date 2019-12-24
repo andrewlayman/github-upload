@@ -1,0 +1,137 @@
+DEFINITION MODULE Printers;
+
+    (* This module implements a class of devices which are output
+       only character-mode.
+    *)
+
+
+
+    (* MODIFICATION HISTORY:
+
+       21-Feb-89  AJL -Original version.
+       12 Jun 89  MWP  Added support for outputting to a Null device.
+
+    *)
+
+
+TYPE
+        (* APrinterConnection is an abstract type.  It is a route
+           to a particular printer, plus information about the printer
+           interface methods and state. *)
+
+    APrinterConnection;                  (* Abstract type. *)
+
+
+        (* AUserQueryProc is any procedure that will pose a
+           question to the user (the LString parameter) and return
+           the answer. *)
+
+    AUserQueryProc = PROCEDURE( VAR ARRAY OF CHAR ) : BOOLEAN;
+
+    APrintMethod = (Parallel, Serial, PrintDOS, NullOutput );
+
+    AProtocol    = (None, CheckCTS, XonXoff, EnqAck );
+
+    APrinterOptionsBlock = RECORD
+        Method : APrintMethod;
+        ParallelPort : CARDINAL;
+        SerialPort   : CARDINAL;
+        BaudRate     : CARDINAL;   (* Actual Bits per second. *)
+        DataBits     : CARDINAL;
+        StopBits     : CARDINAL;
+        ParityBit    : BOOLEAN;
+        EvenParity   : BOOLEAN;
+        TimeOut      : CARDINAL;   (* 100ths of second *)
+        Protocol     : AProtocol;
+        DOSDevice    : CARDINAL;
+        END;
+
+
+
+    (*  ---------------------------------------------------------------
+
+        OpenPrinter -- Attempt to open the printer.
+
+        Preconditions -- none.
+
+        PostConditions -- Printer will be a valid attachment to a printer
+                          device.
+
+                          Either we return FALSE,
+                          or
+                          the printer will be opened, attached to the port
+                          and using the protocol specified in Options.
+
+     ------------------------------------------------------------------ *)
+
+VAR OpenPrinter : PROCEDURE( VAR (*Printer:*) APrinterConnection,
+                                 (*Options:*) APrinterOptionsBlock,
+                                 (*HowToQuery:*) AUserQueryProc ) : BOOLEAN;
+
+
+
+    (*  ---------------------------------------------------------------
+
+        QueryPrinterIsOpen --
+
+        Preconditions --  none
+
+        PostConditions -- Either PrinterIsOpen(Printer) will return FALSE,
+                          or
+                          the printer is ready for output.
+
+     ------------------------------------------------------------------ *)
+
+
+VAR QueryPrinterIsOpen : PROCEDURE( (*Printer:*) APrinterConnection ) : BOOLEAN;
+
+
+
+
+    (*  ---------------------------------------------------------------
+
+        ClosePrinter --
+
+        Preconditions -- Printer must have been opened via a call to
+                         OpenPrinter and not subsequently passed to
+                         ClosePrinter.
+
+        PostConditions -- Any storage associated with Printer is discarded.
+
+     ------------------------------------------------------------------ *)
+
+
+VAR ClosePrinter : PROCEDURE( VAR (*Printer:*) APrinterConnection );
+
+
+
+
+
+
+    (*  ---------------------------------------------------------------
+
+        PrintACharacter --
+
+        Preconditions -- Printer must have been opened via a call to
+                         OpenPrinter and not subsequently passed to
+                         ClosePrinter.
+                      -- QueryPrinterIsOpen must return TRUE.
+
+        PostConditions -- If TRUE is returned, the printer state is changed
+                          such that the character has been transferred to
+                          the printer.
+                          IF FALSE is returned, the character may or may
+                          not have been transferred to the printer.  The
+                          printer state is changed to Closed.
+
+     ------------------------------------------------------------------ *)
+
+
+
+VAR PrintACharacter : PROCEDURE( VAR (*Printer:*) APrinterConnection,
+                                     (*TheChar:*) CHAR):BOOLEAN;
+
+
+
+END Printers.
+

@@ -1,0 +1,80 @@
+DEFINITION MODULE PrintCol;
+
+
+
+
+TYPE
+         (* AColumnWidthProc -- Given a column number, return the
+                                width of that column, or zero if
+                                the column is not part of the table
+                                to be printed. *)
+
+     AColumnWidthProc    = PROCEDURE(     CARDINAL   ) : CARDINAL;
+
+
+
+
+
+    (* PlanStripLayout -- Build a hidden table that contains the
+                          placement of columns on pages.   This
+                          routine must be called AFTER the report
+                          is started with StartReport, and before
+                          any other procedure in this module is
+                          called. *)
+
+PROCEDURE PlanStripLayout(  ColumnWidth       : AColumnWidthProc     );
+
+
+
+    (* OnThisStrip    --  Returns TRUE iff the Column is on the Strip. *)
+
+PROCEDURE OnThisStrip(    Column   : CARDINAL;
+                          Strip     : CARDINAL
+                      ) : BOOLEAN;
+
+
+    (* PrintSeparation -- Print some space between columns.   Call
+                          before each column, except the first on a
+                          page. *)
+
+
+PROCEDURE PrintSeparation;
+
+
+    (* PrintDashes     -- Print the Character in each column position
+                          for each column on the page, separating each
+                          column with spaces. *)
+
+PROCEDURE PrintDashes(    Strip      : CARDINAL;
+                          Character  : CHAR;
+                          ColumnWidth: AColumnWidthProc );
+
+
+    (* HighestStrip     -- Return the page number (1..n) of the last
+                           page (strip) to be printed. *)
+
+
+PROCEDURE HighestStrip():CARDINAL;
+
+
+    (* HighestColumn   -- Return the highest column number that can
+                          be printed.  Call this after PlanStripLayout. *)
+
+
+PROCEDURE HighestColumn():CARDINAL;
+
+
+
+
+    (* SetSeparation   -- Set the separation space between columns,
+                          overriding the default of 3. *)
+
+
+PROCEDURE SetSeparation( Spacing : CARDINAL );
+
+
+
+
+END PrintCol.
+                                                                                
+

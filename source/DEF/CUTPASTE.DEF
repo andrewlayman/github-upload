@@ -1,0 +1,148 @@
+DEFINITION MODULE CutPaste;
+
+(*  =========================================================================
+    Last Edit : August 9, 1989 5:09PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Implement a simple Cut/Paste buffer.
+
+    MODIFICATION HISTORY:
+
+         9-Aug-89  RSC  First cut, as per AJL.
+
+    =========================================================================
+*)
+
+FROM Text           IMPORT
+    (* TYPE *)          AText;
+
+
+CONST
+    CopyToPasteKey  = 302;
+    PasteKey        = 303;
+
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - CopyToPasteBuffer
+
+            Preconditions :
+
+                Time Line has initialized, and FlexStor is running.
+                The StringToEdit cannot contain any chars not allowed by
+                the Text module in AText.
+
+            Postconditions :
+
+                The global paste buffer contains ONLY the passed string.
+
+            Parameters :
+                Input:  CutPasteString  the string to copy to the cut/paste
+                                        buffer.  It must fit within one line
+                                        of "AText".
+
+                Output: None
+
+        =====================================================================
+    *)
+PROCEDURE CopyToPasteBuffer( VAR CutPasteString : ARRAY OF CHAR );
+
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - CopyToPasteText
+
+            Preconditions :
+
+                Time Line has initialized, and FlexStor is running.
+
+            Postconditions :
+
+                The global paste buffer contains the passed text.
+
+            Parameters :
+                Input:  Text        A Valid, filled in Text record.
+
+                Output: None.
+
+        =====================================================================
+    *)
+PROCEDURE CopyToPasteText(    Text  : AText );
+
+
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - PasteBuffer
+
+            Preconditions :
+
+                Time Line has initialized, and FlexStor is running.
+
+            Postconditions :
+
+                The first line of the paste buffer, if any, is copied into
+                CutPasteString.  If there is no paste string, CutPasteString
+                is empty.  Any needed truncation happens.
+
+            Parameters :
+                Input:  None.
+
+                Output: CutPasteString  is the string containing whatever
+                                           was in the paste buffer.
+
+        =====================================================================
+    *)
+PROCEDURE PasteBuffer( VAR CutPasteString : ARRAY OF CHAR );
+
+
+
+
+
+
+    (*  =====================================================================
+        
+        PROCEDURE - PasteText
+
+            Preconditions :
+
+                Time Line has initialized, and FlexStor is running.
+                Text is a valid Text, including NIL.  It cannot be
+                uninitialized garbage.
+
+            Postconditions :
+
+                The text is returned as the entire paste buffer.  If no
+                paste buffer is available, then an empty text is returned.
+                It could be NIL.  The old contents of Text are destroyed.
+
+            Parameters :
+                Input:  None.
+
+                Output: Text contains the paste buffer.
+
+        =====================================================================
+    *)
+PROCEDURE PasteText( VAR Text        : AText );
+
+
+
+
+
+END CutPaste.
+
+

@@ -1,0 +1,18 @@
+DEFINITION MODULE Dispatcher;
+
+
+TYPE
+    ALayoutProc             = PROCEDURE();
+
+VAR
+    CurrentLayoutProc       : ALayoutProc;
+
+
+PROCEDURE Dispatch( ToDo : CARDINAL );
+
+
+
+
+
+END Dispatcher.
+

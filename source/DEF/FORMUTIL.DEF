@@ -1,0 +1,243 @@
+DEFINITION MODULE FormUtil;
+
+    (* MODIFICATION HISTORY:
+
+        7-Jan-91 AJL -Changed the parameter S on StringToReal from VAR
+                      to call-by-value, so that a side-effect of the routine
+                      is no longer to modify the input parameters.
+    *)
+
+FROM Codes      IMPORT ACode, ASetOfCodes;
+
+FROM Events     IMPORT AnEvent;
+
+FROM FormCon    IMPORT MaxChoice, AFieldNo,
+                       AChoiceNo, AFieldType;
+
+FROM FormRec    IMPORT Anxoff, Ayoff, MaxFLines,
+                       AFormField, AFormRecord, FLineLen, MaxCapLen,
+                       AFormRecordPointer, APromptType,
+                       AnAttribute, ASetOfAttributes,
+                       ACaption, MaxCaptionsPerField;
+
+FROM Forms      IMPORT 
+    (* TYPE *)         AFieldValue, ACheckProc, AQueryPromptProc,
+                       AStringValuePointer, ACursorAttribute;
+
+FROM Helper     IMPORT AHelpBox;
+
+FROM Kbio       IMPORT ascreenx, ascreeny, avidmode;
+
+FROM Rugs       IMPORT ARug;
+
+FROM SYSTEM     IMPORT ADDRESS;
+
+
+
+TYPE
+    AnOpenMode               = ( UnderOurControl, UnderUserControl );
+    AFieldTypeSet            = SET OF AFieldType;
+    AFormValuePointer = POINTER TO ARRAY [0..100] OF AFieldValue;
+
+    AFormControlBlock = RECORD
+                            Field,
+                            Index                : CARDINAL;
+                            LastKey              : ARRAY [0..1] OF CARDINAL;
+                            KeyStackIndex        : CARDINAL;           (* Index of next unused stack cell. *)
+                            FormValuePointer     : AFormValuePointer;
+                            FormRecordPointer    : AFormRecordPointer;
+                            UserCheckProc        : ACheckProc;
+                            UserContext          : ADDRESS;
+                            QueryPrompt          : AQueryPromptProc;
+                            TemporaryStringValue : AStringValuePointer;
+                            ULX                  : ascreenx;
+                            ULY                  : ascreeny;
+                            LRX                  : ascreenx;
+                            LRY                  : ascreeny;
+                            PromptRug            : ARug;
+                            Rug                  : ARug;
+                            KeyStack             : ARRAY [0..4] OF ACode;
+                            HelpULY, HelpLRY     : ascreeny;
+                            HelpBox              : AHelpBox;
+                            OpenMode             : AnOpenMode;
+                            ModalHelp            : BOOLEAN;
+                            PromptPending        : BOOLEAN;
+                            PromptRugSaved       : BOOLEAN;
+                            RugSaved             : BOOLEAN;
+                            InsertMode           : BOOLEAN;
+                            FieldIsFull          : BOOLEAN;
+                            DisplayEnable        : BOOLEAN;       (* Permit field display. *)
+                            ChangesMadeToForm    : BOOLEAN;       (* RSC 10/16/87 *)
+                        END;
+
+    AFormControlBlockPointer = POINTER TO AFormControlBlock;
+
+
+
+PROCEDURE GetNextEvent(     Form : AFormControlBlockPointer;
+                        VAR CodeSet:ASetOfCodes;
+                        VAR Event  :AnEvent );
+
+
+PROCEDURE PushCode(    Form : AFormControlBlockPointer;
+                       Code : ACode );
+
+
+PROCEDURE PopEvent(     Form : AFormControlBlockPointer;
+                   VAR  Event  :AnEvent ) : BOOLEAN;
+
+
+
+
+
+PROCEDURE ClearAnyHelpText( Form : AFormControlBlockPointer );
+
+
+
+
+    (*  SHOWBASE -- Show the base portion of a screen form.
+                    Y gives the starting line number. *)
+
+PROCEDURE ShowBase(Form : AFormControlBlockPointer);
+
+
+
+
+
+    (* TemplateFieldNo -- Return the number of the field whose attributes
+                          define the passed field.  This dereferences
+                          repeating fields. *)
+
+PROCEDURE TemplateFieldNo(VAR Form:AFormRecord; FieldNo:AFieldNo):AFieldNo;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    (* GetFieldAttributes -- Find the x,y position of
+                          a field.  This does the computations necessary
+                          to shield the user from concerns about whether
+                          this is a unique field or part of a table.   If
+                          the field is a string or numeric field, the
+                          Index is not used. *)
+
+PROCEDURE GetFieldAttributes(VAR Form:AFormRecord;
+                                 FieldNo:AFieldNo;
+                                 Index:CARDINAL;
+                             VAR BaseField : AFormField;
+                             VAR XOff : Anxoff;
+                             VAR YOff : Ayoff;
+                             VAR Len  : CARDINAL;
+                             VAR Group : CARDINAL );
+
+
+
+
+
+
+    (* SHOWCHOICE -- Show a selected element of a choice or set
+                    in the indicated videomode. *)
+
+PROCEDURE ShowChoice(    x          : ascreenx;
+                         y          : ascreeny;
+                     VAR FormRecord : AFormRecord;
+                         FieldNo    : AFieldNo;
+                         i          : AChoiceNo;
+                         Mode       : avidmode );
+
+
+
+
+PROCEDURE MakeNumericString(VAR FieldValue:AFieldValue;
+                                Len:CARDINAL;
+                            VAR s : ARRAY OF CHAR);
+
+
+
+
+PROCEDURE MakeRealString(VAR FieldValue: AFieldValue;
+                             MinDigits, MaxDigits : CARDINAL;
+                             Len       : CARDINAL;
+                         VAR s         : ARRAY OF CHAR);
+
+
+
+
+    (* Convert a string containing a number or numeric expression
+       to a real number, or else set ok to FALSE. *)
+
+PROCEDURE StringToReal(     S : ARRAY OF CHAR;
+                        VAR R : REAL;
+                        VAR ok : BOOLEAN );
+
+
+
+
+PROCEDURE MakeStringValue(     Form : AFormControlBlockPointer;
+                               FieldValue : AFieldValue;
+                               BaseField : AFormField;
+                               Len    : CARDINAL;
+                           VAR S : ARRAY OF CHAR );
+
+
+
+        (* SetTemporaryValue -- Copy the value of the field into a
+                                temporary work area.  This is in,
+                                (or pointed to) by Form^. *)
+
+
+PROCEDURE SetTemporaryValue(     Form     : AFormControlBlockPointer;
+                                 Field    : AFieldNo     );
+
+
+    (* SHOWVALUE -- Show a single field's value.  *)
+
+PROCEDURE ShowThisValue(    Form       : AFormControlBlockPointer;
+                            FieldNo:AFieldNo;
+                        VAR FieldValue: AFieldValue);
+
+
+
+PROCEDURE DisplayCursor(    Form            : AFormControlBlockPointer;
+                        VAR FormValue       : ARRAY OF AFieldValue;
+                            FieldNo         : AFieldNo;
+                            Index           : CARDINAL;
+                            CursorAttribute : ACursorAttribute);
+
+
+
+PROCEDURE GetPromptCoordinates(     Form  : AFormControlBlockPointer;
+                                VAR PULX  : ascreenx;
+                                VAR PULY  : ascreeny;
+                                VAR PLRX  : ascreenx;
+                                VAR PLRY  : ascreeny   );
+
+    (* DisplayFieldPrompt -- Display the prompt text in the
+                             prompt area of the form. *)
+
+PROCEDURE DisplayFieldPrompt(     Form      : AFormControlBlockPointer;
+                                  Type      : AFieldType;
+                                  FieldNo   : AFieldNo;
+                                  Highlight : BOOLEAN    );
+
+
+
+
+
+
+PROCEDURE OkToEscapeForm( Form : AFormControlBlockPointer ) : BOOLEAN;
+
+
+
+END FormUtil.
+
+

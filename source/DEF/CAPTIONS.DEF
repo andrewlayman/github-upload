@@ -1,0 +1,317 @@
+DEFINITION MODULE Captions;
+
+  (* MODIFICATION History - 
+
+      6/5/87  RSC  Added "LongDurationToString"
+                   and "AssignmentSummaryToString".
+      11-Jun-87 LAA Added new procedures to support GanttViews and AVPViews.
+      05-Feb-88 LAA Changed parameter to GetColumnInfo, and added 
+                    GetColumnValue and GetColumnString to support task table
+                    and exporting.
+      08-Feb-88 LAA Added RemainingBaselineCost column.
+      11-Feb-88 LAA Added IndentationLevel column.
+      22-Feb-88 LAA Exported FormatLongDuration.
+      25-Feb-88 LAA Changed parameters of FormatLongDuration.
+      26-Feb-88 LAA Exported AppendTimeUnit.
+      20-Dec-88 RSC Massive changes.  Bring in line with TableCaptions, remove
+                    formatting routines into RealFormat and TimeFormat.
+       7-Feb-89 RSC Added "GetColumnString" which gets the value and formats it.
+       9-Mar-89 RSC Added a new ColumnInfoChoice of "Get Sort Sequence" to allow
+                    sorting of the column name list.
+      21-Mar-89 RSC Added "TotalByRsrc" as one of the choices for a GetInfoProc.
+                    This is to support Ken's reports.
+      22-Mar-89 EGK Added new "GetColumnPercentage" stealable procedure.
+      27-Mar-89 RSC Added "DataFieldsFromDataType" to support "Better Reports"
+                    project.
+      30-Mar-90 RSC Made Timeu to Timei conversions.
+       5-Oct-90 RSC Added support for a transient TLCaptions.
+      13-Oct-90 AJL Moved the support for a transient captions to CapData.
+      29-Oct-90 AJL Added "ColumnEnumerations" which returns a phrase number
+                    of a list of the valid entries in a field during 
+                    field edit, or else zero if not an enumerated type.
+                    Added "ColumnHelpKey which returns a string which is 
+                    the help key describing that column.
+      24-Jan-91 RSC Added TaskPtr to the parameters for FormatTaskColumns.
+  *)
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  AnAssignmentSummary, ATaskPtr, ATaskStatus;
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM ChartForms             IMPORT
+    (* TYPE *)                  AChartFormat, AChartFormatPtr;
+
+FROM Gantt                  IMPORT
+    (* TYPE *)                  AGanttLineType;
+
+FROM SYSTEM                 IMPORT
+    (* THING *)                 ADDRESS;
+
+FROM Timei                  IMPORT ADate, ADuration, ADurationUnit;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+TYPE
+    AColumnInfoChoice       = (ColumnHeading1, ColumnHeading2,
+                               ColumnName, ColumnNext, ColumnWidth,
+                               ColumnExportWidth, ColumnMinDecimals,
+                               ColumnDataType, ColumnFormatType,
+                               ColumnFormalName, ColumnUniqueId,
+                               ColumnNarrowHeading1, ColumnNarrowHeading2,
+                               ColumnNarrowWidth, ColumnRightJustified,
+                               ColumnMaxDecimals, ColumnBslnRequired,
+                               ColumnBslnDifferent, ColumnPhraseRaw,
+                               ColumnTotalByRsrc, (* RSC 21-Mar-89 *)
+                               ColumnSortSequence,(* RSC 9-Mar-89 *)
+                               ColumnEnumerations,(* AJL 29-Oct-90 *)
+                               ColumnHelpKey      (* AJL 29-Oct-90 *)
+                             );
+
+        (* These are the possible fields-in-use in AColumnDataRecord. *)
+
+    AColumnDataField        = ( BooleanInUse,
+                                RealInUse,
+                                CardinalInUse,
+                                DateInUse,
+                                DurationInUse,
+                                TimeUnitInUse,
+                                IntegerInUse,
+                                LongIntInUse,
+                                BigTimeInUse,
+                                AddressInUse,
+                                DiscardProcInUse,
+                                StringInUse
+                              );
+    ASetOfColumnDataFields  = SET OF AColumnDataField;
+
+    AColumnDataRecordPtr    = POINTER TO AColumnDataRecord;
+
+    AColumnDiscardProc      = PROCEDURE ( AColumnDataRecordPtr,
+                                          ADDRESS );        (* Context *)
+
+(*$A+*)
+    AColumnDataRecord       = RECORD
+                                DataType      : [0..255];
+                                DataFields    : ASetOfColumnDataFields;
+                                BooleanValue  : BOOLEAN;
+                                RealValue     : REAL;
+                                CardinalValue : CARDINAL;
+                                DateValue     : ADate;
+                                DurationValue : ADuration;
+                                TimeUnitValue : ADurationUnit;
+                                IntegerValue  : INTEGER;
+                                LongIntValue  : LONGINT;
+                                BigTimeValue  : ABigTime;
+                                AddressValue  : ADDRESS;
+                                DiscardProc   : AColumnDiscardProc;
+                                DiscardContext: ADDRESS;
+                                StringValue   : ARRAY [0..255] OF CHAR;
+                              END;
+(*$A=*)
+
+
+    AGetColumnInfoProc      = PROCEDURE(    ATreeNode,          (* TaskNode *)
+                                        VAR ATaskPtr,           (* Task *)
+                                            CARDINAL,           (* Column *)
+                                            AColumnInfoChoice,  (* Info *)
+                                            CARDINAL,           (* Width *)
+                                        VAR AColumnDataRecord); (* Value *)
+
+    AGetColumnValueProc     = PROCEDURE(    ATreeNode,          (* TaskNode *)
+                                        VAR ATaskPtr,           (* Task *)
+                                            CARDINAL,           (* Column *)
+                                            AGanttLineType,     (* Plan/Bsln *)
+                                        VAR AColumnDataRecord)  (* Value *)
+                                                              : BOOLEAN;
+
+    AFormatColumnValueProc  = PROCEDURE(    CARDINAL,           (* Column *)
+                                            CARDINAL,           (* Width *)
+                                            AGanttLineType,     (* Plan/Bsln *)
+                                            CARDINAL,           (* MinDecimals *)
+                                            CARDINAL,           (* MaxDecimals *)
+                                            BOOLEAN,            (* Right Just *)
+                                        VAR AColumnDataRecord); (* Value *)
+
+    AGetColumnStringProc    = PROCEDURE(    ATreeNode,          (* TaskNode *)
+                                        VAR ATaskPtr,           (* Task *)
+                                            CARDINAL,           (* Column *)
+                                            AGanttLineType,     (* Plan/Bsln *)
+                                            CARDINAL,           (* Width *)
+                                        VAR ARRAY OF CHAR)      (* Value *)
+                                                              : BOOLEAN;
+
+    AGetColumnPercentProc   = PROCEDURE(    ATreeNode,          (* TaskNode *)
+                                        VAR ATaskPtr,           (* Task *)
+                                            CARDINAL,           (* Column *)
+                                            AGanttLineType,     (* Plan/Bsln *)
+                                        VAR CARDINAL         )  (* Percent value *)
+                                                              : BOOLEAN;
+
+
+
+    (* ResourceNameList -- Produce a list of all the resources used
+                           by the task.  As many as fit within the
+                           specified length will be listed. *)
+
+    AResourceNameListProc = PROCEDURE(  ATreeNode,       (* Task node *)
+                                        AGanttLineType,  (* LineType *)
+                                        CARDINAL,        (* Length *)
+                                    VAR ARRAY OF CHAR );
+
+
+
+
+    (* AssignmentSummaryToString - Make AnAssignmentSummary printable.
+
+          Preconditions  - Summary is a filled in assignment summary.  "Time"
+                           is a huge duration, "Amount" is bucks.
+
+                           SuggestedTimeUnit is the desired minimum time unit.
+                           If it seems appropriate, I may scale this up.
+
+                           TimeMinDecimalPlaces is the minimum number of decimal
+                           places to include in the Time field.  It may be zero.
+
+                           TimeMaxDecimalPlaces is the maximum number of decimal
+                           places to include in the Time field.  It may be zero.
+
+                           AmountDecimalPlaces is the number of digits to the
+                           right of the decimal point.  If zero, no decimal
+                           point is generated.
+
+                           MaxLength is the maximum length to fill the string
+                           with.  This allows FormValues, which are 80 bytes,
+                           to be filled in for, say, 25 bytes.
+
+          Postconditions - The string "s" is filled in up to MaxLength.
+                           The Amount is right justified, the time is left
+                           justified.
+    *)
+
+    AnAssignmentSummaryToStringProc = PROCEDURE (
+                      VAR AnAssignmentSummary,  (* Summary *)
+                          ADurationUnit,            (* SuggestedTimeUnit *)
+                          CARDINAL,             (* TimeMinDecimalPlaces *)
+                          CARDINAL,             (* TimeMaxDecimalPlaces *)
+                          CARDINAL,             (* AmountDecimalPlaces  *)
+                          CARDINAL,             (* MaxLength *)
+                      VAR ARRAY OF CHAR  );
+
+
+
+(*----------------------------------------------------------------------------
+    FormatTaskColumns --
+
+    Format the fields of this task's record into a string of the indicated
+    length, using the given ChartFormat to determine the length and position
+    of each field.  The indicated total length of the resulting LString may
+    be less than the sum of the field lengths specified in the ChartFormat.
+
+    Preconditions:
+        The task node must not be NIL.  The ChartFormat must have valid and
+        consistent fields.
+
+    Postconditions:
+        The result LString will contain the fields of the task record, in the
+        order, and with the length specified in the ChartFormat, but limited
+        to the indicated total length.  Each field will be seperated by a
+        single blank, which is included as part of the field length.
+
+    (* 25-Jan-91 RSC Added TaskPtr to eliminate extra locks. *)
+----------------------------------------------------------------------------*)
+
+AFormatTaskColumnsProc = PROCEDURE (  ATreeNode,       (* TaskNode *)
+                                      ATaskPtr,        (* TaskPointer *)
+                                      AGanttLineType,  (* LineType *)
+                                  VAR AChartFormat,    (* ChartFormat *)
+                                      CARDINAL,        (* Length *)
+                                  VAR ARRAY OF CHAR ); (* String *)
+
+
+
+(*----------------------------------------------------------------------------
+    DataFromType --
+
+
+    Preconditions:  DataType is a valid data type.
+
+    Postconditions: DataFields has been set appropriately.
+----------------------------------------------------------------------------*)
+
+ADataFromTypeProc      = PROCEDURE (     CARDINAL              (* Data Type *)
+                                   ) : ASetOfColumnDataFields; (* Data Fields *)
+
+
+VAR
+    GetColumnInfo             : AGetColumnInfoProc;
+    GetColumnValue            : AGetColumnValueProc;
+    FormatColumnValue         : AFormatColumnValueProc;
+    GetColumnPercentage       : AGetColumnPercentProc;
+    ResourceNameList          : AResourceNameListProc;
+    AssignmentSummaryToString : AnAssignmentSummaryToStringProc;
+    FormatTaskColumns         : AFormatTaskColumnsProc;
+    GetColumnString           : AGetColumnStringProc;
+    DataFieldsFromDataType    : ADataFromTypeProc;
+
+
+
+
+
+
+  (* Set Currency Scale : Set a new currency scale.  Get the old one with
+                          GetCurrencyScale(), and then put it back when you
+                          are done with it.
+  *)
+PROCEDURE SetCurrencyScale( NewScale : REAL );
+
+
+
+  (* Get Currency Scale : Get the current currency scale.
+  *)
+PROCEDURE GetCurrencyScale() : REAL;
+
+
+
+
+TYPE
+    ACaptionsFunction = (FDataFieldsFromType,
+                         FGetColumnString,
+                         FFormatTaskColumns,
+                         FFormatValue,
+                         FColumnPercentage,
+                         FColumnValue,
+                         FColumnInfo,
+                         FResourceNameList);
+
+    ACaptionsOverlayInterface = RECORD
+        TaskNode        : ATreeNode;
+        TaskPtr         : ATaskPtr;
+        ChartFormatPtr  : AChartFormatPtr;
+        DataType        : CARDINAL;
+        MinDecimals     : CARDINAL;
+        MaxDecimals     : CARDINAL;
+        Column          : CARDINAL;
+        Width           : CARDINAL;
+        PercentValue    : CARDINAL;
+        Fields          : ASetOfColumnDataFields;
+        ValuePtr        : AColumnDataRecordPtr;
+        Info            : AColumnInfoChoice;
+        GanttLineType   : AGanttLineType;
+        StringValue     : ARRAY [0..255] OF CHAR;
+        RightJustify    : BOOLEAN;
+        Function        : ACaptionsFunction;
+        ReturnValue     : BOOLEAN;
+    END;
+
+
+
+
+END Captions.
+
+

@@ -1,0 +1,316 @@
+DEFINITION MODULE LayoutViews;              (* Subclass of ActiveViews *)
+
+    (*  LayoutViews provides an object which is a view of a tree node.
+        The data object of the tree node is a layout.  Its name is
+        displayed using indentation to reflect depth in the tree, and "+"
+        and "-" symbols to show whether or not it has children.  The layout
+        name is displayed in reverse video if the cursor is on it.
+    *)
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched ALayoutViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+
+
+
+TYPE
+        (*  ALayoutView is a subclass of AnActiveView  *)
+
+    ALayoutView             = POINTER TO ALayoutViewRecord;
+
+    ALayoutViewMethods      = POINTER TO ALayoutViewMethodsRecord;
+
+    ALayoutViewRecord       = RECORD
+                                Methods        : ALayoutViewMethods;
+                              END;
+
+
+
+
+
+TYPE
+
+        (*  These types are re-definitions of types exported from ActiveViews. *)
+
+
+    ALayoutViewStatus       = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn,
+                               LayoutViewSpare5, LayoutViewSpare6, 
+                               LayoutViewSpare7, LayoutViewSpare8, 
+                               LayoutViewSpare9);
+
+    ALayoutViewStatusSet    = SET OF ALayoutViewStatus;
+
+
+
+
+
+
+
+
+
+
+
+    (*  These are the methods for ALayoutView objects.  They inherit and
+        redefine methods from ActiveViews, but do not add any new methods
+        of their own.
+    *)
+
+TYPE
+    ALayoutViewMethodsRecord  = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    ALayoutView,
+                                        VAR ALayoutView )
+                                                         : BOOLEAN;
+          StoreOn           : PROCEDURE(    ALayoutView,
+                                            AnObject    );
+
+          Discard           : PROCEDURE(VAR ALayoutView );
+
+          SuperclassMethods : AnObjectMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    ALayoutView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+          GetInternalXY     : PROCEDURE(    ALayoutView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny    );
+
+          (*------------------------------------------------------------------
+            GetTitle --
+
+                In this module, GetTitle returns the name of the viewed
+                layout, NOT the title of this view's box, which may or may
+                not be displaying.
+
+            Preconditions:
+                The view must be a valid Layout view object.
+
+            Postconditions:
+                If the view object of this view is not NIL, the layout name
+                associated with this view will be returned.  Otherwise, a
+                zero-length string will be returned.
+          ------------------------------------------------------------------*)
+
+          GetTitle          : PROCEDURE(    ALayoutView,
+                                        VAR ARRAY OF CHAR);
+
+          SetObject         : PROCEDURE(    ALayoutView,
+                                            ATreeNode   );
+
+          GetObject         : PROCEDURE(    ALayoutView )
+                                                         : ATreeNode;
+
+          Move              : PROCEDURE(    ALayoutView,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+          Display           : PROCEDURE(    ALayoutView );
+
+          GetHelp           : PROCEDURE(    ALayoutView );
+
+          HideView          : PROCEDURE(    ALayoutView );
+
+          RevealView        : PROCEDURE(    ALayoutView );
+
+          NotifyOfChange    : PROCEDURE(    ALayoutView );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    ALayoutView,
+                                            AnEvent     );
+
+          GetRecordedEvent  : PROCEDURE(    ALayoutView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    ALayoutView,
+                                            AnEvent,
+                                        VAR AnEvent     );
+
+          GetCursor         : PROCEDURE(    ALayoutView )   
+                                                         : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    ALayoutView,   
+                                            BOOLEAN     );
+
+          SetCursorMode     : PROCEDURE(    ALayoutView,
+                                            avidmode    );
+
+
+          ActiveViewTag     : CARDINAL;
+
+
+          LayoutViewTag     : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsLayoutView --
+
+    Initialize the indicated object as a layout view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid layout view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsLayoutView(    LayoutView   : ALayoutView;
+                               SuperView    : AnActiveView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                               HelpKey      : CARDINAL);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateLayoutView --
+
+    Allocate storage for, and initialize the indicated object as a layout 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid layout view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateLayoutView( VAR LayoutView   : ALayoutView;
+                                SuperView    : AnActiveView;
+                                Ulx          : ascreenx;
+                                Uly          : ascreeny;
+                                Lrx          : ascreenx;
+                                Lry          : ascreeny;
+                                Box          : ABoxType;
+                                VideoMode    : avidmode;
+                                HelpKey      : CARDINAL)
+                                                        : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsLayoutView --
+
+    UnInitialize the indicated object as a layout view.
+
+    Preconditions:
+        The object will be a valid layout view object.
+
+    Postconditions:
+        The layout view will no longer be a valid layout view object, and any
+        side-effects of InitAsLayoutView will be undone.  This procedure does
+        not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsLayoutView(    LayoutView : ALayoutView);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneLayoutViewMethods --
+
+    Make a copy of the layout view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The layout view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneLayoutViewMethods(    MethodObject : ALayoutViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateLayoutView --
+
+    Determine that the indicated object is in fact a valid layout view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid layout view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateLayoutView(    LayoutView : ALayoutView);
+
+
+
+END LayoutViews.
+

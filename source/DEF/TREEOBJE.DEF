@@ -1,0 +1,1229 @@
+DEFINITION MODULE TreeObjects;        (* A subclass of LinkedListObjects *)
+
+FROM LinkedListObjects      IMPORT
+    (* TYPE *)                  ALinkedList, ALinkedListNodeMethods,
+                                ALinkedListMethods;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+
+TYPE
+        (*  ATree is a subclass of LinkedListObjects.ALinkedList          *)
+
+    ATree                   = POINTER TO ATreeRecord;
+
+        (*  ATreeNode is a subclass of LinkedListObjects.ALinkedListNode  *)
+
+    ATreeNode               = POINTER TO ATreeNodeRecord;
+
+
+
+
+
+    ATreeMethods            = POINTER TO ATreeMethodsRecord;
+
+    ATreeNodeMethods        = POINTER TO ATreeNodeMethodsRecord;
+
+
+
+    ATreeRecord             = RECORD
+                                Methods     : ATreeMethods;
+                              END;
+
+    ATreeNodeRecord         = RECORD
+                                Methods     : ATreeNodeMethods;
+                              END;
+
+
+
+
+
+
+TYPE
+    ATreeNodeProcessingProc = PROCEDURE(VAR ATreeNode,
+                                            ADDRESS  );
+
+    ATreeNodeAttribute = (Select0, Select1, Select2, Select3,
+                          SelfVisible, PrivateSelfVisible, ChildrenVisible,
+                          TypeThroughEnable, SelfMatch, ChildrenMatch,
+                          TempFlag1, TempFlag2, TempFlag3, TempFlag4,
+                          TempFlag5, TempFlag6);
+
+    ATreeOrder              = (ParentBeforeChild, ParentAfterChild, NoParent);
+
+
+
+
+
+
+    ATreeMethodsRecord      = RECORD
+
+        Methods             : AnObjectMethods;
+
+        Clone               : PROCEDURE (    ATree,
+                                         VAR ATree    )
+                                                       : BOOLEAN;
+
+        StoreOn             : PROCEDURE (    ATree,
+                                             AnObject );
+
+        Discard             : PROCEDURE (VAR ATree    );
+
+        SuperclassMethods   : ALinkedListMethods;
+
+        MethodSize          : CARDINAL;
+
+        ObjectMethodsTag    : CARDINAL;
+
+
+
+        AddFirst            : PROCEDURE (    ATree,
+                                             ATreeNode);
+    (*------------------------------------------------------------------------
+        Link the tree node as the first, top level node in the given tree.
+
+        Preconditions:
+            The node object, and the tree must both be valid objects of their 
+            respective types.
+
+        Postconditions:
+            The tree node will be the first, top level node of the tree.  
+    ------------------------------------------------------------------------*)
+
+
+
+        AddLast             : PROCEDURE (    ATree,
+                                             ATreeNode);
+    (*------------------------------------------------------------------------
+        Link the tree node as the last, top level node in the given tree.
+
+        Preconditions:
+            The node object, and the tree must both be valid objects of their 
+            respective types.
+
+        Postconditions:
+            The tree node will be the last, top level node of the tree.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetFirst            : PROCEDURE (    ATree)
+                                                   : ATreeNode;
+    (*------------------------------------------------------------------------
+        Get the first, top level node in the indicated tree.
+
+        Preconditions:
+            The object must be a valid tree object.
+
+        Postconditions:
+            If there are any nodes in the tree, the first, top level one will 
+            be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        GetLast             : PROCEDURE (    ATree)
+                                                   : ATreeNode;
+    (*------------------------------------------------------------------------
+        Get the last, top level node in the indicated tree.
+
+        Preconditions:
+            The object must be a valid tree object.
+
+        Postconditions:
+            If there are any nodes in the tree, the last, top level one will 
+            be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        ForAll              : PROCEDURE (    ATree,
+                                             ATreeNodeProcessingProc, 
+                                             ADDRESS                 );  (* Context *)
+     (*------------------------------------------------------------------------
+        Call the provided procedure for all top level nodes in the indicated 
+        tree.
+
+        Preconditions:
+            The object must be a valid tree object.  The context points to an
+            area used for sharing data between the caller and the processing
+            procedure.
+
+        Postconditions:
+            The action provided by the given procedure will have been 
+            performed on all top level nodes in the tree.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetFirstVisible     : PROCEDURE (    ATree)
+                                                   : ATreeNode;
+
+    (*------------------------------------------------------------------------
+        Get the first visible, top level node in the indicated tree.
+
+        Preconditions:
+            The object must be a valid tree object.
+
+        Postconditions:
+            If there are any visible nodes in the tree, the first visible, 
+            top level one will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        GetLastVisible      : PROCEDURE (    ATree)
+                                                   : ATreeNode;
+
+    (*------------------------------------------------------------------------
+        Get the last visible, top level node in the indicated tree.
+
+        Preconditions:
+            The object must be a valid tree object.
+
+        Postconditions:
+            If there are any visible nodes in the tree, the last visible, 
+            top level one will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        ListMethodsTag      : CARDINAL;
+
+
+
+
+        GetParent           : PROCEDURE(    ATree)
+                                                  : ATreeNode;
+    (*------------------------------------------------------------------------
+        Determine the tree node which is the parent of this tree.
+
+        Preconditions:
+            The tree must be a valid tree object.
+
+        Postconditions:
+            If there is a parent tree node for this tree, it will be returned.
+            Otherwise, NIL is returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        SetParent           : PROCEDURE(    ATree,
+                                            ATreeNode);
+    (*------------------------------------------------------------------------
+        Define the given tree node to be the parent of this tree.
+
+        Preconditions:
+            The tree must be a valid tree object, and the tree node must be a 
+            valid tree node object.
+
+        Postconditions:
+            The tree node will be set to be the parent of this tree, and the
+            tree will be the subtree of the tree node.
+    ------------------------------------------------------------------------*)
+
+
+
+        TraverseTree        : PROCEDURE(    ATree,           (* Tree *)
+                                            ATreeOrder,      (* Order *)
+                                            CARDINAL,        (* Level *)
+                                            ATreeNodeProcessingProc,
+                                            ADDRESS                 );  (* Context *)
+    (*------------------------------------------------------------------------
+        Traverse the tree in the order specified, down to the indicated level,
+        calling the node processing procedure for each subtree and tree node.
+        If only the top level, relative to the indicated tree, is to be 
+        processed, pass a level of zero.
+        Preconditions:
+            The given tree must be a valid tree object.  The context provides
+            an area by which the caller and the processing procedure may share
+            data.
+
+        Postconditions:
+            For each tree node within the given tree, the node processing proc
+            will be called.  For any node which has subtrees, its tree object
+            will also be traversed with its nodes passed to the node 
+            processing proc.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        GetRoot             : PROCEDURE(    ATree)
+                                                  : ATree;
+
+    (*------------------------------------------------------------------------
+        Return the root tree object for the tree structure of which this is a
+        subtree.  The given tree may BE the root.
+
+        Preconditions:
+            The given tree must be a valid tree object.
+
+        Postconditions:
+            The root of the tree structure is returned.
+    ------------------------------------------------------------------------*)
+
+        TreeMethodsTag      : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+TYPE
+
+        (*  These methods are for objects of type ATreeNode.  They 
+            inherit (and redefine) some methods just because tree nodes are 
+            objects, and then define new methods which apply only to tree 
+            nodes and their subclasses.
+        *)
+
+    ATreeNodeMethodsRecord  =  RECORD
+
+        Methods             : AnObjectMethods;
+
+        Clone               : PROCEDURE(    ATreeNode,
+                                        VAR ATreeNode )
+                                                       : BOOLEAN;
+
+        StoreOn             : PROCEDURE(    ATreeNode,
+                                            AnObject  );
+
+        Discard             : PROCEDURE(VAR ATreeNode );
+
+        SuperclassMethods   : ALinkedListNodeMethods;
+
+        MethodSize          : CARDINAL;
+
+        ObjectMethodsTag    : CARDINAL;
+
+
+
+        GetNext             : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the tree node object following this one at the same level.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is a tree node following this one at the same level, it 
+            will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        GetPrev             : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the tree node object preceeding this one at the same level.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is a tree node preceeding this one at the same level, it 
+            will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        AddBefore           : PROCEDURE(    ATreeNode,   (* Target *)
+                                            ATreeNode);  (* NodeToAdd *)
+    (*------------------------------------------------------------------------
+        Link the indicated tree node object before, and at the same level as,
+        the one given as its target.
+
+        Preconditions:
+            The indicated object, and its target object, must both be valid
+            tree node objects.
+
+        Postconditions:
+            The indicated tree node will be made the predecessor of the given 
+            target.
+    ------------------------------------------------------------------------*)
+
+
+        AddAfter            : PROCEDURE(    ATreeNode,   (* Target *)
+                                            ATreeNode);  (* NodeToAdd *)
+    (*------------------------------------------------------------------------
+        Link the indicated tree node object after, and at the same level as,
+        the one given as its target.
+
+        Preconditions:
+            The indicated object, and its target object, must both be valid
+            tree node objects.
+
+        Postconditions:
+            The indicated tree node will be made the successor of the given 
+            target.
+    ------------------------------------------------------------------------*)
+
+
+        DeList              : PROCEDURE(    ATreeNode);
+    (*------------------------------------------------------------------------
+        Remove the indicated tree node object from the tree of which it's a 
+        part.
+
+        Predecessor:
+            The object must be a valid tree node object.
+
+        Successor:
+            The given tree node object will be unlinked from its successor and
+            predecessor objects.
+    ------------------------------------------------------------------------*)
+
+
+        SetDataObject       : PROCEDURE(    ATreeNode,        (* TreeNode *)
+                                            ADDRESS  );       (* DataObject *)
+    (*------------------------------------------------------------------------
+        Define the data object which the indicated tree node is associated 
+        with.
+
+        Preconditions:
+            The object must be a valid tree node.
+
+        Postconditions:
+            The data object will be associated with the given tree node.
+    ------------------------------------------------------------------------*)
+
+
+        GetDataObject       : PROCEDURE(    ATreeNode)
+                                                      : ADDRESS;
+    (*------------------------------------------------------------------------
+        Return the data object which the indicated tree node is associated 
+        with.
+
+        Preconditions:
+            The object must be a valid tree node.
+
+        Postconditions:
+            The data object associated with the given tree node will be 
+            returned.
+    ------------------------------------------------------------------------*)
+
+
+        GetList             : PROCEDURE(    ATreeNode)
+                                                      : ATree;
+    (*------------------------------------------------------------------------
+        Return the tree of which the indicated tree node object is a member.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            The tree object which contains this tree node is returned.  If the
+            tree node is not linked into a tree, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        NextForDisplay      : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the next visible tree node object in pre-order (parent before 
+        child) relative to this one.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is a visible tree node following this one in pre-order, 
+            it will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        PrevForDisplay      : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the previous visible tree node object in post-order (parent 
+        after child) relative to this one.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is a visible tree node preceeding this one in post-order, 
+            it will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        FirstVisibleCoNode  : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the first visible tree node object at the same level as this
+        one.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is any visible tree node at the same level as this one, 
+            the first one will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        LastVisibleCoNode   : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the last visible tree node object at the same level as this
+        one.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is any visible tree node at the same level as this one, 
+            the last one will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        GetNextVisible      : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the visible tree node object following this one at the same 
+        level.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is a visible tree node following this one at the same 
+            level, it will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        GetPrevVisible      : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the visible tree node object preceeding this one at the same 
+        level.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            If there is a visible tree node preceeding this one at the same 
+            level, it will be returned.  Otherwise, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        SetVisible          : PROCEDURE(    ATreeNode,
+                                            BOOLEAN  );
+    (*------------------------------------------------------------------------
+        Set the visibility of this tree node to be as indicated.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            The visibility of the tree node will be set as indicated.  
+    ------------------------------------------------------------------------*)
+
+
+        Visible             : PROCEDURE(    ATreeNode)
+                                                      : BOOLEAN;
+    (*------------------------------------------------------------------------
+        Determine the visibility of this tree node.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            The visibility of the tree node will be returned.  
+    ------------------------------------------------------------------------*)
+
+
+
+        SetPrivateVisible   : PROCEDURE(    ATreeNode,
+                                            BOOLEAN  );
+    (*------------------------------------------------------------------------
+        Set the private visibility of this tree node to be as indicated.
+        Private here means programmatically, not as commanded by the user.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            The private visibility of the tree node will be set as indicated.  
+    ------------------------------------------------------------------------*)
+
+
+        PrivateVisible      : PROCEDURE(    ATreeNode)
+                                                      : BOOLEAN;
+    (*------------------------------------------------------------------------
+        Determine the private visibility of this tree node.
+        Private here means programmatically, not as commanded by the user.
+
+        Preconditions:
+            The object must be a valid tree node object.
+
+        Postconditions:
+            The private visibility of the tree node will be returned.  
+    ------------------------------------------------------------------------*)
+
+
+        ListNodeMethodsTag  : CARDINAL;
+
+
+
+        GetSubtree          : PROCEDURE(    ATreeNode)
+                                                      : ATree;
+    (*------------------------------------------------------------------------
+        Determine the subtree object below this node, if one exists.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The subtree of this node will be returned.  If this node does not
+            have a subtree, NIL is returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        SetSubtree          : PROCEDURE(    ATreeNode,
+                                            ATree    );
+    (*------------------------------------------------------------------------
+        Define the subtree for this tree node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The indicated tree is made the subtree of this node.  NIL is
+            a valid value for the subtree.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        IndentationLevel    : PROCEDURE(    ATreeNode)
+                                                      : CARDINAL;
+    (*------------------------------------------------------------------------
+        Return the indentation level of this node.  This indicates the node's
+        depth with its tree structure.  A level of zero is the topmost level.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The indentation level of this node is returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        Promote             : PROCEDURE(    ATreeNode);
+    (*------------------------------------------------------------------------
+        Promote the indicated node one level up in its tree.  It will become
+        the sibling following its current parent.  This does not work if the
+        node is already at the top level.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            If the node is already at the top level, it will not be moved.  
+            Otherwise, it will be placed on the same level as, and immediately
+            after, its current parent.  Its indentation level will be 
+            decremented by one.  Any children will remain attached, and their 
+            level will also be decremented by one.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        Demote              : PROCEDURE(    ATreeNode);
+    (*------------------------------------------------------------------------
+        Make this node a child of the previous sibling.
+
+        Preconditions:
+            The node must be a valid tree node object.
+
+        Postconditions:
+            If the indicated tree node does not have a previous sibling, it 
+            will not be moved within the tree.  Otherwise, it will be made 
+            the last child of the previous sibling, and its indentation level 
+            will be incremented by one.  All children of this node remain 
+            attached to it, and their levels are also incremented by one.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        Parent              : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the parent of the indicated tree node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The parent node of this tree node will be returned, unless this node
+            is at the top level.  In that case, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+        FirstChild          : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the first child of this tree node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The first child of this node will be returned, if it exists.
+            If not, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        LastChild           : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the last child of this tree node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The last child of this node will be returned, if it exists.
+            If not, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        AddAsFirstChild     : PROCEDURE(    ATreeNode,        (* Parent *)
+                                            ATreeNode);       (* Child  *)
+    (*------------------------------------------------------------------------
+        Add the indicated node as the first child of this tree node.
+
+        Preconditions:
+            Both tree nodes must be valid tree node objects.
+
+        Postconditions:
+            The indicated node will be made the first child node of the
+            given parent node.
+    ------------------------------------------------------------------------*)
+
+
+        AddAsLastChild      : PROCEDURE(    ATreeNode,        (* Parent *)
+                                            ATreeNode);       (* Child  *)
+    (*------------------------------------------------------------------------
+        Add the indicated node as the last child of this tree node.
+
+        Preconditions:
+            Both tree nodes must be valid tree node objects.
+
+        Postconditions:
+            The indicated node will be made the last child node of the
+            given parent node.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        GetRoot             : PROCEDURE(    ATreeNode)
+                                                      : ATree;
+    (*------------------------------------------------------------------------
+        Return the root tree object for the tree structure of which this is a
+        node. 
+
+        Preconditions:
+            The given tree node must be a valid tree node object.
+
+        Postconditions:
+            The root of the tree structure is returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        SetAttributeBit     : PROCEDURE(    ATreeNode,              (* Node *)
+                                            ATreeNodeAttribute,     (* Flag *)
+                                            BOOLEAN            );   (* Value *)
+    (*------------------------------------------------------------------------
+        Define the status of one of the attribute flags in the
+        indicated node.
+
+        Preconditions:
+            The given tree node must be a valid tree node object.
+
+        Postconditions:
+            The selection state of the indicated flag will be as given.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        TestAttributeBit    : PROCEDURE(    ATreeNode,              (* Node *)
+                                            ATreeNodeAttribute)     (* Flag *)
+                                                               : BOOLEAN;
+    (*------------------------------------------------------------------------
+        Determine the selection status of one of the attribute flags in the 
+        indicated node.  
+
+        Preconditions:
+            The given tree node must be a valid tree node object.
+
+        Postconditions:
+            The selection state of the indicated flag will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+        SetAttributes       : PROCEDURE(    ATreeNode,        (* Node *)
+                                            CARDINAL       ); (* Value *)
+    (*------------------------------------------------------------------------
+        Set the visibility attributes of the indicated node according to the
+        CARDINAL value supplied.
+
+        Preconditions:
+            The given tree node must be a valid tree node object.  The
+            CARDINAL value must have been obtained from a corresponding call
+            to the GetAttributes method.
+
+        Postconditions:
+            The visibility attributes of the indicated node will be set to
+            the same as when the CARDINAL value was obtained.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        GetAttributes       : PROCEDURE(    ATreeNode)
+                                                      : CARDINAL;
+    (*------------------------------------------------------------------------
+        Return all visibility attributes associated with the indicated node
+        as a CARDINAL value, with the intention that it will be saved (in a
+        data file) and later restored with a corresponding call to the
+        SetAttributes method.
+
+        Preconditions:
+            The given tree node must be a valid tree node object.
+
+        Postconditions:
+            The visibility attributes of the indicated node will be returned
+            as a CARDINAL value.
+    ------------------------------------------------------------------------*)
+
+
+
+        FirstVisibleChild   : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the first visible child of this tree node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The first visible child of this node will be returned, if it exists.
+            If not, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+        LastVisibleChild    : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the last visible child of this tree node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The last visible child of this node will be returned, if it exists.
+            If not, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+        SetChildrenVisible  : PROCEDURE(    ATreeNode,
+                                            BOOLEAN  );
+    (*------------------------------------------------------------------------
+        Set the visibility of this node's children.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The visibility of the node's children will be set as indicated.
+            The children nodes have a seperate, independant visibility
+            attribute, which is not affected by this method.
+    ------------------------------------------------------------------------*)
+
+
+
+        ChildrenVisible     : PROCEDURE(    ATreeNode)
+                                                      : BOOLEAN;
+    (*------------------------------------------------------------------------
+        Determine the visibility of this node's children.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The state of visibility of this node's children will be returned.
+            This is not the attribute of visibility associated with each
+            seperate child node, but the attribute of this node as to whether
+            any of it's children are allowed to be visible.
+    ------------------------------------------------------------------------*)
+
+
+
+        ParentVisible       : PROCEDURE(    ATreeNode)
+                                                      : BOOLEAN;
+    (*------------------------------------------------------------------------
+        Return the visibility of this node's parent node.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            If this node has a parent node, it's visibility attribute is
+            returned.  If there is no parent node, then the visibility is
+            returned as FALSE.
+    ------------------------------------------------------------------------*)
+
+
+        NextPreOrder        : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+    (*------------------------------------------------------------------------
+        Return the next node in parent-before-child order, across level of the
+        tree structure.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The next tree node, in order, will be returned.  If there is no
+            next node, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        PrevPreOrder        : PROCEDURE(    ATreeNode)
+                                                      : ATreeNode;
+
+    (*------------------------------------------------------------------------
+        Return the previous node in parent-before-child order, across level of 
+        the tree structure.
+
+        Preconditions:
+            The tree node must be a valid tree node object.
+
+        Postconditions:
+            The previous tree node, in order, will be returned.  If there is 
+            no previous node, NIL will be returned.
+    ------------------------------------------------------------------------*)
+
+
+        LockFlexStorDataObject : PROCEDURE(    ATreeNode)
+                                                         : ADDRESS;
+
+    (*------------------------------------------------------------------------
+        Lock the FlexStor handle (which is assumed to be the data object of
+        this tree node), and return the address of the record which is 
+        referenced by the FlexStor handle.
+
+        Preconditions:
+            The data object of the tree node must have been set up to be a
+            FlexStor handle.
+
+        Postconditions:
+            The record which the FlexStor handle references will be locked 
+            into memory, and its address returned.
+    ------------------------------------------------------------------------*)
+
+
+        UnlockFlexStorDataObject : PROCEDURE(    ATreeNode);
+
+    (*------------------------------------------------------------------------
+        Unlock a previously locked FlexStor handle, which is assumed to be
+        the data object of this tree node.
+
+        Preconditions:
+            The data object of the tree node must have been set up to be a
+            FlexStor handle.
+
+        Postconditions:
+            The FlexStor handle in this tree node will be unlocked, making
+            further references to the address returned by 
+            LockFlexStorDataObject invalid, i.e. who knows what that address
+            contains after this call.
+    ------------------------------------------------------------------------*)
+
+
+        UnlockUnchangedDataObject : PROCEDURE(    ATreeNode);
+
+    (*------------------------------------------------------------------------
+        Unlock a previously locked FlexStor handle, which is assumed to be
+        the data object of this tree node.  This method marks the handle as
+        not having been changed during the time it was locked.
+
+        Preconditions:
+            The data object of the tree node must have been set up to be a
+            FlexStor handle.
+
+        Postconditions:
+            The FlexStor handle in this tree node will be unlocked, making
+            further references to the address returned by 
+            LockFlexStorDataObject invalid, i.e. who knows what that address
+            contains after this call.
+    ------------------------------------------------------------------------*)
+
+
+        TreeNodeMethodsTag  : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsTree --
+
+    Initialize the indicated storage location as an object of type 
+    ATree.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated object will be initialized as a tree object.  This 
+        procedure does not allocate storage, it only initializes the area
+        of memory referenced by the object provided.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsTree(    Tree               : ATree);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsTree --
+
+    Un-Initialize the indicated storage location as an object of type 
+    ATree.
+
+    Preconditions:
+        The object must be a valid Tree Object.
+
+    Postconditions:
+        The indicated object will no longer be initialized as a tree
+        object.  Any side-effects of InitAsTree will be undone.
+        This procedure does not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsTree(    Tree             : ATree);
+
+
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateTree --
+
+    Allocate storage off of the heap, and initialize it as an object of type
+    ATree.  This procedure should only be used to create objects
+    which are not subclassed, or for which the subclassing does not add new
+    data fields.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, a new object of type
+        ATree will be allocated, initialized, and TRUE will be 
+        returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateTree(VAR Tree               : ATree)
+                                                    : BOOLEAN;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateTree --
+
+    Validate the indicated storage location as an object of type 
+    ATree.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the indicated object is not a tree, or a subclass, 
+        FatalError will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateTree(    Tree             : ATree);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneTreeMethods --
+
+    Make a copy of this class' methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The tree methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneTreeMethods(    MethodObject : ATreeMethods);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsTreeNode --
+
+    Initialize the indicated storage location as an object of type 
+    ATreeNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated object will be initialized as a tree node object.  This 
+        procedure does not allocate storage, it only initializes the area
+        of memory referenced by the object provided.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsTreeNode(    TreeNode       : ATreeNode);
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsTreeNode --
+
+    Un-Initialize the indicated storage location as an object of type 
+    ATreeNode.
+
+    Preconditions:
+        The object must be a valid Tree Node Object.
+
+    Postconditions:
+        The indicated object will no longer be initialized as a tree node
+        object.  Any side-effects of InitAsTreeNode will be undone.
+        This procedure does not deallocate storage.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsTreeNode(    TreeNode     : ATreeNode);
+
+
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateTreeNode --
+
+    Allocate storage off of the heap, and initialize it as an object of type
+    ATreeNode.  This procedure should only be used to create objects
+    which are not subclassed, or for which the subclassing does not add new
+    data fields.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, a new object of type
+        ATreeNode will be allocated, initialized, and TRUE will be 
+        returned.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateTreeNode(VAR TreeNode       : ATreeNode)
+                                                        : BOOLEAN;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateTreeNode --
+
+    Validate the indicated storage location as an object of type 
+    ATreeNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the indicated object is not a tree node, or a subclass, 
+        FatalError will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateTreeNode(    TreeNode     : ATreeNode);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneTreeNodeMethods --
+
+    Make a copy of this class' methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The tree node methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneTreeNodeMethods(    MethodObject : ATreeNodeMethods);
+
+
+
+END TreeObjects.
+

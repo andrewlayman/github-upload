@@ -1,0 +1,112 @@
+DEFINITION MODULE ForeignSubfiles;
+
+
+    (*  Foreign Subfiles  - track all data records in subfiles that we
+                            do not recognize.
+
+        Modification History:
+
+            RSC 29-Jun-89   Revised the gameplan for this module.
+                            "Finished" implementing this.
+            RSC  1-Sep-89   Added new parameters onto the calls,
+                            Added a "Delete subfiles" call.
+
+    *)
+
+
+
+
+
+
+FROM FileSystem IMPORT
+    (* TYPE *)      File;
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+
+TYPE
+    AFileType   = ( ScheduleFile, ConfigFile );
+
+
+
+
+
+(* Write All Foreign Subfiles - Write out all previously stored subfiles.
+
+    Preconditions   - A File of Subfiles has been created/opened, and is
+                      passed in as the file variable.
+
+    Postconditions  - Any "foreign" subfiles read for the specified file
+                      type in earlier in this run of Time Line have been
+                      written out to the file.
+
+    Input Parameters  - TheFile     An Open file of subfiles to be written to.
+                        FileType    Which kind of subfile to be written.
+
+    Output Parameters - TheFile     An Open file of subfiles.
+*)
+PROCEDURE WriteAllForeignSubfiles( VAR TheFile  : File;
+                                       FileType : AFileType );
+
+
+
+(* Delete All Foreign Subfiles - remove stored files from memory.
+
+    Preconditions  - Client wants to remove all foreign subfiles of
+                     type "FileType".  This is generally used during
+                     schedule erase on schedule file foreigners.
+
+                     Holder system is running.
+
+    Postconditions - all space taken by the foreigns of type FileType
+                     have been freed up.
+
+    Input Parameters - FileType   is the kind of subfile you want
+                                  deleted.
+
+    Output Parameters - none.
+*)
+PROCEDURE DeleteAllForeignSubfiles(    FileType : AFileType );
+
+
+
+
+
+(* Digest Subfile - ASubfileTraverseProc to gobble up one subfile.
+
+    Preconditions - TraverseSubfiles has been called, and this procedure
+                    has been given to it as the "ASubfileTraverseProc".
+                    TraverseSubfiles reads the directory of a file of
+                    subfiles and calls this procedure once for each
+                    subfile found.
+
+                    The client wants any foreign subfiles read from the
+                    file and stored for later.
+
+    Postconditions - The subfile has been scooped up into Holder and
+                     FlexStor.
+
+    Input Parameters    - TheFile       The file containing subfiles.
+                                        Open, and no errors pending.
+                          SubfileNumber the subfile to read from the file.
+                          Version       the subfile's version number.
+                          Context       POINTER TO AFileType; the type
+                                        of file we are digesting.
+
+    Output Parameters   - TheFile       The file containing subfiles.
+                          RETURN        TRUE if file read ok.
+                                        FALSE if an error was reported.
+
+*)
+PROCEDURE DigestSubfile( VAR TheFile        : File;
+                             SubfileNumber,
+                             Version        : CARDINAL;
+                             Context        : ADDRESS ) : BOOLEAN;
+
+
+
+
+END ForeignSubfiles.
+

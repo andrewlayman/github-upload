@@ -1,0 +1,387 @@
+DEFINITION MODULE ResUtilities;
+
+(* Procedures useful to various parts of resource levelling.
+
+      MODIFICATION HISTORY
+
+    Jan 04, 90 - JES -created.
+
+    Aug 13, 90 - JES -added some comments.
+
+    Sep 04, 90 - JES -added procedures ProcessResource and MaxEndOfSpent.
+                      Changed name of TaskHasAbsoluteStartDate to
+                      UnspentWorkMustBeContiguous.
+                      Also, in that procedure, changed the condition
+                      "StartStatus <> FutureS" to "FixTheStart in
+                      TaskFlags", since (for now) these will be equivalent
+                      (as soon as AJL ceases to set this flag for "Fixed"
+                      tasks).
+    Sep 06, 90 - JES -added procedure ToGoDurationOfEffortDelayTask.
+
+    Sep 17, 90 - JES -added procedures DurationToEffort and EffortToDuration.
+    Sep 18, 90 - JES -procedure UnspentWorkMustBeContiguous always returns
+                        FALSE for effort-driven split tasks, since
+                        levelling will schedule any unspent effort on these
+                        tasks in all circumstances.
+    Oct 2,  90 - JES -added procedure TaskUsesNoResources (to support
+                        handling by levelling of non-levellable resources,
+                        the procedure TaskUsesNoLevellableResources is
+                        replaced by TaskUsesNoResources in most places)
+    Oct 4,  90 - JES - undid the change made Sep 18. Cpm can now handle
+                       started/done "contiguous work" tasks even if they
+                       are effort-driven split, since it can use the
+                       same procedure ("CreateSubstitutableResourceAssignments")
+                       that levelling uses.
+    Oct. 9, 90 - AJL - Added ResourceAssignedAtDate and ResourceIsAssignedToTask.
+    Oct. 18, 90 -JES - Added some documentation to procedure ProcessResource.
+       1-Nov-90  CL  - Change resource-driven to effort-driven in the
+	                   comments.
+      13-Nov-90  CL  - Move SubtractDuration here from TLCPM.
+   Nov 13, 90    JES - Added procedure CheckResourceDuration.
+   Nov 26, 90    JES - Removed the now unused procedure ProcessResource.
+   Nov 28, 90    JES - Added procedure TaskUsesNoEmployableResources.
+   Dec 17, 90    JES - Added procedure BackCheckResourceDuration.
+   Dec 19, 90    JES - Added EndDate  as an out parameter to
+                       CheckResourceDuration, and StartDate as
+                       an out parameter to BackCheckResourceDuration.
+   Dec 21, 90    JES - Added procedure NoEmployableResources that's
+                       like TaskUsesNoEmployableResources but takes
+                       an assignment array instead of a task.
+   Jan 14, 91    JES - Added parameter DoWeUseLateAvailabilities to
+                        procedure BackCheckResourceDuration.
+
+   Jan 18, 91    JES - Added procedure TaskDuration.
+
+   Jan 28, 91    JES - Added procedure ToGoDurationOfEffortDelayAssignments.
+   Feb  1, 91    JES - Added CONST Half so we can do rounding.
+   Feb 15, 91    JES - Changed name of MaxEndOfActuals to MaxEndOfSpent.
+   Mar 18, 91    JES - Changed UnspentWorkMustBeContiguous so that it
+                        returns TRUE for one more case, namely: a duration
+                        driven task with some spent effort (i.e., even if
+                        the task is marked Future)
+   Apr  3, 91    JES - Renamed procedure ToGoDurationOfEffortDelayTask
+                       to ToGoDurationOfEffortDrivenTask, and removed
+                       restriction that it be called with the Delay task.
+   Apr  8, 91    JES - Added procedure MoveTaskToListInPriorityOrder.
+                       For this purpose, moved procedure BPreemptA from
+                       ResBumpt to here.
+   Apr  9, 91    JES - Moved CompTaskByLowerBound from Tlrplan to here.
+   May 17, 91    JES - Removed BPreemptA; it's now in the new module
+                        ResPriority.
+   May 17, 91    AJL - Added TasksMightHaveResourcesInCommon.
+   Mar 17, 92    AJL - Added GetToGoLevel, OneHundredTimesSMUPH;
+*)
+
+FROM Allocs IMPORT
+    (* TYPE *)   ATaskPtr;
+
+FROM Assignments IMPORT
+    (* TYPE *)   AnAssignmentArray, AnAssignmentRecord;
+
+FROM FlexStor    IMPORT
+    (* TYPE *)   AnExtHandle;
+
+FROM RsrcMod IMPORT AResourcePointer;
+    (* TYPE *)
+
+FROM Timei  IMPORT
+    (* TYPE *)   ADate, ADuration;
+
+FROM VaryAssgnment IMPORT AVaryingAssgnList;
+    (* TYPE *)
+
+CONST
+   Zero = 0.0;
+   Half = 0.5;
+   OneHundred = 100.0;
+VAR
+   OneHundredTimesSMUPH : REAL;
+
+
+
+
+(*------SubtractDuration------------------------------------------------
+
+    If Date >= Duration, subtract Duration from Date and return the
+	result.  Otherwise,	issue a warning message.
+
+*)
+
+PROCEDURE SubtractDuration( Date     : ADate; 
+                            Duration : ADuration ) : ADate;
+
+
+
+
+(*------LatestAntecedantEndDate--------------------------------------
+
+    Returns max of (Day, latest end date of any antecedants) .
+
+    Preconditions -
+        For a meaningful result, all antecedants must be scheduled
+        (or at least active).
+
+    Postconditions -
+        No effects.
+*)
+
+
+PROCEDURE LatestAntecedantEndDate(Task : ATaskPtr;
+                                  Day  : ADate ) : ADate;
+(*------EarliestDescendantStartDate-----------------------------
+
+    Returns the earliest start date of any antecedant tasks, or
+    EndOfSchedule if none.
+
+*)
+
+
+PROCEDURE EarliestDescendantStartDate(Task          : ATaskPtr;
+                                      EndOfSchedule : ADate) : ADate;
+(*------TaskUsesNoLevellableResources------------------------------------
+
+    Returns TRUE if task has no resource assignments where the
+    resource is levellable and is assigned more than zero.
+    Otherwise returns FALSE.
+*)
+
+PROCEDURE TaskUsesNoLevellableResources(Task: ATaskPtr) : BOOLEAN;
+
+(*------TaskUsesNoEmployableResources------------------------------------
+
+    Returns TRUE if task has no resource assignments where the
+    resource is employable and is assigned more than zero.
+    Otherwise returns FALSE.
+*)
+
+PROCEDURE TaskUsesNoEmployableResources(Task: ATaskPtr) : BOOLEAN;
+
+(*------NoEmployableResources------------------------------------
+
+    Returns TRUE if assignment array has no resource assignments where the
+    resource is employable and is assigned more than zero.
+    Otherwise returns FALSE.
+*)
+
+PROCEDURE NoEmployableResources(Assignments : AnAssignmentArray;
+                                NumAssignments : CARDINAL) : BOOLEAN;
+
+(*------TaskUsesNoResources------------------------------------
+
+    Returns TRUE if task uses no resources, or all resource assignments
+    use zero of the resource.
+*)
+
+PROCEDURE TaskUsesNoResources(Task: ATaskPtr) : BOOLEAN;
+
+(* ------ UnspentWorkMustBeContiguous ---------------------------------
+    Returns TRUE if (a) task is frozen; or
+                    (b) task is duration-driven, and either has some
+                        spent effort or is started or done;
+                    (c) task is started or done and "KeepEffortContiguous"
+                        switch is on.
+    Otherwise returns FALSE.
+*)
+
+PROCEDURE UnspentWorkMustBeContiguous (Task: ATaskPtr) : BOOLEAN;
+
+
+(* ------TaskIsFixedType -----------------------------------------
+    Returns TRUE iff task fixation is "fixed".
+*)
+PROCEDURE TaskIsFixedType (Task: ATaskPtr) : BOOLEAN;
+
+
+
+(* ---- MaxEndOfSpent -------------------------------
+        returns max {Day,
+                     max{EndOfActualDate | all resource assignments}}.
+*)
+
+PROCEDURE MaxEndOfSpent (Task : ATaskPtr; Day: ADate) : ADate;
+
+(* ---- ToGoDurationOfEffortDrivenTask -----
+
+   Note: the duration returned may not be the true remaining
+   duration if the task is type Split rather than Delay.
+*)
+
+PROCEDURE ToGoDurationOfEffortDrivenTask (Task: ATaskPtr) : ADuration;
+
+(* ---------------- ToGoDurationOfEffortDrivenAssignments -----------------
+
+  Just like ToGoDurationOfEffortDrivenTask, but takes an already
+  locked assignments array.
+*)
+
+PROCEDURE ToGoDurationOfEffortDrivenAssignments (Task: ATaskPtr;
+                                                 Assignments : AnAssignmentArray;
+                                                NumAssignments : CARDINAL) : ADuration;
+
+
+
+
+(* --- DurationToEffort - given a duration and a resource level, does
+    the conversion to effort.  ResourceLevel is in FTE * 100.
+    *)
+PROCEDURE DurationToEffort(Duration: ADuration;
+                           ResourceLevel: REAL) : REAL;
+
+(* --- EffortToDuration - given an amount of effort and a resource level,
+    does the conversion to duration. ResourceLevel is in FTE * 100.
+    *)
+PROCEDURE EffortToDuration(Effort : REAL;
+                           ResourceLevel: REAL) : ADuration;
+
+
+(* --- ResourceIsAssignedToTask
+       Answers the question "Is this resource working on this task?"
+       *)
+
+PROCEDURE ResourceIsAssignedToTask(     Task     : ATaskPtr;
+                                        Resource : AResourcePointer
+                                   ) : BOOLEAN;
+
+
+
+(* --- ResourceAssignedAtDate
+
+       Given a task, resource and date, shows the amount of the resource
+       assigned to the task at that date. *)
+
+PROCEDURE ResourceAssignedAtDate(     Task     : ATaskPtr;
+                                      Resource : AResourcePointer;
+                                      Date     : ADate
+                                ) : REAL;
+
+(* -------- CheckResourceDuration ----------------------------
+
+   Determine if given required duration and level of a Resource can
+   be satisfied starting at StartDate, without running
+   into a violation. If "DoWeCountVacations" is TRUE, then vacation
+   time is counted in the accumulated duration, provided that
+   "DoWeAllowVacations" is also TRUE. A violation is a date such that
+   either (a) the level is not satisfied and "DoWeIgnoreResourceLevels"
+   is FALSE, or (b) the resource is on vacation and "DoWeAllowVacations"
+   is FALSE. If the conditions can be satisfied, "DateIsGoodForResource"
+   is returned as TRUE, and "EndDate" contains resulting end date for
+   for the resource. If not, "DateIsGood" is returned
+   as FALSE, and ViolationDate contains the last date contained in
+   the earliest cell found to have a violation (that is, the cell's
+   end date minus 1).
+
+   If the global HonorDaysOff flag is FALSE, we pretend the resource
+   has no vacations.
+*)
+
+PROCEDURE CheckResourceDuration (Resource             : AResourcePointer;
+                                 StartDate            : ADate;
+                                 LevelRequired        : REAL;   (* FTE * 100 *)
+                                 DurationRequired     : ADuration;
+                                 DoWeAllowVacations   : BOOLEAN;
+                                 DoWeCountVacations   : BOOLEAN;
+                                 DoWeIgnoreResourceLevels : BOOLEAN;
+                            VAR  DateIsGood           : BOOLEAN;
+                            VAR  EndDate              : ADate;
+                            VAR  ViolationDate        : ADate);
+
+(* -------- BackCheckResourceDuration ----------------------------
+
+   Determine if given required duration and level of a Resource can
+   be satisfied starting at ThruDate and running backwards in time,
+   without running
+   into a violation. If "DoWeCountVacations" is TRUE, then vacation
+   time is counted in the accumulated duration, provided that
+   "DoWeAllowVacations" is also TRUE. A violation is a date such that
+   either (a) the level is not satisfied and "DoWeIgnoreResourceLevels"
+   is FALSE, or (b) the resource is on vacation and "DoWeAllowVacations"
+   is FALSE. If the conditions can be satisfied, "DateIsGoodForResource"
+   is returned as TRUE. If not, "DateIsGood" is returned
+   as FALSE, and ViolationDate contains the START DATE of the latest
+   cell found to have a violation. (Note that this is not the same as
+   the latest violation date found! That would be the cell's end date
+   minus 1.)
+
+   If DoWeUseLateAvailabilities is TRUE, the procedure references
+   the LateAvailProfile of each resource; otherwise it references
+   the regular AvailProfile.
+
+   If the global HonorDaysOff flag is FALSE, we pretend the resource
+   has no vacations.
+*)
+
+PROCEDURE BackCheckResourceDuration (Resource             : AResourcePointer;
+                                     ThruDate             : ADate;
+                                     LevelRequired        : REAL;    (* FTE * 100 *)
+                                     DurationRequired     : ADuration;
+                                     DoWeAllowVacations       : BOOLEAN;
+                                     DoWeCountVacations       : BOOLEAN;
+                                     DoWeIgnoreResourceLevels : BOOLEAN;
+                                     DoWeUseLateAvailabilities: BOOLEAN;
+                                VAR  DateIsGood           : BOOLEAN;
+                                VAR  StartDate            : ADate;
+                                VAR  ViolationDate        : ADate);
+
+
+(* -------- TaskDuration ----------------------------------------
+
+   Simply subtracts task's early start from early end. (Note: this is
+   not necessarily the same as the Task^.duration field!)
+*)
+
+PROCEDURE TaskDuration(Task : ATaskPtr) : ADuration;
+
+
+(* --------- MoveTaskToListInPriorityOrder ------------------------
+
+   Removes the task from whatever list it's on and puts it into
+   the specified list in order of priority (as a function of
+   Day).
+*)
+
+PROCEDURE MoveTaskToListInPriorityOrder (Task       : ATaskPtr;
+                                         TaskHandle : AnExtHandle;
+                                         Day        : ADate;
+                                         List       : AnExtHandle);
+
+
+(* ------------- CompTaskByLowerBound ---------------------
+   Returns TRUE if a's lower bound is > b's. In case of a tie,
+   returns TRUE if a's sequence number is > b's.
+*)
+
+PROCEDURE CompTaskByLowerBound(   a : ATaskPtr;
+                            bHandle : AnExtHandle) : BOOLEAN;
+
+(* -----------------------------------------------------------
+    TasksMightHaveResourcesInCommon
+
+
+-------------------------------------------------------------- *)
+
+PROCEDURE TasksMightHaveResourcesInCommon( A, B : ATaskPtr ) : BOOLEAN;
+
+
+
+
+
+(* ----------------------------------------------------------------
+
+GetToGoLevel -- Return the rate at which the resource should
+                be assigned for the remainder of the task.  This
+                will be, depending on the assignment, either entered
+                by the user or computed based on the remaining
+                effort.
+----------------------------------------------------------------- *)
+
+
+PROCEDURE GetToGoLevel(     Task         : ATaskPtr;
+                        VAR Assignment   : AnAssignmentRecord; 
+                            ToGoDuration : ADuration ) : REAL;
+
+
+
+
+
+END ResUtilities.
+

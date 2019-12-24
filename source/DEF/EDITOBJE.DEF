@@ -1,0 +1,681 @@
+DEFINITION MODULE EditObjects;             (* Subclass of LinkedListObjects *)
+
+    (*  The edit workspace defined here is a subclass of a linked list, 
+        which is used to hold lines of text while they are being edited.
+        Its main addition if a changed flag, so there's a way of determining
+        if the text has been changed.  The edit node is a subclass of a
+        list node, and holds data about the current status of a single line
+        of the text being edited.  This object is the one that could be
+        used as a string field on a form, or whereever a single line of
+        text (actually it's an LString) needs to be edited.
+    *)
+
+FROM LinkedListObjects      IMPORT
+    (* TYPE *)                  ALinkedListMethods, ALinkedListNodeMethods;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+
+
+
+
+TYPE
+        (*  AnEditWorkspace is a subclass of LinkedListObjects.ALinkedList  *)
+
+    AnEditWorkspace         = POINTER TO AnEditWorkspaceRecord;
+
+    AnEditWorkspaceMethods  = POINTER TO AnEditWorkspaceMethodsRecord;
+
+    AnEditWorkspaceRecord   = RECORD
+                                Methods     : AnEditWorkspaceMethods;
+                              END;
+
+
+
+
+        (*  AnEditNode is a subclass of LinkedListObjects.ALinkedListNode   *)
+
+    AnEditNode              = POINTER TO AnEditNodeRecord;
+
+    AnEditNodeMethods       = POINTER TO AnEditNodeMethodsRecord;
+
+    AnEditNodeRecord        = RECORD
+                                Methods     : AnEditNodeMethods;
+                              END;
+
+
+
+
+TYPE
+    AnEditStringPointer     = POINTER TO AnEditString;
+
+    AnEditString            = ARRAY [0..65520] OF CHAR;
+
+    ARelativeOrder          = (ComesBefore, SameAs, ComesAfter);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedures types defined
+        in Objects, so that we can pass objects of type AnEditWorkspace and
+        AnEditNode to them.
+    *)
+
+TYPE
+    AWorkspaceCloneProc     = PROCEDURE(    AnEditWorkspace,
+                                        VAR AnEditWorkspace)
+                                                            : BOOLEAN;
+
+    AWorkspaceStoreOnProc   = PROCEDURE(    AnEditWorkspace,
+                                            AnObject       );
+
+    AWorkspaceDiscardProc   = PROCEDURE(VAR AnEditWorkspace);
+
+    AnEditNodeCloneProc     = PROCEDURE(    AnEditNode,
+                                        VAR AnEditNode)
+                                                       : BOOLEAN;
+
+    AnEditNodeStoreOnProc   = PROCEDURE(    AnEditNode,
+                                            AnObject  );
+
+    AnEditNodeDiscardProc   = PROCEDURE(VAR AnEditNode);
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedures types defined
+        in LinkedListObjects, so that we can pass objects of type 
+        AnEditWorkspace and AnEditNode to them.
+    *)
+
+TYPE
+    AWorkspaceAddProc       = PROCEDURE(    AnEditWorkspace,
+                                            AnEditNode     );
+
+    AWorkspaceGetProc       = PROCEDURE(    AnEditWorkspace)
+                                                            : AnEditNode;
+
+    AnEditNodeProcessingProc = PROCEDURE(VAR AnEditNode,
+                                             ADDRESS   );
+
+    AWorkspaceForAllProc    = PROCEDURE(    AnEditWorkspace,
+                                            AnEditNodeProcessingProc,
+                                            ADDRESS                 );  (* Context *)
+
+    AnEditNodeGetProc       = PROCEDURE(    AnEditNode)
+                                                       : AnEditNode;
+
+    AnEditNodeAddProc       = PROCEDURE(    AnEditNode,
+                                            AnEditNode);
+
+    AnEditNodeDeListProc    = PROCEDURE(    AnEditNode);
+
+    AnEditNodeSetObjectProc = PROCEDURE(    AnEditNode,
+                                            AnEditStringPointer);
+
+    AnEditNodeGetObjectProc = PROCEDURE(    AnEditNode)
+                                                       : AnEditStringPointer;
+
+    AnEditNodeGetWorkspaceProc = PROCEDURE(    AnEditNode)
+                                                          : AnEditWorkspace;
+
+    AnEditNodeSetVisibleProc = PROCEDURE(    AnEditNode,
+                                             BOOLEAN   );
+
+    AnEditNodeVisibleProc   = PROCEDURE(    AnEditNode)
+                                                       : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+    (*  The following are the new methods for the workspace class   *)
+
+
+(*----------------------------------------------------------------------------
+    AWorkspaceGetChangedProc --
+
+    Determine if the workspace has been changed.
+
+    Preconditions:
+        The object must be a valid edit workspace object.
+
+    Postconditions:
+        The status of the change state will be returned.  TRUE indicates
+        that the workspace was changed.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AWorkspaceGetChangedProc = PROCEDURE(    AnEditWorkspace)
+                                                             : BOOLEAN;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AWorkspaceSetChangedProc --
+
+    Set the status of the workspace change state.
+
+    Preconditions:
+        The object must be a valid edit workspace object.
+
+    Postconditions:
+        The status of the change state will be set as indicated.  TRUE 
+        indicates that the workspace was changed.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AWorkspaceSetChangedProc = PROCEDURE(    AnEditWorkspace,
+                                             BOOLEAN        );
+
+
+
+
+
+
+
+
+
+
+        (*  This defines all the methods which apply to objects of type 
+            AnEditWorkspace.
+        *)
+
+    AnEditWorkspaceMethodsRecord = 
+                              RECORD
+
+                                Methods             : AnObjectMethods;
+                                Clone               : AWorkspaceCloneProc;
+                                StoreOn             : AWorkspaceStoreOnProc;
+                                Discard             : AWorkspaceDiscardProc;
+                                SuperclassMethods   : ALinkedListMethods;
+                                MethodSize          : CARDINAL;
+                                ObjectMethodsTag    : CARDINAL;
+
+                                AddFirst            : AWorkspaceAddProc;
+                                AddLast             : AWorkspaceAddProc;
+                                GetFirst            : AWorkspaceGetProc;
+                                GetLast             : AWorkspaceGetProc;
+                                ForAll              : AWorkspaceForAllProc;
+                                GetFirstVisible     : AWorkspaceGetProc;
+                                GetLastVisible      : AWorkspaceGetProc;
+                                ListMethodsTag      : CARDINAL;
+
+                                GetChanged          : AWorkspaceGetChangedProc;
+                                SetChanged          : AWorkspaceSetChangedProc;
+                                WorkspaceMethodsTag : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+
+
+
+    (*  The following are the new methods for the edit node class  *)
+
+(*----------------------------------------------------------------------------
+    AnEditNodeRelativeOrderProc --
+
+    Return the relative order of two edit nodes, and the offsets into them.
+
+    Preconditions:
+        The objects must be valid edit node objects, and the offsets must be
+        greater than zero.
+
+    Postconditions:
+        The position of the first, relative to the second, will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodeRelativeOrderProc = PROCEDURE(    AnEditNode,  (* First *)
+                                                CARDINAL,    
+                                                AnEditNode,  (* Second *)
+                                                CARDINAL  )
+                                                           : ARelativeOrder;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodeEndOfLineProc --
+
+    Determines the end of line of the string associated with the indicated
+    edit node.  Trailing blanks are not considered significant.  The position
+    returned will be just past (one greater than) the last non-blank character
+    in the string.
+
+    Preconditions:
+        The object indicated must be a valid edit node object.
+
+    Postconditions:
+        The position of the end of line will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodeEndOfLineProc = PROCEDURE(    AnEditNode)
+                                                       : CARDINAL;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodeGetLineProc --
+
+    Get a portion of the line associated with the indicated node.
+
+    Preconditions:
+        The object indicated must be a valid edit node object.
+
+    Postconditions:
+        The requested portion of the line will be returned.  If the portion
+        requested if past the end of the line, or the line is NIL, a null
+        LString will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodeGetLineProc   = PROCEDURE(    AnEditNode,     (* EditNode *)
+                                            CARDINAL,       (* StartPosition *)
+                                            CARDINAL,       (* Length *)
+                                        VAR ARRAY OF CHAR); (* LString *)
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodePutLineProc --
+
+    The provided LString will be placed in the line of the indicated edit
+    node, according to the supplied parameters.
+
+    Preconditions:
+        The object indicated must be a valid edit node object, the position
+        must be greater than zero, and the LString must be a valid LString.
+
+    Postconditions:
+        Iff there is sufficient memory available, the line will be modified 
+        as indicated with the LString.  If InsertMode is TRUE, the LString
+        will be inserted at the indicated position, otherwise it will overlay
+        existing characters of the line.  The line will be extended as
+        necessary.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodePutLineProc   = PROCEDURE(    AnEditNode,      (* EditNode *)
+                                            CARDINAL,        (* StartPosition *)
+                                            BOOLEAN,         (* InsertMode *)
+                                        VAR ARRAY OF CHAR);  (* LString *)
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodeGetCharProc --
+
+    Get the character at the indicated position in the string associated with
+    the edit node.
+
+    Preconditions:
+        The object indicated must be a valid edit node object, and the 
+        position must be greater than zero.
+
+    Postconditions:
+        The character at the indicated position will be returned.  If the
+        position is past the current line length, a blank will be returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodeGetCharProc   = PROCEDURE(    AnEditNode,        (* EditNode *)
+                                            CARDINAL  )        (* Position *)
+                                                       : CHAR;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodePutCharProc --
+
+    The character at the indicated position in the string associated with
+    the edit node will be set to the one supplied.
+
+    Preconditions:
+        The object indicated must be a valid edit node object, and the 
+        position must be greater than zero.
+
+    Postconditions:
+        The given character will be put into the string at the position
+        indicated.  If insert mode is on, then it will push any existing
+        characters at and past that position to the right.  If the
+        position indicated is past the current line length, the line will be
+        extended with blanks as necessary.  
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodePutCharProc   = PROCEDURE(    AnEditNode,      (* EditNode *)
+                                            CARDINAL,        (* Column *)
+                                            BOOLEAN,         (* InsertMode *)
+                                            CHAR      );     (* NewChar *)
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodeDeleteCharProc --
+
+    Delete the character at the indicated column of the string associated with
+    the edit node.
+
+    Preconditions:
+        The object indicated must be a valid edit node object, and the 
+        position must be greater than zero.
+
+    Postconditions:
+        If the string length is less than the indicated position, nothing will
+        happen.  Otherwise, the character at the indicated position will be
+        deleted from the string.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodeDeleteCharProc = PROCEDURE(    AnEditNode,      (* EditNode *)
+                                             CARDINAL  );     (* Column *)
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnEditNodeDeleteBlockProc --
+
+    Delete the block specified by the start column and the length in the line
+    of the edit node.
+
+    Preconditions:
+        The object indicated must be a valid edit node object, and the start 
+        position must be greater than zero.
+
+    Postconditions:
+        The indicated block of characters will be removed from the line of
+        the edit node.  If the start position is past the end of the line, 
+        nothing will be done.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnEditNodeDeleteBlockProc  = PROCEDURE(    AnEditNode,     (* EditNode *)
+                                               CARDINAL,       (* StartPos *)
+                                               CARDINAL  );    (* Length   *)
+
+
+
+
+
+
+
+
+
+        (*  This defines all the methods which apply to objects of type 
+            AnEditNode.
+        *)
+
+    AnEditNodeMethodsRecord = RECORD
+
+                                Methods            : AnObjectMethods;
+                                Clone              : AnEditNodeCloneProc;
+                                StoreOn            : AnEditNodeStoreOnProc;
+                                Discard            : AnEditNodeDiscardProc;
+                                SuperclassMethods  : ALinkedListNodeMethods;
+                                MethodSize         : CARDINAL;
+                                ObjectMethodsTag   : CARDINAL;
+
+                                GetNext            : AnEditNodeGetProc;
+                                GetPrev            : AnEditNodeGetProc;
+                                AddBefore          : AnEditNodeAddProc;
+                                AddAfter           : AnEditNodeAddProc;
+                                DeList             : AnEditNodeDeListProc;
+                                SetDataObject      : AnEditNodeSetObjectProc;
+                                GetDataObject      : AnEditNodeGetObjectProc;
+                                GetList            : AnEditNodeGetWorkspaceProc;
+                                NextForDisplay     : AnEditNodeGetProc;
+                                PrevForDisplay     : AnEditNodeGetProc; 
+                                FirstVisibleCoNode : AnEditNodeGetProc;
+                                LastVisibleCoNode  : AnEditNodeGetProc; 
+                                GetNextVisible     : AnEditNodeGetProc;
+                                GetPrevVisible     : AnEditNodeGetProc;
+                                SetVisible         : AnEditNodeSetVisibleProc;
+                                Visible            : AnEditNodeVisibleProc;
+                                SetPrivateVisible  : AnEditNodeSetVisibleProc;
+                                PrivateVisible     : AnEditNodeVisibleProc;
+                                ListNodeMethodsTag : CARDINAL;
+
+                                RelativeOrder      : AnEditNodeRelativeOrderProc;
+                                EndOfLine          : AnEditNodeEndOfLineProc;
+                                GetLine            : AnEditNodeGetLineProc;
+                                PutLine            : AnEditNodePutLineProc;
+                                GetCharacter       : AnEditNodeGetCharProc;
+                                PutCharacter       : AnEditNodePutCharProc;
+                                DeleteCharacter    : AnEditNodeDeleteCharProc;
+                                DeleteBlock        : AnEditNodeDeleteBlockProc;
+                                EditNodeMethodsTag : CARDINAL;
+
+                              END;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsEditWorkspace --
+
+    Initialize the indicated storage as an object of type AnEditWorkspace.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated storage is initialized as a valid object of type
+        AnEditWorkspace.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsEditWorkspace(    EditWorkspace : AnEditWorkspace);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsEditNode --
+
+    Initialize the indicated storage as an object of type AnEditNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The indicated storage is initialized as a valid object of type
+        AnEditNode.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsEditNode(    EditNode       : AnEditNode;
+                             EditWorkspace  : AnEditWorkspace);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateEditWorkspace --
+
+    Allocate storage for, and initialize the storage as an object of type 
+    AnEditWorkspace.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff sufficient heap space is available, a new object of type
+        AnEditWorkspace will be allocated, and initialized and TRUE will be
+        returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateEditWorkspace(VAR EditWorkspace : AnEditWorkspace)
+                                                                  : BOOLEAN;
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateEditNode --
+
+    Allocate and initialize space on the heap as an object of type AnEditNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff sufficient heap space is available, a new object of type
+        AnEditNode will be allocated, initialized with an empty line, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateEditNode(VAR EditNode       : AnEditNode;
+                             EditWorkspace  : AnEditWorkspace)
+                                                              : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsEditWorkspace --
+
+    UnInitialize the indicated storage as an object of type AnEditWorkspace.
+
+    Preconditions:
+        The object must be a valid edit workspace.
+
+    Postconditions:
+        Any edit nodes linked to the workspace will be unlinked and 
+        discarded, and the workspace will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsEditWorkspace(    EditWorkspace : AnEditWorkspace);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsEditNode --
+
+    UnInitialize the indicated storage as an object of type AnEditNode.
+
+    Preconditions:
+        The object must be a valid edit node.
+
+    Postconditions:
+        The string associated with the edit node will be discarded, and
+        the edit node invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsEditNode(    EditNode     : AnEditNode);
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateEditWorkspace --
+
+    Validate the indicated storage location as an object of type 
+    AnEditWorkspace.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the indicated object is not an edit workspace, or a subclass, 
+        FatalError will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateEditWorkspace(    Workspace : AnEditWorkspace);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateEditNode --
+
+    Validate the indicated storage location as an object of type 
+    AnEditNode.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the indicated object is not an edit node, or a subclass, 
+        FatalError will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateEditNode(    EditNode     : AnEditNode);
+
+
+
+
+
+
+END EditObjects.
+

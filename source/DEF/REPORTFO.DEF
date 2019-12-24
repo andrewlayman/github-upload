@@ -1,0 +1,14 @@
+DEFINITION MODULE ReportForm;
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+
+
+    (*  DoPrinterForm  -- Allow printer parameters to be changed. *)
+
+PROCEDURE DoPrinterForm(): ACode;
+
+
+END ReportForm.
+

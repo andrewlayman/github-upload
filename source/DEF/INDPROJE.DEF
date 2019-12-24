@@ -1,0 +1,46 @@
+DEFINITION MODULE IndProjects;
+
+
+    (*--------------------------------------------------------------------
+
+      IndProjects
+
+      This module determines if the schedule consists of one connected network,
+      or several unconnected networks (independent projects).  Each weakly 
+      connected network of task nodes is identified as a project.  For each
+      such network, a single node is identified as a terminal node and marked
+      as such.  This may require creating an extra node and adding it as a
+      temporary, zero-length task to the network.
+
+    -------------------------------------------------------------------- *)
+
+    (*--------------------------------------------------------------------
+    
+       MODIFICATION HISTORY
+
+        8-Sep-90  AJL -Moved code to here from TLCPM.
+       27-Nov-90  AJL -Added TaskCount to AddTerminalNodes.
+
+
+    -----------------------------------------------------------------------*)
+
+FROM FlexStor       IMPORT
+    (* TYPE *)     AnExtHandle;
+
+
+
+
+    (* AddTerminalNodes -- Add some new nodes to the graph so that
+                           each (weakly) connected subgraph has exactly
+                           one node with no (directed) descendants.
+
+                           *)
+
+
+PROCEDURE AddTerminalNodes (  PrivateTaskList : AnExtHandle;
+                              TaskCount       : CARDINAL );
+
+
+END IndProjects.
+
+

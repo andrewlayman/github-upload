@@ -1,0 +1,542 @@
+DEFINITION MODULE Allocs;
+
+    (* MODIFICATION HISTORY:
+
+       5/2/86    AJL  - Moved FilteredIn flag to a previously
+                        unused byte position in the Task record,
+                        and added Highlight flag to another unused
+                        byte position.  These bytes were unused
+                        because of the alignment option in the
+                        compiler.
+
+                      - Moved count, count2, X and Y to just
+                        after datestring.
+
+       6/12/86   AJL  - Added ADateBlock;
+       07/23/86 LAA     Incorporated references to Texts.
+       12/03/86 LAA     Changed the task definition to include the set for
+                        filtering, an percent complete field, and the sort
+                        codes: WBS, OBS, and AUX.  Also added TaskId to be
+                        used later as the unique task identifier.
+       5-May-87 LAA     Added the TaskTree to this .DEF.  Also, Andrew added
+                        a MustStartBy and MustEndBy date, and some more flags
+                        to the task record, and a workspace address to the
+                        resource record.
+       5-May-87 RSC     Added Costs information to the Task record.
+                        This includes adding imports from Costs,
+                        and significant changes to ADateBlock.
+                        I also removed status and status2 from the
+                        Task record and replaced them with ATaskStatusSet.
+       7-May-87 RSC     Changed the way resources are allocated to Tasks.
+                        Now, resources are allocated from the "Assignment"
+                        records under Plan and BaseLine.  See
+                        the Costs module for the Assignment record.
+                        Remember that these are in FlexStor, and so are
+                        refered to via handles.
+                        Removed "AddResourceToTask".
+                        Added "RemoveAssignmentsAndExpenses".
+      18-May-87 RSC     Yet more changes as per AJL re: planning stuff.
+      22-May-87 LAA     Changed most procedure to take a tree node as
+                        parameter, instead of a task pointer.
+      29-May-87 LAA     Removed obsolete procedures.
+      02-Jun-87 LAA     Added the AssignmentSummary field to the task record,
+                        and the ShowSubMilestones value to TaskFlags.
+    Jun 17, 1987  RSC - Added explicit procedures "InitializeTaskRecord" and
+                        "CopyOneAssignmentWithSpeed".  Added "BaseLineSummary"
+                        and BigTime to the task record.
+    Jul  9, 1987  RSC - removed MustStartBy and MustEndBy.
+    Jul 14, 1987  RSC - removed datestring, BigTime.  Added ABigDateBlock.
+    Jul 16, 1987  RSC - added CostPlace to task record.
+    Aug  2, 1987  RSC - Moved fields around again.
+    Sep 22, 1987  EGK - Added new procedures to allow manipulation of tasks
+                        and edges underneath the user interface (primarily to
+                        support undo).
+    Oct 13, 1987  RSC - Added BCWSDollars to task record as per AJL.
+    Dec  8, 1987  RSC - Added "CreateTaskWithSpeed".
+    Feb  1, 1988  RSC - Added BCWP at end of task record for Andrew.
+    Jan 10, 1989  EGK - moved edge procedures into Edges module, and assignments
+                        procedures to Assignments module.
+    Mar 22, 1989  AJL - Made the CheckTaskValid a VAR PROC.
+                      - Added TopoOrder and Temp3.
+                      - Changed X to XX and Y to YY.
+    May  3, 1989 EGK  - Changed WBS, OBS, and AUX to be lines of the
+                        new "Coding" field (AText).
+    May 30, 1989 RSC  - Changed WBS and OBS length to 30.
+    Aug 31, 1989 AJL  - Redefined the former FreeBit1 and FreeBit2 in
+                        ATaskStatus to be CriticalStart and CriticalEnd.
+                        Removed FreeBit2 and 3.
+    30-Mar-90 RSC  Made Timeu to Timei conversions.
+    May 29, 1990 AJL  - Changed the import of ACostPlace from RsrcMod to
+                        Accruals.
+                      - Defined the AssignmentDriven type.
+                      - Added splitting rules to the record.
+    08-Jul-90  AJL - Moved the temp task flags to their own set.
+                   - Added ForceCritical flag.
+    17-Jul-90  AJL - Renamed LockFixedDate to FixedStart; added FixedEnd
+                     and FixedDuration.
+    4-Sep-90  AJL  - Added NoSoonerStart, NoSoonerEnd to task flags.
+    9-Sep-90   AJL - Added NoLaterStart, NoLaterEnd.
+                   - Removed FixTheStart, FixTheEnd, FixTheDuration.
+   10-Sep-90   AJL - Removed the FixedStart fields from date blocks.
+                   - Added UserEnteredStart, UserEnteredEnd and
+                     SupposedToStart to the task record.
+                   - Added UpperBoundStart and LowerBoundStart to the
+                     task record.
+                   - Added LateIndStart and LateIndEnd to date blocks.
+   14-Sep-90   RSC - Even-Aligned the records.
+    9-Oct-90   AJL - Renamed Temp3 to Fingerprint.  Made it a BITSET.
+                   - Added SequenceNumber.
+    1-Nov-90   CL  - Rename UpperBoundStartDate to StartDateUpperBound,
+                     LowerBoundStartDate to StartDateLowerBound,
+                     LockScheduledDates to FrozenTask, 
+                     SuppressSlack to ForceCritical, and
+                     ResourceDriven to EffortDriven.
+   26-Mar-91   AJL - Added QueryNumberOfTasks.
+
+    *)
+
+FROM Accruals               IMPORT
+    (* TYPE *)                  ACostPlace;
+
+FROM BigTimeU               IMPORT
+        (* TYPE *)              ABigTime;
+
+FROM Edges                  IMPORT
+    (* TYPE *)                  AnEdgePtr;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate, ADuration, ADurationUnit;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+FROM FlexStor             IMPORT
+    (* TYPE *)                  AnExtStoragePreference, AnExtHandle;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  BYTE, ADDRESS;
+
+
+
+(*$A+*)
+
+CONST
+    TskNmLen  = 30;     (* Max Length of a task's name. *)
+    StartStatusNameLen = 20;     (* Length of a start status name. *)
+
+    WBSLine             = 0;
+    OBSLine             = 1;
+    AUXLine             = 2;
+
+    FirstOtherCodingLine    = 3;
+
+    WBSLen              = 30; (* RSC 30-May-89 *)
+    OBSLen              = 30; (* RSC 30-May-89 *)
+    AUXLen              = 10;
+
+TYPE
+    ATaskName = ARRAY [0..TskNmLen] OF CHAR;
+    AFixType = (FixedDate,                 (* The user has entered the start date. *)
+                ASAP,                      (* Please compute earliest start date.  *)
+                ALAP,                      (* Complete this a late as feasible.    *)
+                Span);                     (* Grow this task as long as possible.  *)
+    AStartStatus = (FutureS, StartedS, DoneS);
+    ADurationMethod = (DurationDriven, EffortDriven, AssignmentDriven);
+    arectag   = CARDINAL;
+    ATaskPtr  = POINTER TO ATask;
+    ADateBlockPointer = POINTER TO ADateBlock;
+    ARollupStatus = (NotRollup, RollupNotLoaded, RollupLoaded, RollupNotAvailable,
+                     RollupLoadError );
+
+    ATaskFlag = (DeferAlarms,          (* No more alarms for this task.    *)
+                 TaskRecentlyAdded,    (* Task added this session.         *)
+                 IsHeadNode,           (* Not a real task, is head of list.*)
+                 FrozenTask,           (* Always schedule at fixed date *)
+                 ForceCritical,        (* Force zero slack. *)
+                 NoSoonerStart,        (* Entered start date is lower bound. *)
+                 NoLaterStart,         (* Entered start date is upper bound. *)
+                 NoSoonerEnd,          (* Entered end date is lower bound. *)
+                 NoLaterEnd,           (* Entered end date is upper bound. *)
+                 TFS1,
+                 TFS2,
+                 TFS3,
+                 BaseLineExists,       (* Baseline or Plan dates exist yet? *)
+                 PlanExists,           (* RSC 5/18/87 *)
+                 ShowSubMilestones,    (* 02-Jun-87 LAA -- Unused *)
+                 SelfContained);
+    ATaskFlagSet = SET OF ATaskFlag;
+
+    ATempTaskFlag = (TempTaskFlag1,        (* Temporary use flags              *)
+                     TempTaskFlag2,
+                     TempTaskFlag3,
+                     TempTaskFlag4,
+                     TempTaskFlag5,
+                     TempTaskFlag6,
+                     TempTaskFlag7,
+                     TempTaskFlag8 );
+
+    ATempTaskFlagSet = SET OF ATempTaskFlag;
+
+    ASplittingRule  =   (  Delay,      (* Wait until after vacations. *)
+                           Split  );   (* Split assignments around vacations. *)
+
+    ATaskFilter             = (Selected,
+                               Highlight1,
+                               Highlight2,
+                               Highlight3,
+                               Highlight4,
+                               Highlight5,
+                               Highlight6,
+                               Highlight7,
+                               WorkBit1,
+                               WorkBit2  );
+
+    ATaskFilterSet          = SET OF ATaskFilter;
+
+
+
+    (*
+         These blocks of Time and Amount on each task will reflect the
+         summary values of all resources on the task, plus the values of
+         resources on subsidary tasks, if there are any.
+    *)
+
+    AnAssignmentSummary     = RECORD
+                                Time            : REAL;
+                                Amount          : REAL;
+                              END;
+
+  (* Please keep these two date blocks in synch.  ADateBlock is stored
+     (twice) in the task record.  ABigDateBlock is stored when the task
+     is saved to disc.  It is placed after the task record; one for each
+     'normal' date block.  Big Dates are impervious to calendar changes,
+     and so are prefered over the more ficle 'ADate'.
+   *)
+    ADateBlock = RECORD
+                     EarlyStart,
+                     EarlyEnd,
+                     LateFreeStart,
+                     LateFreeEnd,
+                     LateTotalStart,
+                     LateTotalEnd,
+                     LateIndStart,
+                     LateIndEnd    : ADate;
+                 END;
+    ABigDateBlock = RECORD
+                     EarlyStart,
+                     EarlyEnd,
+                     LateFreeStart,
+                     LateFreeEnd,
+                     LateTotalStart,
+                     LateTotalEnd,
+                     LateIndStart,
+                     LateIndEnd    : ABigTime;
+                 END;
+
+    ATaskStatus = (Critical,
+                   PartialJoinPrior, PartialJoinAfter,
+                   ResourceOverload, ResourceConflict,
+                   Loop,
+                   NeedsRecalculate,
+                   CriticalStart, CriticalEnd,
+                   FreeBit1, FreeBit2 );
+
+    ATaskStatusSet = SET OF ATaskStatus;
+
+    ADateAssignmentBlock = RECORD
+        Dates        : ADateBlock;
+        Assignments  : AnExtHandle;
+    END;
+
+    (* Structure for each task.
+    *)
+    ATask = RECORD
+                rectag                      : arectag;
+                TaskID                      : INTEGER;   (* Unique identifier *)
+                taskname                    : ATaskName; (* 31 bytes *)
+                DurationMethod              : ADurationMethod;
+                duration                    : ADuration;
+                fixation                    : AFixType;
+                scale                       : ADurationUnit;
+                EffortScale                 : ADurationUnit;
+                CostPlace                   : CHAR;     (* ACostPlace *)
+                priority                    : CARDINAL;
+                TaskFlags                   : ATaskFlagSet;
+                FilterSet                   : ATaskFilterSet;
+                PercentComplete             : CARDINAL;
+                TaskStatusSet               : ATaskStatusSet;
+                StartStatus                 : AStartStatus;
+                rollupstatus                : ARollupStatus;
+                XX,YY  (* Temp *)           : CARDINAL;
+                count,
+                count2                      : CARDINAL;
+                TaskSortOrder               : CARDINAL;
+                antetasks                   : AnEdgePtr;  (* List of tasks that must
+                                                             precede this one. *)
+                desctasks                   : AnEdgePtr;  (* List of tasks that must follow
+                                                             this one. *)
+                Prevlink                    : AnExtHandle;  (* Prior task. *)
+                Nextlink                    : AnExtHandle;  (* Next task.  *)
+                WorkSpace                   : ADDRESS; (* Temporary use *)
+                BaseLineSummary             : AnAssignmentSummary;
+                ToGoSummary                 : AnAssignmentSummary;
+                CompletedSummary            : AnAssignmentSummary;
+                Plan                        : ADateAssignmentBlock;
+                UserEnteredStartDate,
+                UserEnteredEndDate          : ABigTime;     (* From the task form. *)
+                SupposedToStart             : ABigTime;     (* Computed *)
+
+            (* POSSIBLE START OF EXTENDED TASK RECORD *)
+
+                BaseLine                    : ADateAssignmentBlock;
+                Coding                      : AText;    (* 5/3/89 EGK *)
+                        (*  Line 0 = WBS
+                                 1 = OBS
+                                 2 = AUX    *)
+
+                notes                       : AText;
+                summarizes                  : AText;  (* other file name. *)
+                BCWSDollars                 : REAL;   (* RSC 10/13/87     *)
+                BCWP                        : REAL;   (* RSC  2/01/88     *)
+                TopoOrder                   : CARDINAL;
+                Fingerprint                 : BITSET;
+                StartDateUpperBound,
+                StartDateLowerBound         : ADate;  (* Temp for calc. *)
+                SplittingRule               : ASplittingRule;
+                TempTaskFlags               : ATempTaskFlagSet;
+                SequenceNumber              : CARDINAL;
+            END;
+
+
+
+
+VAR
+    TaskTree       : ATree;
+    FixationName   : ARRAY AFixType OF ARRAY [0..20] OF CHAR;
+    StartStatusName: ARRAY AStartStatus OF ARRAY [0..StartStatusNameLen] OF CHAR;
+
+
+(*$A=*)
+
+
+
+(*----------------------------------------------------------------------------
+    CopyTask --
+
+    Make a copy of the task data, notes text, and resource assignments (but
+    not dependencies).
+
+    Preconditions:
+        The two tasks must both be valid task nodes, with space already
+        allocated by CreateTask.
+
+    Postconditions:
+        The task data, notes text, and resource assignments will be copied
+        from SourceTask to DestTask.
+----------------------------------------------------------------------------*)
+PROCEDURE CopyTask  (   SourceTask  : ATreeNode;
+                        DestTask    : ATreeNode );
+
+
+
+(*----------------------------------------------------------------------------
+    AddTask --
+
+    Link a task into the task tree as a child of the given parent and after
+    the given prior task.
+
+    Preconditions:
+        The given task must be a valid task node.
+
+    Postconditions:
+        If the prior task is not NIL, the given task will be added after the
+        prior task and at the same level.  If the prior task is NIL, the given
+        task will be made the first child of the parent task.  If both are
+        NIL, the task will be made the first task in the task tree.
+----------------------------------------------------------------------------*)
+PROCEDURE AddTask   (   NewTask         : ATreeNode;
+                        ParentTask      : ATreeNode;
+                        PriorTask       : ATreeNode     );
+
+
+
+
+(*----------------------------------------------------------------------------
+    RemoveTask --
+
+    Remove a task from the task tree and deallocate all storage associated
+    with it.  This does not work for summary tasks; each detail must be
+    removed individually with this procedure.
+
+    Preconditions:
+        The task must be a valid task node.
+
+    Postconditions:
+        The task will be removed from the task tree, and its storage will be
+        deallocated.
+----------------------------------------------------------------------------*)
+PROCEDURE RemoveTask    ( VAR Task      : ATreeNode );
+
+
+(*----------------------------------------------------------------------------
+    DelTask --
+
+    Discard an task node, whether or not it is linked into the task tree.
+
+    Preconditions:
+        The task must be a valid task node.
+
+    Postconditions:
+        All storage for the task will be deallocated.  No checking is done
+        to determine whether or not this task is in the task tree;  to
+        explicitly remove a task, use RemoveTask.
+----------------------------------------------------------------------------*)
+PROCEDURE DelTask   ( VAR Task : ATreeNode );
+
+
+(*----------------------------------------------------------------------------
+    CheckTaskValid --
+
+    Determine whether or not this is a valid task node.
+
+    Preconditions:
+
+    Postconditions:
+        If this is not a valid task node, the program stops.
+
+    PROCEDURE CheckTaskValid    (Task : ATreeNode);
+----------------------------------------------------------------------------*)
+VAR CheckTaskValid : PROCEDURE( (*Task : *) ATreeNode);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitializeTaskRecord --
+
+    Initialize one task record's contents to 0, NIL, Spaces, and whatever
+    else seems appropriate.
+
+    Preconditions:
+        The Task record has no valid data in it.  That is, it does not have
+        ALLOCATEd spaces that could be lost by this procedure.  It is as if
+        you just said this:
+
+                        NEW(TaskPtr);
+                        InitializeTaskRecord( TaskPtr^ );
+
+    Postconditions:
+        The task record has all its values initialized.  Pointers are set to
+        NIL, counters to 0 or 0.0,  Other special fields initialized to
+        some "empty" value as appropriate.
+
+      DANGER!!  When updating the definition of ATask, be sure to add all
+                new fields into this procedure so that the fields are set
+                to some reasonable start value.  This way, tasks can be
+                created from different areas (Task form, importing, etc),
+                and all come out OK.
+----------------------------------------------------------------------------*)
+PROCEDURE InitializeTaskRecord( VAR Task : ATask );
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateTask          --
+    CreateTaskWithSpeed --
+
+    Create a valid task node, or return NIL.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If there is sufficient memory available, a valid task node will be
+        returned with empty fields (see InitializeTaskRecord).  Otherwise
+        the procedure returns NIL.
+
+        CreateTask creates tasks with a speed of ExtMedium.
+
+----------------------------------------------------------------------------*)
+PROCEDURE CreateTask() : ATreeNode;
+PROCEDURE CreateTaskWithSpeed( Speed : AnExtStoragePreference ) : ATreeNode;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    FindTaskByNumber --
+
+    Find the task whose ID matches the one specified.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If there is a task whose ID matches the given ID, it will be returned.
+        Otherwise the procedure returns NIL.
+----------------------------------------------------------------------------*)
+PROCEDURE FindTaskByNumber  ( ID    : INTEGER ) : ATreeNode;
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    RemoveTaskData --
+
+    Remove the resources and texts from the given task.
+
+    Moved here from changer 5/13/87 by RSC
+----------------------------------------------------------------------------*)
+PROCEDURE RemoveTaskData(    Task    : ATreeNode);
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    SetCodingField --
+
+    Put the string "s" into the Task's coding field indicated by "LineNo".
+----------------------------------------------------------------------------*)
+PROCEDURE SetCodingField (  VAR Task    : ATask;
+                                LineNo  : CARDINAL;
+                            VAR s       : ARRAY OF CHAR );
+
+
+(*----------------------------------------------------------------------------
+    GetCodingField --
+
+    Copy the Task's coding field indicated by "LineNo" into the string "s".
+----------------------------------------------------------------------------*)
+PROCEDURE GetCodingField (  VAR Task    : ATask;
+                                LineNo  : CARDINAL;
+                            VAR s       : ARRAY OF CHAR );
+
+
+
+    (*  InitializeAllocs -- Call this once at start of program. *)
+
+PROCEDURE InitializeAllocs;
+
+
+    (* Returns the number of tasks that exist. *)
+
+PROCEDURE QueryNumberOfTasks(): CARDINAL;
+
+
+END Allocs.
+
+

@@ -1,0 +1,101 @@
+DEFINITION MODULE WBSDictionary;
+
+  (*
+        MODIFICATION HISTORY:
+
+         14-Jul-89  MWP  Added modification history.
+         14-Jul-89  MWP  Added procedure ClearDuplicateWBSCodes.
+         19-Jul-89  MWP  Consolidated various routines into general purpose
+                         procedures for the creation, maintenance, and deletion
+                         of WBS code dictionaries.
+         20-Jul-89  MWP  Renamed ClearWBSCodes to the more aptly
+                         titled FlagDuplicateWBSCodes and documented.
+  *)
+
+
+FROM Dictionary     IMPORT
+    (* TYPE *)              ADictionary;
+
+FROM SYSTEM         IMPORT
+                            ADDRESS;
+FROM TreeObjects    IMPORT
+    (* TYPE *)              ATree, ATreeNode;
+
+        (*
+           Prepares the WBS code dictionary for use by
+           creating it. DeleteWBSCodeDictionary MUST be called
+           before any  other calls to this proc are made, or
+           a Fatal error will result. If the Dictionary could
+           not be created, a FALSE value will be returned, else
+           a TRUE is returned.
+        *)
+PROCEDURE  CreateWBSCodeDictionary () : BOOLEAN;                   (* 19-Jul-89 MWP *)
+
+        (*
+           Deletes a previously created WBS code dictionary.
+        *)
+PROCEDURE  DeleteWBSCodeDictionary ();                             (* 19-Jul-89 MWP *)
+
+        (*
+           Returns TRUE if WBSCode is in WBS code dictionary.
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE  IsInDict ( VAR WBSCode : ARRAY OF CHAR ) : BOOLEAN;
+
+        (*
+           Returns TRUE if WBSCode can be placed in the WBS code dictionary.
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE  PutInDict ( VAR Node : ATreeNode ) : BOOLEAN;
+
+        (*
+           Will load all WBS codes within the Task tree to the
+           WBS Code dictionary. Blank and duplicate codes are NOT
+           stored.
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE  LoadWBSCodes ();                                        (* 19-Jul-89 MWP *)
+
+        (*
+           Similair to LoadWBSCodes, FlagDuplicateWBSCodes
+           will load all WBS codes within the Task tree to the
+           WBS Code dictionary. Duplicate WBS codes are flagged
+           if they are within a previously defined range of tasks.
+           ( via call to SetDuplicateFlagInNode, or SetDuplicateFlagsInTree )
+
+           Note that CreateWBSCodeDictionary MUST have been
+           successfully called previous to this proc or a fatal
+           error will occur.
+        *)
+PROCEDURE  FlagDuplicateWBSCodes ( Context : ADDRESS );            (* 20-Jul-89 MWP *)
+
+        (*
+           Sets the length of WBS code within TaskNode to zero.
+        *)
+PROCEDURE  ClearWBSCode ( VAR TaskNode : ATreeNode );
+
+        (*
+           Sets the TempFlag1 attribute of TaskNode to 'Value'.
+        *)
+PROCEDURE  SetDuplicateFlagInNode    ( VAR TaskNode : ATreeNode;
+                                           Value    : BOOLEAN );
+
+        (*
+           Sets the TempFlag1 attribute of the indicated Task Tree to FALSE.
+        *)
+PROCEDURE  ClearDuplicateFlagsInTree ( VAR Tree : ATree );
+
+
+        (*
+           Sets the TempFlag1 attribute of the indicated Task Tree to TRUE.
+        *)
+PROCEDURE  SetDuplicateFlagsInTree   ( VAR Tree : ATree );
+
+END WBSDictionary.
+

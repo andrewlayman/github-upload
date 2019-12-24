@@ -1,0 +1,54 @@
+DEFINITION MODULE NetSave;
+
+    (*  This module manages the storage of some generic objects for the
+        PERT view.  The meaning of these objects is defined elsewhere so
+        that the root of Time Line doesn't need to import PERT-specific
+        information.  All we know here is that we store up to DataMax
+        generic flexstor objects (elements of NetSaveData) as well as one
+        more object (NetSaveArray) which points to an array of other objects.
+
+        Furthermore, we don't actually create the objects here; all we do is
+        initialize our data to NILs on startup and in response to several
+        kinds of notices.  The creation of this data is also done elsewhere.
+    *)
+
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+
+CONST
+    ArrayMax        = 800;
+    DataMax         = 10;
+
+TYPE
+    ANetArray       = ARRAY [0..ArrayMax] OF AnExtHandle;
+    AnArrayPtr      = POINTER TO ANetArray;
+
+VAR
+    DataValid       : BOOLEAN;
+
+    NetSaveData     : ARRAY [0..DataMax] OF AnExtHandle;
+    NetSaveArray    : AnExtHandle;      (* references AnArrayPtr *)
+
+
+
+    (* DiscardData --   flush out any data that is saved here, presumably
+                        because we know it is no longer good.  This frees
+                        up all flexstor space used by this module.
+    *)
+
+PROCEDURE DiscardData();
+
+
+
+    (* InitNetSave --   this should be called once at program initialization.
+                        It registers to receive the proper notices to allow
+                        the saved data to be purged correctly.
+    *)
+
+PROCEDURE InitNetSave();
+
+
+END NetSave.
+

@@ -1,0 +1,116 @@
+DEFINITION MODULE ColorName;
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+CONST
+    MaxColor                = 50;
+
+TYPE
+    AColorRecordPtr         = POINTER TO AColorRecord;
+
+    AColorRecord            = RECORD
+                                  ID   : CARDINAL;
+                                  Name : ARRAY [0..21] OF CHAR;
+                              END;
+
+    AColorDescription       = ARRAY [0..255] OF CHAR;
+
+    ATLGSColorDescTable     = RECORD
+                                  ColorDesc : ARRAY [1..MaxColor] OF
+                                              AColorDescription;
+                                  END;
+
+    ATLGSColorDescTablePtr  = POINTER TO ATLGSColorDescTable;
+
+(*  DisposeColorNameTree --
+        Dispose of the color name tree made by CreateColorNameTree.
+
+    Preconditions:
+        The color name tree must have been created by a call to
+        CreateColorNameTree.
+
+    Postconditions:
+        The color name tree and all the nodes are discarded.
+*)
+
+PROCEDURE DisposeColorNameTree();
+
+
+(*  CreateColorNameTree --  
+        Create the tree of Color names for use by 
+        SelectColor, FindColorByName, and FindColorByNumber.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If heap space is available, the color name tree is created,
+        and TRUE returned.  Otherwise, FALSE is returned, and the
+        tree is not created.
+*)
+
+PROCEDURE CreateColorNameTree() : BOOLEAN;
+
+
+(*  SelectColor --
+        Display the scrolling list of color names at the indicated
+        coordinates, and allow the user to select one from it.
+
+    Preconditions:
+        The color name tree must have been created by a call to
+        CreateColorNameTree, and not discarded by DisposeColorNameTree.
+
+    Postconditions:
+        The name of the color selected is passed back via ColorNameText,
+        and the ID of the via ColorIDNumber.
+*)
+
+PROCEDURE SelectColor(    Ulx            : ascreenx;
+                          Uly            : ascreeny;
+                          Lrx            : ascreenx;
+                          Lry            : ascreeny;
+                      VAR ColorNameText : ARRAY OF CHAR;
+                      VAR ColorNameID   : CARDINAL) : ACode;
+
+
+(*  FindColorByName --
+        Find the node in the color name tree for the provided color
+        name (an LString).
+
+    Preconditions:
+        The color name tree must have been created by a call to
+        CreateColorNameTree, and not discarded by DisposeColorNameTree.
+
+    Postconditions:
+        If the color name can be found in the tree, the ColorRecord
+        is returned.  If the color name is not found, NIL is returned.
+*)
+
+PROCEDURE FindColorByName (ColorNameString : ARRAY OF CHAR) : AColorRecordPtr;
+    (*  FindColorByNumber --
+
+            Find the node in the color name tree for the provided color
+            number (a cardinal).
+
+        Preconditions:
+            The color name tree must have been created by a call to
+            CreateColorNameTree, and not discarded by DisposeColorNameTree.
+
+        Postconditions:
+            If the color number can be found in the tree, the ColorRecord
+            is returned.  If the color name can't be found, NIL will be 
+            returned.
+    *)
+
+PROCEDURE FindColorByNumber (VAR ColorNumber : CARDINAL) : AColorRecordPtr;
+
+END ColorName.
+
+

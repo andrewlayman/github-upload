@@ -1,0 +1,58 @@
+DEFINITION MODULE RunMenu2;
+
+    (****************************************************************)
+    (*                                                              *)
+    (*      RunMenu -- Put up a menu of possible items of           *)
+    (*          the class indicated.  If one is picked, run it.     *)
+    (*                                                              *)
+    (*                                                              *)
+    (****************************************************************)
+
+    (*   MODIFICATION HISTORY:
+        21-Dec-89 AJL -Created from RunMenu.def
+        9-Jul-91 AJL Added more parameters to ExtraFancyMenu.
+                     Removed FancyMenu.
+    *)
+
+
+FROM Boxes          IMPORT
+    (* TYPE *)          ABoxType, ABoxAttribute;
+
+FROM Codes          IMPORT
+    (* TYPE *)          ACode, ASetOfCodes;
+
+FROM Kbio           IMPORT
+    (* TYPE *)          ascreenx, ascreeny;
+
+FROM RunMenu        IMPORT
+    (* TYPE *)          ADispatchProcedure;
+
+
+    (* ExtraFancyMenu --
+           All sorts of good parameters.
+           Make sure you allocate enough vertical space to contain the
+           largest possible menu.
+           If any code in the ExitCodes is pressed, this will return.
+           *)
+
+
+PROCEDURE ExtraFancyMenu   (     Class  : ARRAY OF CHAR;
+                                 Prefix :ARRAY OF CHAR;
+                                 ULX : ascreenx;
+                                 ULY : ascreeny;
+                                 LRX : ascreenx;
+                                 LRY : ascreeny;
+                                 BoxType   : ABoxType;
+                                 ExitCodes : ASetOfCodes;
+                                 InitialChoice : CARDINAL;
+                             VAR ReturnString        : ARRAY OF CHAR;
+                             VAR Dispatch            : ADispatchProcedure;
+                                 CallDepth           : CARDINAL;
+                             VAR ChoiceSequence      : ARRAY OF CARDINAL
+                            ):ACode;
+
+
+                                                                        
+END RunMenu2.
+
+

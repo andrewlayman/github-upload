@@ -1,0 +1,123 @@
+DEFINITION MODULE ImPorTable;
+
+  (* Importable - A variety of routines used by the importers.
+
+        MODIFICATION HISTORY:
+
+        28-Jul-89 MWP Added procedures to manage tree of task column
+                      information for use by import overlays.
+        25-Aug-89 MWP Remove procedure definitions for handling formal
+                      name structures.
+        30-Aug-89 MWP Allow us to store the file format and report on
+                      file format and report type.
+         9-Sep-89 MWP Add procedure to validate date values.
+        27-Sep-89 MWP Removed date ranges for Years and Months.
+         6-Oct-89 MWP Created routine LogAMessage, which will not
+                      set the ErrorsHaveOccured flag. Changed GetSignOnMessage
+                      to LogSingOnMessage.
+   *)
+
+FROM EditError      IMPORT
+    (* TYPE *)              AnErrorSeverity, AKindOfError;
+
+FROM FileSystem     IMPORT
+    (* TYPE *)              File;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)              ADDRESS;
+
+FROM Text           IMPORT
+    (* TYPE *)              AText;
+
+FROM Timei          IMPORT
+    (* TYPE *)              ATimeInfo;
+
+CONST
+    ImportOverall           = 1;
+    ImportPredicate         = 2;
+    ImportData              = 3;
+
+    MinDay                  = 0;
+    MaxDay                  = MinDay + 31;
+
+    MinHour                 = 0;
+    MaxHour                 = MinHour + 24;
+
+    MinMinute               = 0;
+    MaxMinute               = MinMinute + 60;
+
+TYPE
+    AImportTable            = RECORD
+                                 ErrorOccured        : BOOLEAN;
+                                 ImportBaseLineInfo  : BOOLEAN;
+                                 BaseLineEncountered : BOOLEAN;
+                                 Counter             : CARDINAL;
+                              END;
+
+    AnAskAlterBaselineProc  = PROCEDURE() : BOOLEAN;
+
+    AnStoreFormalNameProc   =
+                              PROCEDURE ( VAR ARRAY OF CHAR,
+                                          CARDINAL );
+
+    AFilePosition           = ADDRESS;
+
+
+VAR
+    ImportNote              : AText;
+    ErrorsHaveOccured       : BOOLEAN;
+    ImportLineNumber        : CARDINAL;
+    ImportFieldNumber       : CARDINAL;
+    RowsToImport            : CARDINAL;
+    FileType                : CARDINAL;
+    FormatType              : CARDINAL;                           (* 30-Aug-89 MWP *)
+
+
+PROCEDURE CreateJournal ();
+
+PROCEDURE EndJournal ( HaveErroRsOccured : BOOLEAN );
+
+PROCEDURE AskAlterBaseline(): BOOLEAN;
+
+PROCEDURE  FileNotFound ( VAR FileName : ARRAY OF CHAR );
+
+PROCEDURE DefAlterBaselineProc(): BOOLEAN;
+
+PROCEDURE VerboseErrorHandler( Severity        : AnErrorSeverity;
+                               ErrorKind       : AKindOfError;
+                               ColumnID        : CARDINAL;
+                           VAR ErrorText       : ARRAY OF CHAR;
+                               MyContext       : ADDRESS
+                           ) : BOOLEAN;
+
+PROCEDURE LogAnError      ( VAR ErrorText       : ARRAY OF CHAR );
+
+PROCEDURE LogAMessage     ( VAR Text       : ARRAY OF CHAR );
+
+PROCEDURE GetOverallInfo  () : BOOLEAN;
+
+PROCEDURE FindRecord      (    Type    : CARDINAL;
+                           VAR Where   : AFilePosition  ) : BOOLEAN;
+
+PROCEDURE GetFilePosition ( VAR Position    : AFilePosition );
+
+PROCEDURE SetFilePosition ( Position    : AFilePosition );
+
+PROCEDURE SkipRecordBody  ( VAR F      : File;
+                                Length : CARDINAL );
+
+PROCEDURE Advance         () : BOOLEAN;
+
+PROCEDURE CheckFileStatus ( VAR f: File ) : BOOLEAN;
+
+PROCEDURE FlushARecord    ( FieldCount : CARDINAL );
+
+PROCEDURE DoPredicateSetup  ( FormalName : AnStoreFormalNameProc) : BOOLEAN;
+
+PROCEDURE LogSignOnMsg ();                                          (* 30-Aug-89 MWP *)
+
+PROCEDURE CheckDateValues (  TimeInfo : ATimeInfo ) : BOOLEAN;
+
+
+END ImPorTable.
+

@@ -1,0 +1,206 @@
+DEFINITION MODULE Menus;
+
+
+  (* Modification history -
+
+     June 25, 1987 - RSC - Added the MenuSize procedure.
+     11-Dec-89 RSC added "Modal" parameter for mouse support.
+     12-Apr-91 RSC Removed the prompt proc.  Added APromptType and the
+                   prompt text
+
+  *)
+
+
+FROM Boxes      IMPORT
+    (* TYPE *)      ABoxType, ABoxAttribute;
+
+FROM Codes      IMPORT
+    (* TYPE *)      ACode, ASetOfCodes;
+
+FROM Kbio       IMPORT
+    (* TYPE *)      ascreenx, ascreeny;
+
+FROM Text       IMPORT
+    (* TYPE *)      AText;
+
+
+
+
+
+    (*  Put a menu on the screen beginning at row y.  (It may also
+        continue for several lines.  The string "prefix" is placed
+        prior to the menustring.  Items may be chosen from the
+        menu.
+
+        Characters in codeset will be accepted as
+        reasons for exit.  On exit, the character typed will be
+        returned as the function value, the selection number
+        will be returned in "selection", and the name of the selection
+        in "name."
+
+        The two keys "DoIt" and "CancelKey" from Keys.DEF are permanently
+        acceptable as reasons for exit, just as though they were in
+        CodeSet.
+
+        Alternately, a user may type the first letter of any selection.
+        In this case, the returned values are as above, and the
+        returned code is "DoIt."
+
+        Selections within the passed string must be separated by commas.
+        (e.g. "First Choice, Second Choice,Third Choice".)
+
+        The first byte of each ARRAY OF CHAR contains the count of the
+        actual number of significant letters in the array.  See the
+        LStrings module.
+
+        The value of Selection on input determines the initial choice
+        that will be highlighted.
+
+        PromptNumbers, if non-zero, is the first number of a sequence
+        of numbers, one per menu choice, each number n, n+1, . . .,
+        corresponding to a phrase in the phrases file.  These phrases
+        will be displayed as prompting text for the menu.
+
+    *)
+
+PROCEDURE Menu(VAR Prefix:ARRAY OF CHAR;
+               VAR Menustr:ARRAY OF CHAR;
+                   ULX    : ascreenx;
+                   ULY    : ascreeny;
+                   LRX    : ascreenx;
+                   LRY    : ascreeny;
+                   CodeSet:ASetOfCodes;
+                   Modal  : BOOLEAN;
+               VAR Selection:CARDINAL )
+                                       : ACode;
+
+
+
+
+(* MenuWithPrompts -- Run a menu, maybe supplying prompts.
+
+    Prompts are optional (NoPrompts), or can come from one of two
+    sources.  PromptFromPhrases means "Get the prompts from the phrases
+    file (STANDARD section) starting at phrase number
+    PromptStartingNumber".  PromptFromText means "Get the prompts from
+    the passed Text record (PromptText)".
+
+    Preconditions:
+
+        The Prefix and Menustr are valid LStrings
+        Screen coordinates are within the screen boundaries
+        PromptText is set up if PromptType = PromptFromText.
+        Selection is the default selection to start with.
+        CodeSet has all the exit codes.
+
+    Postconditions:
+
+        Selection is the chosen selection.
+        RETURN indicates the code for exit.  Any code within CodeSet
+            is possible.
+
+    Passed:
+
+        Prefix      The prefix to the menu, like "Pick One:".
+        MenuStr     A menu string, with comma separated values.
+        ULX,ULY     Upper left screen coordinates
+        LRX,LRY     Lower right screen coordinates
+        BoxType     What kind of box to draw (including NoBox)
+        CodeSet     Exit codes.  Standard ones are F10 and ESC.
+        PromptType  How prompts are derived.  See above notes.
+        PromptStartingNumber
+                    Only applicable when PromptType=PromptFromPhrases
+                    This is the FIRST prompt to use.
+        PromptText  Only applicable when PromptType=PromptFromText
+                    Each line in the text record corresponds to one line
+                    of prompt.
+        Modal       Do mouse clicks outside the menu area cancel the menu?
+                    True=Modal=No, they do not.
+                    False=Non Modal=Yes, they do.
+        Selection   The default menu selection.
+
+    Returned:
+
+        Selection   The chosen selection if RETURN is not CancelKey (in
+                    which case, selection is random)
+
+        RETURN      the code that caused the menu to exit.  CancelKey
+                    and ExitKey are always possible.  Also, anything in
+                    the CodeSet could do it (like a double click)
+        
+*)
+TYPE
+    APromptType = (NoPrompts,PromptFromPhrases,PromptFromText);
+
+    AMenuWithPromptsProc = PROCEDURE (VAR (* Prefix :*) ARRAY OF CHAR,
+                                      VAR (* Menustr:*) ARRAY OF CHAR,
+                                          (* ULX    :*) ascreenx,
+                                          (* ULY    :*) ascreeny,
+                                          (* LRX    :*) ascreenx,
+                                          (* LRY    :*) ascreeny,
+                                          (* BoxType:*) ABoxType,
+                                          (* CodeSet:*) ASetOfCodes,
+                                          (* PromptType :*) APromptType,
+                                          (* PromptStartingNumber :*) CARDINAL,
+                                          (* PromptText : *) AText,
+                                          (* Modal  :*) BOOLEAN,
+                                      VAR (* Selection:*) CARDINAL )
+                                                         : ACode;
+
+
+VAR
+    MenuWithPrompts : AMenuWithPromptsProc;
+
+
+
+  (* MenuSize - determine how many lines a menu will take. 
+
+        Preconditions  - Prefix and Menustr are those that will be passed to
+                               a menu proc.
+                         UsePrompts is TRUE if you will be calling a menu
+                               procedure that takes prompts.  This is TRUE
+                               if you call anything but "Menu".
+                         ULX, LRX are the left and right boundaries.
+                         BoxType is the type of box that will be used.
+
+        Postconditions - RETURN is the total lines, including box,
+                            that will be taken.  
+   *)
+
+    MenuSize : PROCEDURE (VAR (* Prefix        :*) ARRAY OF CHAR,
+                          VAR (* Menustr       :*) ARRAY OF CHAR,
+                              (* UsePrompts    :*) BOOLEAN,
+                              (* ULX           :*) ascreenx,
+                              (* LRX           :*) ascreenx,
+                              (* BoxType       :*) ABoxType
+                          ) : CARDINAL;
+
+
+
+
+
+    (*  NoYes  -- Prompt for a Yes or No answer to a question.
+                  Return TRUE iff Yes. *)
+
+
+PROCEDURE NoYes (VAR Prefix:ARRAY OF CHAR):BOOLEAN;
+
+PROCEDURE NoYesWithPrompts( VAR Menustr    :ARRAY OF CHAR;
+                                PromptProc : APromptType;
+                                PromptStartingNumber : CARDINAL;
+                                PromptText : AText ) : BOOLEAN;
+
+
+
+
+    (* WordNumber -- Return the text of the Nth menu item. *)
+
+VAR
+    WordNumber : PROCEDURE ( VAR (* Menustr :*) ARRAY OF CHAR,
+                                 (* N       :*) CARDINAL,
+                             VAR (* Word    :*) ARRAY OF CHAR );
+
+
+END Menus.
+
+

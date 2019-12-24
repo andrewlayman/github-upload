@@ -1,0 +1,152 @@
+DEFINITION MODULE SegWords;
+
+
+
+    (* MODIFICATION HISTORY
+
+
+       19-Dec-89  AJL  - Original version; code taken from Menus.mod
+       18-May-90  KKC  - Add GetStringBeforeWordNumber, 
+                         GetStringAfterWordNumber and UpdateWordAtWordNumber.
+
+    *)
+
+
+
+    (*
+    These replacements for StartOfNextWord and EndOfWord have been modified to
+    allow for empty words (e.g. two commas in a row have an empty word between
+    them).  To allow WordNumber to keep track of multiple consecutive occurrences
+    of these nulls, the convention is that an empty word begins one character
+    after it ends.  For example:
+    
+        "Hello,,there" contains three words.
+    
+        Word 1 is "Hello",  start = 1, end = 5
+        Word 2 is "",       start = 7, end = 6
+        Word 3 is "there",  start = 8, end = 12
+    *)
+
+
+
+
+
+    (*  END OF WORD.  Given a string and an index into that string,
+                      we will find the end of the word (on the
+                      assumption that all words end with ','. *)
+
+PROCEDURE EndOfWord (VAR s:ARRAY OF CHAR; i:CARDINAL; Delim:CHAR):CARDINAL;
+
+
+
+
+    (* START OF NEXT WORD.  Finds the start of the next word, or
+                            else the start of the last word on the
+                            line. Returns FALSE if no next word.*)
+
+PROCEDURE StartOfNextWord(VAR s:ARRAY OF CHAR; VAR i: CARDINAL;Delim:CHAR):BOOLEAN;
+
+
+
+
+PROCEDURE SkipBlanks(VAR s:ARRAY OF CHAR; VAR i : CARDINAL);
+
+
+
+PROCEDURE GetDelimAndStart( VAR MenuStr : ARRAY OF CHAR;
+                            VAR Delim   : CHAR;
+                            VAR i       : CARDINAL );
+
+
+
+    (* WordNumber -- Return the text of the Nth menu item. *)
+
+PROCEDURE WordNumber( VAR Menustr : ARRAY OF CHAR;
+                          N       : CARDINAL;
+                      VAR Word    : ARRAY OF CHAR );
+
+
+
+
+
+
+
+
+
+(***************************************************************************
+    GetStringBeforeWordNumber:
+        Return a string before given word number including the delimiter
+    right before word number.
+
+    Preconditions:
+
+        InString must be an LString and it is separated by some sort of
+        delimiter.  For now, we only use ',' as a delimiter.
+
+        FieldNumber is the Nth menu item.
+
+    Postconditions:
+        OutString contains all text before Nth menu item.
+
+***************************************************************************)
+
+PROCEDURE GetStringBeforeWordNumber(
+                                       VAR InString : ARRAY OF CHAR;
+                                        FieldNumber : CARDINAL;
+                                      VAR OutString : ARRAY OF CHAR
+                                   );
+
+
+
+
+(***************************************************************************
+    GetStringAfterWordNumber:
+        Return a string after given word number including the delimiter
+    right after word number.
+
+
+    Preconditions:
+        InString must be an LString and it is separated by some sort of
+        delimiter.  For now, we only use ',' as a delimiter.
+
+        FieldNumber is the Nth menu item.
+
+    Postconditions:
+        OutString contains all text after Nth menu item.
+
+***************************************************************************)
+PROCEDURE GetStringAfterWordNumber(
+                                     VAR InString : ARRAY OF CHAR;
+                                      FieldNumber : CARDINAL;
+                                    VAR OutString : ARRAY OF CHAR
+                                  );
+
+
+
+
+(***************************************************************************
+    UpdateWordAtWordNumber-
+        Update the Nth menu item.
+
+
+    Preconditions:
+        Line must be an LString and it is separated by some sort of
+        delimiter.  For now, we only use ',' as a delimiter.
+
+        FieldNumber is the Nth menu item.
+
+        Word is the new item.
+
+    Postconditions:
+
+        Nth item in Line is replaced by Word
+
+***************************************************************************)
+PROCEDURE UpdateWordAtWordNumber( 
+                                      VAR Line : ARRAY OF CHAR;
+                                   FieldNumber : CARDINAL;
+                                          Word : ARRAY OF CHAR
+                                );
+
+END SegWords.
+

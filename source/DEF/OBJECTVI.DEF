@@ -1,0 +1,458 @@
+DEFINITION MODULE ObjectViews;      (* A subclass of Objects *)
+
+    (*  MODIFICATION HISTORY:
+
+        14-Dec-89 KKC       Patched AObjectViewStatus to 16 bits.
+    *)
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+
+
+TYPE
+        (*  AnObjectView is a subclass of Objects.AnObject  *)
+
+
+    AnObjectView            = POINTER TO AnObjectViewRecord;
+
+
+    AnObjectViewMethods     = POINTER TO AnObjectViewMethodsRecord;
+
+
+    AnObjectViewRecord      = RECORD
+                                Methods     : AnObjectViewMethods;
+                              END;
+
+
+
+
+
+
+
+TYPE
+    AnObjectViewStatus      = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               ObjectViewSpare4,
+                               ObjectViewSpare5, ObjectViewSpare6, 
+                               ObjectViewSpare7, ObjectViewSpare8, 
+                               ObjectViewSpare9);
+    
+
+    AnObjectViewStatusSet   = SET OF AnObjectViewStatus;
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AnObjectView to 
+        them.
+    *)
+
+TYPE
+    AnObjectViewCloneProc   = PROCEDURE(    AnObjectView,
+                                        VAR AnObjectView)
+                                                         : BOOLEAN;
+
+    AnObjectViewStoreOnProc = PROCEDURE(    AnObjectView,
+                                            AnObject    );
+
+    AnObjectViewDiscardProc = PROCEDURE(VAR AnObjectView);
+
+
+
+
+
+
+    (*  Here are the new methods for the object view class  *)
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewGetObjectProc --
+
+    Return the object associated with this view.
+
+    Preconditions:
+        The object must be a valid object view object.
+
+    Postconditions:
+        The object associated with this view is returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewGetObjectProc  = PROCEDURE(    AnObjectView)
+                                                            : AnObject;
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewSetObjectProc --
+
+    Set the object associated with this view.
+
+    Preconditions:
+        The object must be a valid object view object.
+
+    Postconditions:
+        The object associated with this view is set.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewSetObjectProc  = PROCEDURE(    AnObjectView,
+                                               AnObject    );
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewXYProc --
+
+    Determine the exterior (interior) screen coordinates of this view.
+
+    Precondition:
+        The object must be a valid object view object.
+
+    Postconditions:
+        The coordinates of the upper left and lower right corners of the 
+        external (internal) dimensions of this view on the screen are 
+        returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewXYProc      = PROCEDURE(    AnObjectView,    (* ObjectView *)
+                                        VAR ascreenx,        (* Ulx *)
+                                        VAR ascreeny,        (* Uly *)
+                                        VAR ascreenx,        (* Lrx *)
+                                        VAR ascreeny    );   (* Lry *)
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewTitleProc --
+
+    Return the title LString associated with this view.
+
+    Preconditions:
+        The object must be a valid object view object.
+
+    Postconditions:
+        The title associated with this view is returned.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewTitleProc   = PROCEDURE(    AnObjectView,
+                                        VAR ARRAY OF CHAR);
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewDisplayProc --
+
+    Display the object view on the screen.
+
+    Preconditions:
+        The object must be a valid object view object.
+
+    Postconditions:
+        The object view will be displayed on the screen.  Subclasses of
+        ObjectViews must override this method, since only they know how
+        to actually display an object.  This method will display a blank
+        area inside any type box asked for, with the title at the bottom.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewDisplayProc = PROCEDURE(    AnObjectView);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewMoveProc --
+
+    Move the object view to the new coordinates given.
+
+    Preconditions:
+        The object must be a valid object view object. Also, a rug must have
+        been taken, or the view must not have yet been displayed.
+
+    Postconditions:
+        The object view will be moved from its current screen position to
+        the given screen position.  If it has not been displayed on the
+        screen, the its coordinates will be set as indicated.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewMoveProc    = PROCEDURE(    AnObjectView,     (* ObjectView *)
+                                            ascreenx,         (* Ulx *)
+                                            ascreeny    );    (* Uly *)
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewHelpProc --
+
+    Cause help to be displayed for this view.
+
+    Preconditions:
+        The object must be a valid object view object.
+
+    Postconditions:
+        The help information accessed by the help number stored in this 
+        object will be displayed.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewHelpProc = PROCEDURE(    AnObjectView);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewHiddenProc --
+
+    Make the view hidden, i.e. remove it from the screen and restore the
+    previous screen contents.
+
+    Preconditions:
+        The indicated view must be a valid object of type AnObjectView, and
+        a rug must have been taken when this view was created.
+
+    Postconditions:
+        The view will be removed from the screen, and the status will reflect
+        the fact that it's hidden.  
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewHiddenProc  = PROCEDURE(    AnObjectView);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewRevealProc --
+
+    Reveal a previously hidden view, i.e. take a rug of the current screen
+    and display the view.
+
+    Preconditions:
+        The indicated view must be a valid object of type AnObjectView, and
+        it must have been previously hidden.
+
+    Postconditions:
+        The view will be displayed on the screen, and the status will reflect
+        the fact that it's not hidden.  
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewRevealProc  = PROCEDURE(    AnObjectView);
+
+
+
+
+(*----------------------------------------------------------------------------
+    AnObjectViewChangedProc --
+
+    Notify the view that his underlying object (or subviews) have changed.
+
+    Preconditions:
+        The indicated view must be a valid object of type AnObjectView.
+
+    Postconditions:
+        The view will be marked as needing to be redisplayed, which will
+        cause it display when the display method is called.
+----------------------------------------------------------------------------*)
+
+TYPE
+    AnObjectViewChangedProc = PROCEDURE(    AnObjectView);
+
+
+
+
+
+
+
+
+
+
+
+    (*  These are the methods for AnObjectView objects.  The inherit and
+        redefine methods from Objects, and add new methods of their own.
+    *)
+
+TYPE
+    AnObjectViewMethodsRecord = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AnObjectViewCloneProc;
+                                StoreOn           : AnObjectViewStoreOnProc;
+                                Discard           : AnObjectViewDiscardProc;
+                                SuperclassMethods : AnObjectMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AnObjectViewXYProc;
+                                GetInternalXY     : AnObjectViewXYProc;
+                                GetTitle          : AnObjectViewTitleProc;
+                                SetObject         : AnObjectViewSetObjectProc;
+                                GetObject         : AnObjectViewGetObjectProc;
+                                Move              : AnObjectViewMoveProc;
+                                Display           : AnObjectViewDisplayProc;
+                                GetHelp           : AnObjectViewHelpProc;
+                                HideView          : AnObjectViewHiddenProc;
+                                RevealView        : AnObjectViewRevealProc;
+                                NotifyOfChange    : AnObjectViewChangedProc;
+                                ObjectViewTag     : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsObjectView --
+
+    Initialize the indicated object as an object view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid object view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsObjectView(    ObjectView   : AnObjectView;
+                               SuperView    : AnObjectView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                           VAR Title        : ARRAY OF CHAR;
+                               HelpKey      : CARDINAL;
+                               TakeRug      : BOOLEAN      );
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsObjectView --
+
+    Un-Initialize the indicated object as an object view.
+
+    Preconditions:
+        The object must be a valid Object View object.
+
+    Postconditions:
+        The object will no longer be a valid object view object, and the
+        effects of InitAsObjectView will be undone.  No storage deallocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsObjectView(    ObjectView   : AnObjectView);
+ 
+
+
+
+(*----------------------------------------------------------------------------
+    CreateObjectView --
+
+    Allocate storage for, and initialize the indicated object as an object 
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid object view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateObjectView(VAR ObjectView   : AnObjectView;
+                               SuperView    : AnObjectView;
+                               Ulx          : ascreenx;
+                               Uly          : ascreeny;
+                               Lrx          : ascreenx;
+                               Lry          : ascreeny;
+                               Box          : ABoxType;
+                               VideoMode    : avidmode;
+                           VAR Title        : ARRAY OF CHAR;
+                               HelpKey      : CARDINAL;
+                               TakeRug      : BOOLEAN      ) 
+                                                            : BOOLEAN;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneObjectViewMethods --
+
+    Make a copy of the object view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The object view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneObjectViewMethods(    MethodObject : AnObjectViewMethods);
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateObjectView --
+
+    Determine that the indicated object is in fact a valid object view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid object view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateObjectView(    ObjectView : AnObjectView);
+
+
+END ObjectViews.
+

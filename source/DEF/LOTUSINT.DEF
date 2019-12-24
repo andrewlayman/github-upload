@@ -1,0 +1,264 @@
+DEFINITION MODULE LotusInt;
+
+  (* Lotusint - A variety of routines used by the 123 importers.
+
+        MODIFICATION HISTORY:
+
+        31-Aug-89 MWP Code cleanup.
+        17-Sep-89 MWP Get123Data has new paramter 'RowsImported'.
+        22-Sep-89 MWP Removed RangePtr and RangeListRecord def's, as they
+                      are no longer used.
+   *)
+
+FROM FileSystem     IMPORT
+    (* TYPE *)              File;
+
+FROM ImPorTable     IMPORT
+    (* TYPE *)              AImportTable;
+
+CONST
+      L123v1a               =  0404H;
+      SYMPHONY              =  0405H;
+      BOTH                  =  0406H; (* 123 v2.x and Symphony 1.1 and greater*)
+
+      MAXBUFSIZE            = 256;
+
+(*
+ * 123 and Sym record type codes. All valid 123 and Sym record types are
+ * defined here, and a few that aren't publically known. Any omissions
+ * in this list mean the record type is undefined formally.
+*)
+      LBOF                  =  0;
+      LEOF                  =  1;
+      LCALCMODE             =  2;
+      LCALCORDER            =  3;
+      LSPLIT                =  4;
+      LSYNC                 =  5;
+      LRANGE                =  6;
+      LWINDOW1              =  7;
+      LCOLW1                =  8;
+      LWINTWO               =  9;
+      LCOLW2                =  10;
+      LNAME                 =  11;
+      LBLANK                =  12;
+      LINTEGER              =  13;
+      LNUMBER               =  14;
+      LLABEL                =  15;
+      LFORMULA              =  16;
+      LTABLE                =  24;
+      LQRANGE               =  25;
+      LPRANGE               =  26;
+      LSRANGE               =  27;
+      LFRANGE               =  28;
+      LKRANGE1              =  29;
+      LHRANGE               =  32;
+      LKRANGE2              =  35;
+      LPROTEC               =  36;
+      LFOOTER               =  37;
+      LHEADER               =  38;
+      LSETUP                =  39;
+      LMARGINS              =  40;
+      LLABELFMT             =  41;
+      LTITLES               =  42;
+      LGRAPH                =  45;
+      LNGRAPH               =  46;
+      LCALCOUNT             =  47;
+      LUNFORMATTED          =  48;
+      LCURSORW12            =  49;
+      LWINDOW               =  50;
+      LSTRING               =  51;
+      LPASSWORD             =  55;
+      LLOCKED               =  56;
+      LQUERY                =  60;
+      LQUERYNAME            =  61;
+      LPRINT                =  62;
+      LPRINTNAME            =  63;
+      LGRAPH2               =  64;
+      LGRAPHNAME            =  65;
+      LZOOM                 =  66;
+      LSYMSPLIT             =  67;
+      LNSROWS               =  68;
+      LNSCOLS               =  69;
+      LNRULER               =  70;
+      LNNAME                =  71;
+      LACOMM                =  72;
+      LAMACRO               =  73;
+      LPARSE                =  74;
+      LWKSPWORD             =  75;
+      LHIDDEN               =  100;
+      LHIDDEN2              =  101;
+      LPARSERANGES          =  102;
+      LRRANGES              =  103;
+      LEXTENDEDAT           =  104;
+      LMATRIXRANGES         =  105;
+      LCPI                  =  150;
+
+(*
+ * 123 and Symphony cell format definitions
+ * All cell entries (including blank formatted cells), contain a format
+ * byte as the first entry in the record definition. The format byte
+ * is structured as follows:
+ *
+ *  [7] [6] [5] [4] [3] [2] [1] [0]
+ *   |  |_________| |_____________|
+ *   |       |              |
+ *   |       |              |-> Number of decimal places or use special format.
+ *   |       |----------------> Format type.
+ *   |------------------------> Cell protection.
+ *
+ * For the purposes of this implementation of the 123 filter, we have chosen
+ * to ignore the cell protection bit. For display purposes within 123, having
+ * protection set on (bit 7 = 1) will cause the cell's entry to be displayed
+ * as with a dim attribute on monochrome monitors.
+ *
+ * The format type bits are encoded as follows:
+ *      000  - Fixed format
+ *      001  - Scientific format
+ *      010  - Currency format
+ *      011  - Percent format
+ *      100  - Comma format
+ *      101  - Not currently used by 123 or Symphony.
+ *      110  -          ""
+ *      111  - Interpret lower nibble of format byte as special format.
+ *
+ * The LSN (least significant nibble).
+ * If the format type bits are NOT equal to 7, then these four bits contain
+ * the number of decimal places. (From 0 - 15)
+ * If the format type bits ARE equal to 7, then the LSN is encoded as follows:
+ *
+ *      0000 - Plus/Minus format
+ *      0001 - General format
+ *      0010 - Date format: DMY
+ *      0011 - Date format: DM
+ *      0100 - Date format: MY
+ *      0101 - Text format
+ *      0110 - Cell entry is within a hidden column. (Symphony only. 123
+ *             designates columns, and by extension cells within those columns,
+ *             as hidden in a 32 byte bit vector table in the file header.)
+ *      0111 - Time format: HMS
+ *      1000 - Time format: HM
+ *      1001 - Date format: International 1
+ *      1010 - Date format: International 2
+ *      1011 - Time format: International 1
+ *      1100 - Time format: International 2
+ *      1101 - Unused
+ *      1110 - Unused
+ *      1111 - Use default format. (The default format is selected by the user.
+ *             123 & Sym. set it to General format. The default format is
+ *             stored in the Window header record. See the def. for L123WINDOW)
+ *
+*)
+
+      L_FIXED               =  0;
+      L_SCIENTIFIC          =  1;
+      L_CURRENCY            =  2;
+      L_PERCENT             =  3;
+      L_COMMA               =  4;
+      L_SPECIAL             =  7;
+
+      L_PLUSMINUS           =  0;
+      L_GENERAL             =  1;
+      L_DATE_DMY            =  2;
+      L_DATE_DM             =  3;
+      L_DATE_MY             =  4;
+      L_TEXT                =  5;
+      HIDDEN                =  6;
+      S_HR_MM_SEC           =  7;
+      S_HR_MM               =  8;
+      S_DATE_INT1           =  9;
+      S_DATE_INT2           =  10;
+      S_TIME_INT1           =  11;
+      S_TIME_INT2           =  12;
+      L_DEFAULT             =  15;
+
+
+
+TYPE
+    ARecordPreface = RECORD
+                        RecordType   : CARDINAL;
+                        RecordLength : CARDINAL;
+                     END;
+
+    AVersionRecord = RECORD
+                        Version : CARDINAL;
+                     END;
+
+    AColWidthRecord  = RECORD
+                          Column  : CARDINAL;
+                          Width   : CHAR;
+                       END;
+
+    AWindowRecord    = RECORD
+                          CursorColPos  : CARDINAL;
+                          CursorRowPos  : CARDINAL;
+                          Format        : CHAR;
+                          unused1       : CHAR;
+                          ColWidth      : CHAR;
+                          NCol          : CARDINAL;
+                          NRow          : CARDINAL;
+                          LeftCol       : CARDINAL;
+                          TRow          : CARDINAL;
+                          NTitleCol     : CARDINAL;
+                          NTitleRow     : CARDINAL;
+                          LeftTitleCol  : CARDINAL;
+                          TopTitleRow   : CARDINAL;
+                          BorderWidCol  : CARDINAL;
+                          BorderWidRow  : CARDINAL;
+                          WindowWidth   : CARDINAL;
+                          Unused2       : CHAR;
+                          Stupid        : CHAR;
+                       END;
+
+
+    ALabelRecord   = RECORD
+                        Format  : CHAR;
+                        Column  : CARDINAL;
+                        Row     : CARDINAL;
+                        Content : ARRAY [0..240] OF CHAR;
+                     END;
+
+    ABlankRecord   = RECORD
+                        Format  : CHAR;
+                        Column  : CARDINAL;
+                        Row     : CARDINAL;
+                     END;
+
+    AIntegerRecord   = RECORD
+                          Format  : CHAR;
+                          Column  : CARDINAL;
+                          Row     : CARDINAL;
+                          Value   : INTEGER;
+                       END;
+
+    ANumericRecord   = RECORD
+                          Format  : CHAR;
+                          Column  : CARDINAL;
+                          Row     : CARDINAL;
+                          Value   : REAL;
+                       END;
+
+
+    ARangeNameRecord   = RECORD
+                            Name       : ARRAY [0..15] OF CHAR;
+                            StartCol   : CARDINAL;
+                            StartRow   : CARDINAL;
+                            EndCol     : CARDINAL;
+                            EndRow     : CARDINAL;
+                            RangeType  : CHAR;
+                         END;
+
+
+VAR
+     DataStartRow,
+     DataEndRow             : CARDINAL;
+     ImportTableP           : POINTER TO AImportTable;
+
+PROCEDURE Get123HeaderData ( VAR f : File ) : BOOLEAN;
+
+PROCEDURE Get123Data ( VAR f : File;                              (* 17-Sep-89 MWP *)
+                       VAR RowsImported : CARDINAL ) : BOOLEAN;
+
+PROCEDURE CheckForCorrectFormat ( VAR  f : File ) : BOOLEAN;
+
+END LotusInt.
+

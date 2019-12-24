@@ -1,0 +1,118 @@
+DEFINITION MODULE ArtExport;
+
+    (* Basic file-writing routines for Artemis exporting *)
+
+
+FROM Allocs                 IMPORT
+                               ATaskPtr;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADuration, ADate;
+
+FROM BigTimeU               IMPORT
+    (* TYPE *)                  ABigTime;
+
+FROM XArTable               IMPORT
+                                AnArtemisExportTable;
+
+TYPE
+    (* Used by WriteTaskID *)
+    AnArtemisTaskIDType = (Normal,
+                           StartHammock,FinishHammock,
+                           StartProject,ProjectHammock,FinishProject);
+
+
+    (* Return false if an error that should terminate output has occurred
+    *)                           
+PROCEDURE FatalWriteError (): BOOLEAN;
+
+PROCEDURE OpenFile      ( VAR   Name        : ARRAY OF CHAR;
+                                LineLength  : CARDINAL      ) : BOOLEAN;
+
+PROCEDURE CloseFile();
+
+
+    (*  OutputLString -- send the LString s directly to the file, without
+        any line breaks or delimiters
+    *)
+
+PROCEDURE OutputLString (VAR s : ARRAY OF CHAR);
+
+
+    (* WriteTLine -- send the T-string s to the file, as a separate record
+        (i.e., this calls StartRecord and EndRecord internally)
+    *)
+
+PROCEDURE WriteTLine (s : ARRAY OF CHAR);
+
+
+    (* StartRecord -- start a new line in the export file *)
+
+PROCEDURE StartRecord();
+
+
+    (* EndRecord -- finish the current line in the export file *)
+
+PROCEDURE EndRecord();
+
+
+    (* WriteText -- send the LString s to the file.  BreakLine tells whether
+        or not to send an end-of-line character immediately after the string
+        (some Artemis types must end strings with an EOL).
+    *)
+
+PROCEDURE WriteText     (     ExportTable   : AnArtemisExportTable;
+                          VAR s             : ARRAY OF CHAR;
+                              BreakLine     : BOOLEAN               );
+
+
+(* WriteTaskId - Write a task ID as either a sequence number or the WBS number
+                 depending on what the user requested.  Add an optional
+                 single suffix character if we were passed non-null Suffix
+                 string .  The TaskID can never be longer than 8 characters
+                 so truncate as necessary.
+                 The suffix is used for tagging start and end milestones of
+                 hammocks.
+*)
+
+PROCEDURE WriteTaskID ( pTask       : ATaskPtr;
+                        ExportTable : AnArtemisExportTable;
+                        IDType      : AnArtemisTaskIDType;
+                        BreakLine   : BOOLEAN               );
+
+
+(*  GetTaskID acts like WriteTaskID, except that it just formats the string
+    without actually exporting anything.
+*)
+
+PROCEDURE GetTaskID (   pTask       : ATaskPtr;
+                        ExportTable : AnArtemisExportTable;
+                        IDType      : AnArtemisTaskIDType;
+                    VAR s           : ARRAY OF CHAR         );
+
+
+
+
+PROCEDURE WriteCardinal ( ExportTable:AnArtemisExportTable;
+                          Number : CARDINAL );
+
+PROCEDURE WriteReal     ( ExportTable:AnArtemisExportTable;
+                          Number : REAL;
+                          Digits : CARDINAL );
+
+PROCEDURE WriteStartDate    (   ExportTable : AnArtemisExportTable;
+                                Date        : ADate                 );
+
+PROCEDURE WritePureDate(     ExportTable : AnArtemisExportTable;
+                             year, month, day : CARDINAL );
+
+PROCEDURE WriteEndDate      (   ExportTable : AnArtemisExportTable;
+                                Date        : ADate                 );
+
+PROCEDURE WriteDuration     ( ExportTable: AnArtemisExportTable;
+                              Plus       : BOOLEAN;
+                              Dur        : ADuration );
+
+
+END ArtExport.
+

@@ -1,0 +1,41 @@
+DEFINITION MODULE ReadAscii;
+
+(* MODIFICATION HISTORY:
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+
+*)
+
+FROM FileSystem    IMPORT
+    (* TYPE *)          File;
+
+FROM Timei         IMPORT
+    (* TYPE *)          ADurationUnit, ADate;
+
+
+
+
+
+PROCEDURE ReadBoolean( VAR F : File;
+                           Length : CARDINAL;
+                       VAR B : BOOLEAN );
+
+PROCEDURE ReadCardinal( VAR F : File;
+                            Length : CARDINAL;
+                        VAR N : CARDINAL );
+
+
+PROCEDURE ReadReal    ( VAR F : File;
+                            Length : CARDINAL;
+                        VAR R : REAL );
+
+PROCEDURE ReadDate    ( VAR F : File;
+                            Length : CARDINAL;
+                        VAR D : ADate );
+
+PROCEDURE ReadTimeUnit( VAR F : File;
+                            Length : CARDINAL;
+                        VAR T : ADurationUnit  );
+
+END ReadAscii.
+

@@ -1,0 +1,21 @@
+DEFINITION MODULE CalShift;
+
+(*
+    CalShift:
+        It contains all the necessary informations about a calendar and
+    the shift for a given resource.
+
+    MODIFICATION HISTORY:
+        Mar 12, 90  KKC -   First Version.
+*)
+
+TYPE
+    ATimeSheet      =   RECORD
+        NoTimeSheet     :   BOOLEAN;
+    END;
+
+VAR
+    TimeSheet       :   ATimeSheet;
+END CalShift.
+
+

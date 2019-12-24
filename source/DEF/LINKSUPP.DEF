@@ -1,0 +1,89 @@
+DEFINITION MODULE LinkSupport;
+
+    (* LINK SUPPORT --
+
+       Utility routines that are used in linking tasks and summarizing
+       their resource assignments.
+
+       MODIFICATION HISTORY
+
+       17-Jan-92  AJL  - Pulled code from TLLNKTL2 and TLLNKSUM.
+
+    *)
+
+
+
+
+FROM VaryAssgnment          IMPORT
+    (* TYPE *)                  AVaryingAssgnList;
+
+TYPE
+    A4ByteReal     =  ARRAY [0..3] OF CHAR;
+
+
+    (* Given two lists of varying assignments, merge them into one composite
+       list.  The two lists are not empty (not NIL).
+
+       Special knowledge: The End Date of one entry in the list is identical
+                          to the Start Date of the next entry.
+    *)
+PROCEDURE MergeVaryingAssignmentLists( OV1, OV2 : AVaryingAssgnList
+                                     ) : AVaryingAssgnList;
+
+
+
+  (* In version TLWin, resource rates are floating point and were in
+     wild ranges.
+     For TL5 DOS, we need rates to be more rigidly defined as
+     n people at m percent, where n and m are both cardinals.
+
+     This routine taken from TLITL2.MOD, the TL2 importer.
+
+     Cases:
+         Resource record:
+                Fraction < 0.01  (version 2 allowed zeroes and negatives!)
+                Fraction > (9999 @ 999%)
+
+         Assignment record:
+                Fraction < 0.00  (version 2 allowed negatives!)
+                Fraction > 655.35 (vers 2 allowed up to 9,999,999,999.00)
+                Fraction > <Resource's maximum>
+
+                Note that the resources maximum CAN BE > 655.35!
+
+     This procedure tries to do a good job picking the number and percent.
+
+     Preconditions  - Name       is the prefix for the message. (rsrc name)
+                      Fraction   is the version 2 rate.
+                      UpperLimit is the max possible for this rsrc/assignment.
+                      LowerLimit is the min possible for this rsrc/assignment.
+                      NLimit     is the desired upper bound for the number field.
+                      PLimit     is the desired upper bound for the percent field.
+                      Number     is the resulting n people.
+                      Percent    is the resulting percentage.
+  *)
+PROCEDURE NewPercent( VAR TaskName,
+                          ResourceName : ARRAY OF CHAR;
+                          Fraction,
+                          UpperLimit,
+                          LowerLimit   : REAL;
+                          NLimit,
+                          PLimit       : CARDINAL;
+                      VAR Number,
+                          Percent      : CARDINAL );
+
+
+
+
+     (* Convert4ByteReal : Convert a number from IEEE 4-byte to 
+        8-byte format. *)
+
+
+PROCEDURE Convert4ByteReal( VAR R4 : A4ByteReal ) : REAL;
+
+
+
+
+END LinkSupport.
+
+

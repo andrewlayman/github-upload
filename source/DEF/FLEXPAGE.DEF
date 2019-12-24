@@ -1,0 +1,266 @@
+DEFINITION MODULE FlexPage;
+
+  (* MODIFICATION HISTORY   
+        10/4/88 AJL  -Original version.    (Original Author AJL)
+   *)
+
+
+FROM FlexData IMPORT
+    (* TYPE *)     APage, APageNo, ARecordNo;
+
+FROM SYSTEM   IMPORT 
+    (* TYPE *)     ADDRESS;
+
+
+    (* ------------------------------------------------------------------
+
+       InitializePage 
+
+       Preconditions:  Page points to an available area of memory, and
+                       Size gives that page's size in bytes.  PageNo
+                       is a number.
+
+       Postconditions: The page will be made suitable for use by other
+                       procedures within this module.  The header of the
+                       page will be filled in to identify it as the 
+                       page numbered by PageNo.
+
+                       The page will contain no records, and will be
+                       unlocked (that is, the lock count is zero).
+
+                       The Header.Check is undefined, and is for internal
+                       use.   
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE InitializePage( VAR Page : APage; 
+                              Size : CARDINAL; 
+                              PageNo : APageNo );
+
+
+
+    (* ------------------------------------------------------------------
+
+       DataAddress 
+
+       Preconditions:     Page was initialized by InitializePage.
+                          There is a record with identifying number
+                          RecNo in the page.
+
+       Postconditions:    The current address of that record is 
+                          returned.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE DataAddress( VAR Page : APage;
+                           RecNo : ARecordNo ) : ADDRESS;
+
+
+    (* ------------------------------------------------------------------
+
+       SizeOfRecord 
+
+       Preconditions:     Page was initialized by InitializePage.
+                          There is a record with identifying number
+                          RecNo in the page.
+
+       Postconditions:    The current size of that record is 
+                          returned.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE SizeOfRecord( VAR Page    : APage;
+                            RecNo   : ARecordNo ) : CARDINAL;
+
+
+
+    (* ------------------------------------------------------------------
+
+       PageHasRoomFor 
+
+       Preconditions:     Page was initialized by InitializePage.
+
+       Postconditions:    If TRUE is returned, then a record of the indicated
+                          size could fit into this page.
+
+                          If FALSE is returned, then
+                              If the page has been squeezed, then a record
+                                  of the indicated size could not fit into
+                                  the page
+                              Else (page not squeezed) the record might or
+                                  might not fit.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE PageHasRoomFor( VAR Page  : APage;
+                              Size  : CARDINAL
+                        ):BOOLEAN;
+
+
+    (* ------------------------------------------------------------------
+
+       AddRecordToPage 
+
+       Preconditions:     Page was initialized by InitializePage.
+                          RecordSize is a number.
+
+       Postconditions:    If TRUE is returned,  then space has been created
+                              within the page for a record of byte size
+                              RecordSize.  It has undefined contents.  RecNo
+                              is returned with an identifying number which
+                              (local to the page) uniquely identifies this
+                              record.  The page is marked "Dirty."
+
+
+                          If FALSE is returned, then
+                              the record space was not created, and the
+                              returned value of RecNo is undefined. 
+
+    ----------------------------------------------------------------------*)
+
+
+
+PROCEDURE AddRecordToPage( VAR Page  : APage;
+                           VAR RecNo    : CARDINAL;
+                               RecordSize : CARDINAL
+                          ) : BOOLEAN;
+
+
+
+    (* ------------------------------------------------------------------
+
+       SetRecordSize
+
+       Preconditions:     Page was initialized by InitializePage.
+                          There is a record with identifying number
+                          RecNo in the page.
+
+       Postconditions:    If TRUE is returned, then the identified record
+                             has had its size set to the NewSize.  If this
+                             is a decrease, bytes were removed from the
+                             end so that the previous bytes numbered
+                             0..NewSize-1 remain unchanged.  If it is an
+                             increase, bytes are added to the end, but their
+                             values are undefined.  The page is marked
+                             "Dirty."
+
+                          If FALSE is returned, then
+                             the size change was not accomplished.  The
+                             record remains with its old size and value.  
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE SetRecordSize( VAR Page     : APage;
+                             RecNo    : ARecordNo;
+                             NewSize  : CARDINAL
+                    ) : BOOLEAN;
+
+
+
+
+
+
+    (* ------------------------------------------------------------------
+
+       RemoveRecordFromPage
+
+       Preconditions:     Page was initialized by InitializePage.
+                          There is a record with identifying number
+                          RecNo in the page.
+
+       Postconditions:    RecNo no longer identifies a record within
+                          this page.  The page is marked "Dirty."
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE RemoveRecordFromPage( VAR Page     : APage;
+                                    RecNo    : ARecordNo );
+
+
+
+
+    (* ------------------------------------------------------------------
+
+       MarkPageDirty
+
+       Preconditions:     Page was initialized by InitializePage.
+
+       Postconditions:    The page is marked "Dirty."  This consists of
+                          setting the Dirty flag in the page Header to
+                          TRUE.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE MarkPageDirty( VAR Page : APage );
+
+
+
+    (* ------------------------------------------------------------------
+
+       SqueezePage
+
+       Preconditions:     Page was initialized by InitializePage.
+
+       Postconditions:    The page may have been internally reorganized
+                          to reclaim usable space.
+                          If the LockCount in the header is zero, all
+                              usable space will have been consolidated,
+                              and made available.  Page.Header.NeedsSqueeze
+                              is set to FALSE.
+                          The page may be marked Dirty.
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE SqueezePage( VAR Page     : APage );
+
+
+
+
+
+    (* ------------------------------------------------------------------
+
+       CheckSumAPage
+
+       Preconditions:     Page was initialized by InitializePage.
+
+       Postconditions:    A CheckSum is computed for the page.  This
+                          checksum reflects the entire contents and 
+                          arrangement of the page, including undefined
+                          contents.  The checksum is placed into
+                          Header.CheckSum. 
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE CheckSumAPage( VAR Page : APage );
+
+    (* ------------------------------------------------------------------
+
+       TestPageCheckSum
+
+       Preconditions:     Page was initialized by InitializePage.
+
+       Postconditions:    A CheckSum is computed for the page.  This
+                          checksum reflects the entire contents and 
+                          arrangement of the page, including undefined
+                          contents.  The checksum is compared to the 
+                          value in Header.CheckSum.  If they do not
+                          match, a FatalError is called. 
+
+    ----------------------------------------------------------------------*)
+
+
+PROCEDURE TestPageCheckSum( VAR Page:APage);
+
+
+
+END FlexPage.
+

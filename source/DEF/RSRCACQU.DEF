@@ -1,0 +1,293 @@
+DEFINITION MODULE RsrcAcquire;
+
+
+
+    (*
+        Rsrc Acquire - Acquire a resource record
+
+            This module, given "columns" of information, attempts to find
+            an existing resource record or create a new record with appropriate
+            defaults.
+
+
+        Terminology:
+
+            For this module, we view the Rsrc Tree as if it were a giant TABLE
+            of records, where each resource is a ROW in the table.  Each FIELD
+            in a resource record is a COLUMN in the table.
+
+
+        Procedure Overview:
+
+            AnalyzeRsrcColumn()
+
+                    Look at each column being read in from a file to see if
+                    we have the columns needed to determine if the record
+                    exists.
+
+            AnalyzeRsrcResult()
+
+                    This inquires as to what was found out from
+                    "AnalyzeRsrcColumn".  Its use is optional, used mainly to
+                    override decisions about using existing resources and
+                    parantage.
+
+            AcquireRsrc()
+
+                    Resets the user-defined default columns.  When a record
+                    is created, SYSTEM defaults are applied, then any user-
+                    defined columns are applied.
+
+            ResetDefaultRsrcColumns()
+
+                    Reset default resource columns.  Default columns are used
+                    whenever we create a resource.
+
+            DefaultRsrcColumn()
+
+                    Set a default resource column.  The next time a resource
+                    record is created, all default columns are applied first,
+                    and then the resource is ready for changes.
+
+
+        Handling Errors:
+
+            There is a client-supplied error handler, which is called whenever
+            an error is detected.  Errors come in different severities and
+            types, and the error handler is responsible for logging the errors
+            and deciding the TRUE severity of the error (for example, you may
+            want to ignore some warning errors).
+
+
+        Undo:
+
+            This module uses Undo to add and change records.  It does not begin
+            or end the undo transaction.  The intent is that clients will:
+
+                Begin Undo Transaction
+                    Call RsrcAquire to get    the resource
+                    Call RsrcChange to change the resource
+                End Undo Transaction.
+
+
+        Modification History:
+
+
+         15-Feb-89  RSC  First version.
+          6-Sep-89  MWP  Added proc to test whether a column is needed
+                         for editing. Does not grab the column value.
+
+
+    *)
+
+
+
+FROM Captions       IMPORT
+    (* TYPE *)          AColumnDataRecord;
+
+FROM EditError      IMPORT
+    (* TYPE *)          AnErrorHandlerProc;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+FROM TreeObjects    IMPORT
+    (* TYPE *)          ATreeNode;
+
+
+
+
+
+
+TYPE
+    (*
+        ARsrcAction - Identify what is to be done or what can be done.
+
+            When returned from "AnalyzeRsrcResult", it tells what can be done
+            about the resource.
+
+                CreateRsrc   OFF  means an existing resource was identified.
+                CreateRsrc   ON   means no resource was found, or WBS not
+                                  present.
+
+                HookToParent OFF  means no parent identifier was found.
+                HookToParent ON   means a parent resource was found.
+
+                IMPLEMENTATION NOTE:
+
+                    As of Time Line Version 4.0, resources do not have parents.
+                    However, this facility is here for future expansion.
+
+            When passed to "AcquireRsrc",
+
+                CreateRsrc   OFF  means go ahead and get the existing resource,
+                                        if there is one (else create).
+                CreateRsrc   ON   means create a new resource anyway.
+
+                HookToParent OFF  means do not hook it to a parent.
+                HookToParent ON   means if possible, hook to a parent.
+
+                CreateRsrc OFF and HookToParent ON provide a default action
+                of "do whatever is possible".
+
+    *)
+    ARsrcAction    = ( CreateRsrc, HookToParent );
+
+    ARsrcActionSet = SET OF ARsrcAction;
+
+CONST
+    DefaultRsrcAction = ARsrcActionSet{ HookToParent };
+
+
+
+
+
+
+(*
+    Analyze Rsrc Column
+
+        Preconditions
+                        > ColumnID is within range for a resource column.
+                        > ColumnData contains the data to be changed.
+
+        Postconditions
+                        > The data has been analized for usability in
+                          defining a resource record to edit.
+*)
+PROCEDURE AnalyzeRsrcColumn(     ColumnID    : CARDINAL;
+                             VAR ColumnData  : AColumnDataRecord );
+
+
+
+PROCEDURE IsControllingColumn ( ColumnID    : CARDINAL ) : BOOLEAN;  (* 6-Sep-89 MWP *)
+
+
+
+
+(*
+    Analyze Rsrc Result
+
+        Preconditions
+                        > All columns have been passed through
+                          "AnalyzeTaskColumn".  If only some columns
+                          have been examined, it may be possible to
+                          tell if, say, parentage is available, but
+                          finding existing tasks is not.  So, while
+                          it is not strictly a precondition that all
+                          columns have bee seen, you may get a
+                          misleading result.
+
+
+        Postconditions
+                        > IntendedAction tells you what AcquireRsrc
+                          would do if passed "DefaultRsrcAction".
+
+                          This step is optional, and is intended for
+                          clients like the outline importer who want
+                          to do their own parental management.
+
+                            IMPLEMENTATION NOTE:
+
+                                As of Time Line Version 4.0, resources
+                                do not have parents.  However, this facility
+                                is here for future expansion.
+
+*)
+PROCEDURE AnalyzeRsrcResult( VAR IntendedAction : ARsrcActionSet );
+
+
+
+
+
+
+
+
+
+(*
+    Acquire Rsrc
+
+        Preconditions
+                        > All columns have been passed through
+                          "AnalyzeRsrcColumn"
+
+                        > DesiredRsrcAction describes the policy to
+                          follow regarding resource creation and parenting.
+
+        Postconditions
+                        > If TRUE is returned, a resource node is returned.
+
+                        > If there was a system error, the ErrorHandler
+                          is called, and FALSE is returned.
+
+                        > Undo is called to notify it of the Add or Change.
+                          The client must start and end the Undo transaction.
+*)
+PROCEDURE AcquireRsrc( VAR RsrcNode          : ATreeNode;
+                           DesiredRsrcAction : ARsrcActionSet;
+                           ErrorHandler      : AnErrorHandlerProc;
+                           HandlersContext   : ADDRESS          )  : BOOLEAN;
+
+
+
+
+
+
+
+
+
+(*
+    Reset Default Rsrc Columns
+
+        Reset the default values for resource columns.
+
+        Preconditions
+                        > none.
+
+        Postconditions
+                        > The next resource that is created will have all
+                          of its fields set to the system defaults, not
+                          any client defaults.
+*)
+PROCEDURE ResetDefaultRsrcColumns();
+
+
+
+
+
+
+(*
+    Default Rsrc Column
+
+        Sets up defaults for resource columns.  These defaults are used
+        whenever creating a new resource.
+
+        Preconditions
+                        > Column ID is within range
+
+                        > ColumnData is properly formatted for the column
+                          being defined.
+
+        Postconditions
+                        > Any resource that is created has values applied
+                          in this order:
+
+                                System defaults
+                                Client defaults, defined with this procedure
+                                Any edits given to RsrcEdit.
+
+                        > Reset this action with "ResetDefaultRsrcColumns"
+*)
+PROCEDURE DefaultRsrcColumn(     ColumnID    : CARDINAL;
+                             VAR ColumnData  : AColumnDataRecord ) : BOOLEAN;
+
+
+
+
+
+
+
+
+
+
+END RsrcAcquire.
+

@@ -1,0 +1,207 @@
+DEFINITION MODULE MacrosRc;
+
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+(* Modifications:
+                    10/26/88 - Started looking into storing macros as
+                               AnExtHandle
+                    11/5/88  - First compilation with ExtHandles for all.
+                    12-Dec-89 LVK - Added PROC ClearMacNode.         
+*)
+
+
+FROM FlexStor               IMPORT AnExtHandle;
+
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+EXPORT QUALIFIED
+    (* PROC *)                  MacroDefaults,
+    (* PROC *)                  ClearMacNode,
+    (* PROC *)                  CreateMacro,
+    (* PROC *)                  DeleteMacro,
+    (* PROC *)                  FindMacroByName,
+    (* PROC *)                  FindMacroByHotkey,
+    (* PROC *)                  FindMacro,
+    (* PROC *)                  DisposeMacros,
+                                SetMacroHotKey,
+                                SetMacroHotKeyStr,
+                                SetMacroName,
+                                SetMacroDescription,
+                                SetMacroHandle,
+                                SetMacroLength,
+                                GetMacroHotKey,
+                                GetMacroHotKeyStr,
+                                GetMacroName,
+                                GetMacroDescription,
+                                GetMacroHandle,
+                                GetMacroLength,
+    (* PROC *)                  SortMacros;
+
+
+  
+
+
+(*----------------------------------------------------------------------------
+    MacroDefaults --
+
+    Give the macro record default values.
+----------------------------------------------------------------------------*)
+
+PROCEDURE MacroDefaults(VAR Macro         : ATreeNode);
+
+
+
+(*----------------------------------------------------------------------------
+    FindMacroByName --
+
+    Look up the macro name given in the group of all macros, and return the
+    corresponding tree node if it can be found.  If it's not found, return
+    NIL. 
+
+    Expects an LString.
+----------------------------------------------------------------------------*)
+
+PROCEDURE FindMacroByName (VAR MacroName   : ARRAY OF CHAR)       (* in     *)
+                                                             : ATreeNode;
+
+
+
+(*----------------------------------------------------------------------------
+    FindMacroByHotkey --
+
+    Look up the macro HOTKEY given in the group of all macros, and return the
+    corresponding tree node if it can be found.  If it's not found, return
+    NIL. 
+----------------------------------------------------------------------------*)
+
+PROCEDURE FindMacroByHotkey (VAR Hotkey   : CARDINAL)       (* in     *)
+                                                            : ATreeNode;
+
+
+
+
+(*----------------------------------------------------------------------------
+    FindMacro --
+
+    Look up the macro, by hotkey and/or name, given in the group of all macros,
+    and return the corresponding tree node if it can be found.  If it's not
+    found, return NIL. 
+----------------------------------------------------------------------------*)
+
+PROCEDURE FindMacro (VAR Hotkey   : CARDINAL;
+                     VAR Name     : ARRAY OF CHAR)       (* in     *)
+                                                             : ATreeNode;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    SortMacros --
+
+    Place the macro list into ascending alphabetical order.
+----------------------------------------------------------------------------*)
+
+PROCEDURE SortMacros();
+
+
+
+(*----------------------------------------------------------------------------
+ClearMacNode - 
+
+Replaces data objects of existing macro tree node with blank data objects.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ClearMacNode (VAR Node : ATreeNode):BOOLEAN;
+
+
+
+(*----------------------------------------------------------------------------
+    CreateMacro --
+
+    Create a new tree node whose data object is a pointer to a defaulted
+    macro record.  Return TRUE iff successful.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateMacro (VAR Node    : ATreeNode)
+                                                : BOOLEAN;
+
+
+
+PROCEDURE SetMacroHotKey (VAR MacroNode : ATreeNode;
+                              HotKey    : CARDINAL);
+
+PROCEDURE GetMacroHotKey (VAR MacroNode : ATreeNode):CARDINAL;
+
+PROCEDURE SetMacroHotKeyStr (VAR MacroNode : ATreeNode;
+                                 HotKeyStr : ARRAY OF CHAR);
+
+PROCEDURE GetMacroHotKeyStr (VAR MacroNode : ATreeNode;
+                             VAR HotKeyStr : ARRAY OF CHAR);
+
+PROCEDURE SetMacroName (VAR MacroNode : ATreeNode;
+                            Name      : ARRAY OF CHAR);
+
+PROCEDURE GetMacroName (VAR MacroNode : ATreeNode;
+                        VAR Name      : ARRAY OF CHAR);
+
+PROCEDURE SetMacroDescription (VAR MacroNode   : ATreeNode;
+                                   Description : ARRAY OF CHAR);
+
+PROCEDURE GetMacroDescription (VAR MacroNode   : ATreeNode;
+                               VAR Description : ARRAY OF CHAR);
+
+PROCEDURE SetMacroHandle (VAR MacroNode   : ATreeNode;
+                              Handle      : AnExtHandle);
+
+PROCEDURE GetMacroHandle (VAR MacroNode : ATreeNode):AnExtHandle;
+
+PROCEDURE SetMacroLength (VAR MacroNode : ATreeNode;
+                              Length    : CARDINAL);
+
+PROCEDURE GetMacroLength (VAR MacroNode : ATreeNode):CARDINAL;
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    DeleteMacro --
+
+    Deallocate storage for the given tree node and the macro record storage
+    it points to.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DeleteMacro (VAR Node      : ATreeNode);
+
+
+
+
+(*----------------------------------------------------------------------------
+    DisposeMacros --
+
+  Delete all nodes.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DisposeMacros (VAR Tree      : ATree);
+
+
+
+END MacrosRc.
+

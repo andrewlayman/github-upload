@@ -1,0 +1,31 @@
+DEFINITION MODULE MacCnfg;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+(*---------------------------------------------------------------
+
+   Read and Write TL/Macro configuration settings to disk.
+   The disk file is assumed to be on the default drive,
+   and named "MACWHAT.CFG".
+
+-----------------------------------------------------------------*)
+
+
+
+EXPORT QUALIFIED ReadConfig, WriteConfig;
+
+
+PROCEDURE ReadConfig;
+
+
+PROCEDURE WriteConfig;
+
+
+END MacCnfg.
+

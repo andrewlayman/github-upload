@@ -1,0 +1,158 @@
+DEFINITION MODULE Filing;
+
+
+    (* Filing -- Definitions of procedure types used in transferring
+                 binary data blocks to and from external storage.  The actual
+                 methods need to be implemented for each new external
+                 storage media.
+
+                 These are meant to be supplied to other procedures in
+                 order to effect the actual transfer.
+
+                 These procedures are sufficient to allow the module defining
+                 the data type to control its storage, provided that the storage
+                 medium is sequential, and that no knowledge of the internal structure
+                 is needed for storage and retrieval (that is, no keys, no structure
+                 to traverse, no data mappings).
+
+                 If the data module stores data in more than one record, it
+                 must make the last record in each series a sentinel record, that
+                 is, a special record that is interpreted not as part of the
+                 data item, but a signal that the data item has finished.
+
+                 
+                 29-May-90 AJL - Initial version.
+
+    *)
+
+
+FROM SYSTEM IMPORT
+    (* TYPE *)      ADDRESS;
+
+
+
+        (* PROCEDURES FOR STORING *)
+
+TYPE
+        (* ----------------------------------------------------------
+
+        AStoreProc
+
+        Purpose:        Copy a record, or array of bytes, from memory
+                        to a storage medium, such as a file.  The caller
+                        of this procedure may make one or more calls to 
+                        this procedure in order to store the internal
+                        information.  If making more than one, the records
+                        must be stored distinct from each other, in stored
+                        order.
+
+        Preconditions : Whatever are relevant to the supplier of this
+                        actual procedure.
+
+        Postconditions: The internal data record, defined by Data and
+                        Length, has been copied to another location.
+                        Context may have been changed. 
+
+
+           ---------------------------------------------------------- *)
+
+    AStoreProc = PROCEDURE (   (* Data     : *)  ADDRESS,
+                               (* Length   : *)  CARDINAL,
+                               (* Context  : *)  ADDRESS    );
+
+
+                               
+    (* PROCEDURES FOR LOADING *)
+
+    (* During loading, there is a file pointer which is at a data record
+       in one of two states:
+           1.   NextSizeIsUnknown
+           2.   NextSizeIsKnown
+       
+    *)
+
+
+TYPE
+        (* ----------------------------------------------------------
+
+        APredictSizeProc
+
+        Purpose:        Predict the size, in bytes, of the next record
+                        that will be returned by the LoadProc.
+
+        Preconditions : The file pointer state is NextSizeIsKnown.
+                        Whatever additional requirements are relevant to 
+                        the supplier of this actual procedure.
+
+
+        Postconditions: The size of the current record is returned.
+                        Context may have been changed. 
+                        The file pointer is unchanged.
+
+           ---------------------------------------------------------- *)
+    APredictSizeProc = PROCEDURE ( (* Context : *) ADDRESS ): CARDINAL; 
+
+
+    
+    
+    (* ----------------------------------------------------------
+
+        ALoadProc
+
+        Purpose:        Read the next record from the file, advancing
+                        the file pointer.
+
+        Input:
+            Data        Address where the incoming data is to be stored.
+            MaxSize     Max bytes to transfer.  (Excess are to be thrown
+                        away, presumably with a warning.)
+            Context     Defined by the actual procedure.
+        Output:
+            ActualSize  Number of bytes actually read from file.
+
+
+        Preconditions : Whatever are relevant to the supplier of this
+                        actual procedure.
+
+        Postconditions: The first ActualSize-1, or MaxSize-1,
+                        whichever is fewer, bytes of memory, beginning
+                        at Data are a copy of the record from the file.
+                        Context may have been changed.
+                        The file pointer is advanced so that it is after
+                        the record just read.
+                        The file pointer state is NextSizeIsUnknown.
+
+           ---------------------------------------------------------- *)
+
+    ALoadProc = PROCEDURE (   (* Data        : *)  ADDRESS,
+                              (* MaxSize     : *)  CARDINAL,
+                              (* ActualSize  : *)  VAR CARDINAL,
+                              (* Context     : *)  ADDRESS    );
+
+
+
+        (* ----------------------------------------------------------
+
+        AReadNextProc
+
+        Purpose:        Advance to the next record, obtaining its 
+                        length.
+
+        Input:
+            Context     Defined by the actual procedure.
+        Output:
+            RETURNS     TRUE iff there is a next record.
+
+        Preconditions : The file pointer state is NextSizeIsUnknown.
+                        Whatever additional requirements are relevant to 
+                        the supplier of this actual procedure.
+
+        Postconditions: 
+                        The file pointer state is NextSizeIsKnown.
+
+           ---------------------------------------------------------- *)
+
+    AReadNextProc    = PROCEDURE ( (* Context : *) ADDRESS ): BOOLEAN;
+
+END Filing.                              
+

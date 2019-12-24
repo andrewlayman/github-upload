@@ -1,0 +1,123 @@
+DEFINITION MODULE MacBuffs;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+---------------------------------------------------------------------------*)
+
+(*  
+   PushBuffer puts an empty plate on the stack.  The plate is yet to be filled.
+
+   PopBuffer throws the top plate away.
+
+   The stack is MacBuffer.
+
+   MacBuffer is used during the recording of a macro.  The stack data structure
+   facilitates nested macros.  The buffer is used to store the keystrokes
+   during recording of the macro prior to storage in the list with ExtStorage.
+*)
+
+    
+
+
+
+EXPORT QUALIFIED MacBuffer, PushBuffer, PopBuffer,
+                 PutStrInBuffer, PutCodeInBuffer,
+                 PutMenuInBuffer, PutMessageInBuffer,
+                 PlayBuffer, MaxKeystrokes,
+                 MacBuffPlay,
+                 MacBuffAvailable;
+
+CONST
+    MaxKeystrokes           = 1500;
+
+TYPE AMacBufferPtr = POINTER TO AMacBufferRec;
+
+     AMacBufferRec = RECORD
+                       tag     : CARDINAL;
+                       buffer  : ARRAY [0..MaxKeystrokes] OF CARDINAL;
+                       count   : CARDINAL;
+                       next,
+                       prev    : AMacBufferPtr;
+                     END;
+
+VAR
+    MacBuffer               : AMacBufferPtr;
+    MacBuffPlay             : CARDINAL;
+
+    PROCEDURE PushBuffer():BOOLEAN;
+(*------------------------------------------------------------------------
+
+Check for available room in buffer.  How to check for cases when a cardinal
+code is inserted ok before a string that can't be inserted?  Must be done in
+the calling procedure that inserted the code. 
+ 
+-------------------------------------------------------------------------*)
+
+PROCEDURE MacBuffAvailable (amount : CARDINAL):BOOLEAN;
+
+
+
+    PROCEDURE PopBuffer;
+    
+(*------------------------------------------------------------------------
+
+Puts a string into a macro that is currently being recorded.  Used to
+insert messages and menus that were created with the Add Menu.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE PutStrInBuffer (str  : ARRAY OF CHAR):BOOLEAN;
+
+
+(*------------------------------------------------------------------------
+
+Inserts a cardinal into a macro that is currently being recorded.  Used to
+insert sentinal values before and after messages and menus.
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE PutCodeInBuffer (code : CARDINAL):BOOLEAN;
+
+
+
+  (*------------------------------------------------------------------------
+
+  Puts a menu that was created with the menu form into the edited macro.
+
+  -------------------------------------------------------------------------*)
+
+PROCEDURE PutMenuInBuffer():BOOLEAN;
+
+
+
+  (*------------------------------------------------------------------------
+
+  Puts the message that was created with the message form into the edited macro.
+
+  -------------------------------------------------------------------------*)
+
+PROCEDURE PutMessageInBuffer():BOOLEAN;
+
+
+
+
+(*------------------------------------------------------------------------
+
+ Put the buffer's contents into a macro, ready for playback in editor.
+ Used to put extended character strings, control character strings,
+ messages and menus into the editted macros.
+
+ Prerequisite : a valid buffer has been created with PushBuffer,
+
+-------------------------------------------------------------------------*)
+
+PROCEDURE PlayBuffer;
+
+
+END MacBuffs.
+

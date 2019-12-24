@@ -1,0 +1,619 @@
+DEFINITION MODULE GanttOutlines;        (*  a subclass of OutlineViews  *)
+
+    (* RSC 12/16/88  Changed method "ChangeHeight" to take upper and lower y
+                     values.
+        04-Feb-89 LAA   Added new methods to support scrolling columns on the
+                        Gantt chart.
+        18-Feb-89 LAA   Added new methods to query and set the scrolling mode.
+         3-Apr-89 RSC   Added new method to implement SpreadSheetView,
+                        "AlternateChangeTaskProc".
+        28-Jul-89 EGK   Added "GetRecordedEvent" method.
+        11-Dec-89 LAA   Removed all the old, commented out code for caching.
+        14-Dec-89 KKC       Patched AGanttOutlineStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveView;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM ChartForms             IMPORT
+    (* TYPE *)                  AChartFormatPtr;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM ListViews              IMPORT
+    (* TYPE *)                  AListViewMethods;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObjectMethods, AnObject;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineViewMethods;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+TYPE
+        (*  AGanttOutline is a subclass of OutlineViews  *)
+
+    AGanttOutline           = POINTER TO AGanttOutlineRecord;
+
+    AGanttOutlineMethods    = POINTER TO AGanttOutlineMethodsRecord;
+
+    AGanttOutlineRecord     = RECORD
+                                Methods     : AGanttOutlineMethods;
+                              END;
+
+
+
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for GanttOutlines
+        *)
+
+TYPE
+    AGanttOutlineStatus     = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                               CursorOn, NeedsStatusDisplay, 
+                               NeedsColumnHeadingsDisplay, 
+                               NeedsGanttDatesDisplay,
+                               GanttOutlineSpare8, 
+                               GanttOutlineSpare9);
+
+    AGanttOutlineStatusSet  = SET OF AGanttOutlineStatus;
+
+    AGanttOutlineShowing    = (ShowNothing, ShowTaskStats, ShowEverything);
+
+
+
+
+
+
+
+
+
+    (*  The following types are just re-typing of procedure types exported
+        from Objects, so that we can pass objects of type AGanttOutline to 
+        them.
+    *)
+
+TYPE
+    AGanttOutlineCloneProc  = PROCEDURE(    AGanttOutline,
+                                        VAR AGanttOutline)
+                                                          : BOOLEAN;
+
+    AGanttOutlineStoreOnProc = PROCEDURE(    AGanttOutline,
+                                             AnObject     );
+
+    AGanttOutlineDiscardProc = PROCEDURE(VAR AGanttOutline);
+
+
+
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ObjectViews, so that we can pass objects of type AGanttOutline to
+        them.
+    *)
+
+TYPE
+    AGanttOutlineGetObjectProc = PROCEDURE(    AGanttOutline)
+                                                             : ATree;
+
+    AGanttOutlineSetObjectProc = PROCEDURE(    AGanttOutline,
+                                               ATree        );
+
+    AGanttOutlineXYProc     = PROCEDURE(    AGanttOutline,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny     );
+
+    AGanttOutlineTitleProc  = PROCEDURE(    AGanttOutline,
+                                        VAR ARRAY OF CHAR);
+
+    AGanttOutlineProc       = PROCEDURE(    AGanttOutline);
+
+    AGanttOutlineMoveProc   = PROCEDURE(    AGanttOutline,    
+                                            ascreenx,        
+                                            ascreeny    );
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ActiveViews, so that we can pass objects of type AGanttOutline 
+        to them.
+    *)
+
+
+TYPE
+    AGanttOutlineRecordProc = PROCEDURE(    AGanttOutline,
+                                            AnEvent      );
+
+    AGanttOutlineGetEventProc = PROCEDURE(    AGanttOutline,
+                                              CARDINAL,
+                                          VAR AnEvent       );
+
+    AGanttOutlineActOnProc  = PROCEDURE(    AGanttOutline,
+                                            AnEvent,
+                                        VAR AnEvent      );
+
+    AGanttOutlineGetCursorProc = PROCEDURE(    AGanttOutline)       (* View *)
+                                                             : BOOLEAN;
+
+    AGanttOutlineSetCursorProc = PROCEDURE(    AGanttOutline,  (* View *)
+                                               BOOLEAN      ); (* Displaying *)
+
+    AGanttOutlineSetCursorModeProc = PROCEDURE(    AGanttOutline,
+                                                   avidmode     );
+
+
+
+
+
+
+    (*  The following methods are just re-typing of procedure types exported
+        from ListViews, so that we can pass objects of type AGanttOutline to
+        them.
+    *)
+
+
+TYPE
+    AGanttOutlineSetProc    = PROCEDURE(    AGanttOutline,
+                                            ATreeNode    );
+
+    AGanttOutlineGetProc    = PROCEDURE(    AGanttOutline)
+                                                          : ATreeNode;
+
+    AGanttOutlineForceProc  = PROCEDURE(    AGanttOutline,
+                                            ATreeNode,
+                                            CARDINAL    );
+
+    AGanttOutlineInquireProc = PROCEDURE(    AGanttOutline,
+                                             ATreeNode    )
+                                                           : CARDINAL;
+
+
+
+
+    AGanttOutlineGetCountProc = PROCEDURE (  AGanttOutline )
+                                                            : CARDINAL;
+
+    AGanttOutlineFindCharProc = PROCEDURE (  AGanttOutline,
+                                             CHAR          )
+                                                            : BOOLEAN;
+
+
+
+
+    (*  Here are the methods that are specific to GanttOutlines  *)
+
+    AGanttOutlineViewType   = (ActualView, ActualAndBaselineView);
+
+    AGanttOutlineSetViewProc = PROCEDURE(    AGanttOutline,
+                                             AGanttOutlineViewType);
+
+    AGanttOutlineSpecificChange = (LayoutChange, GanttDatesChange, TaskChange,
+                                   SubviewsChange);
+
+    AGanttOutlineNoteProc   = PROCEDURE(    AGanttOutline,
+                                            AGanttOutlineSpecificChange);
+
+
+    (*  These are the methods for AGanttOutline objects.  They inherit and
+        redefine methods from ObjectViews, and add new methods of their own.
+    *)
+
+    AnAlternateChangeTaskProc   = PROCEDURE( ATreeNode ) : BOOLEAN;
+
+
+
+
+TYPE
+    AGanttOutlineMethodsRecord  = 
+                              RECORD
+                                Methods           : AnObjectMethods;
+                                Clone             : AGanttOutlineCloneProc;
+                                StoreOn           : AGanttOutlineStoreOnProc;
+                                Discard           : AGanttOutlineDiscardProc;
+                                SuperclassMethods : AnOutlineViewMethods;
+                                MethodSize        : CARDINAL;
+                                ObjectMethodsTag  : CARDINAL;
+                                GetExternalXY     : AGanttOutlineXYProc;
+                                GetInternalXY     : AGanttOutlineXYProc;
+                                GetTitle          : AGanttOutlineTitleProc;
+                                SetObject         : AGanttOutlineSetObjectProc;
+                                GetObject         : AGanttOutlineGetObjectProc;
+                                Move              : AGanttOutlineMoveProc;
+                                Display           : AGanttOutlineProc;
+                                GetHelp           : AGanttOutlineProc;
+                                HideView          : AGanttOutlineProc;
+                                RevealView        : AGanttOutlineProc;
+                                NotifyOfChange    : AGanttOutlineProc;
+                                ObjectViewTag     : CARDINAL;
+                                RecordEvent       : AGanttOutlineRecordProc;
+                                GetRecordedEvent  : AGanttOutlineGetEventProc;
+                                ActOnEvent        : AGanttOutlineActOnProc;
+                                GetCursor         : AGanttOutlineGetCursorProc;
+                                SetCursor         : AGanttOutlineSetCursorProc;
+
+
+        SetCursorMode       : AGanttOutlineSetCursorModeProc;
+    (*------------------------------------------------------------------------
+        Define the video mode used to display the cursor.
+
+        Preconditions:
+            The indicated view must be a valid object of type AnActiveView.
+
+        Postconditions:
+            The cursor video mode will be defined as indicated.
+    ------------------------------------------------------------------------*)
+
+        ActiveViewTag       : CARDINAL;
+                                SetFirst          : AGanttOutlineSetProc;
+                                GetFirst          : AGanttOutlineGetProc;
+                                GetLast           : AGanttOutlineGetProc;
+                                SetCursorNode     : AGanttOutlineSetProc;
+                                GetCursorNode     : AGanttOutlineGetProc;
+                                Synchronize       : AGanttOutlineProc;
+                                ForceToPosition   : AGanttOutlineForceProc;
+                                InquirePosition   : AGanttOutlineInquireProc;
+                                NotifyNodeDeleted : AGanttOutlineSetProc;
+                                ListViewTag       : CARDINAL;
+
+        ResetMatching           : AGanttOutlineProc;
+        GetMatchCount           : AGanttOutlineGetCountProc;
+        FindChar                : AGanttOutlineFindCharProc;
+        OutlineViewTag          : CARDINAL;
+
+
+        SetTypeOfView       : AGanttOutlineSetViewProc;
+    (*------------------------------------------------------------------------
+        Establish the type of view, Actual or ActualAndBaseline, which this
+        is an outline of.
+
+        Preconditions:
+            The Gantt Outline object must be a valid object, created by 
+            CreateGanttOutline.
+
+        Postconditions:
+            The type of view will be established.  If data had been 
+            previously established within the subviews of this outline,
+            that data will carry over into the new type of view.  But if no
+            data had previously been associated with the subviews, this 
+            method will not make that association.
+
+    ------------------------------------------------------------------------*)
+
+
+        NoteSpecificChange  : AGanttOutlineNoteProc;
+    (*------------------------------------------------------------------------
+        Indicate to the Gantt Outline that a specific kind of change has
+        occured to what it should be displaying.  This does not mean that
+        that is the only change possible, but if it is, this method may
+        allow the Gantt Outline to be more efficient in its display.
+
+            LayoutChange - the width or position of columns has changed.
+            GanttDatesChange - start date or scale of the Gantt bars region
+                               has changed.
+            TaskChange - another task is now the cursor task.
+            SubviewChange - tell all subviews they've changed.
+
+        Preconditions:
+            The Gantt Outline object must be a valid object, created by 
+            CreateGanttOutline.
+
+        Postconditions:
+            The Gantt Outline will keep track of the kind of changed
+            indicated, to aid it in displaying its view.
+    ------------------------------------------------------------------------*)
+
+
+        SetShowing          : PROCEDURE(    AGanttOutline,
+                                            AGanttOutlineShowing);
+    (*------------------------------------------------------------------------
+        Set the amount of the Gantt chart to show when the Display method is
+        called.  If you set ShowTaskStats, the only the top three lines of 
+        the screen will be displayed form the Gantt chart.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditons:
+            A mode is established which conditions the action of the Display
+            method.  This mode will remain in effect until altered by another
+            call of this method.
+    ------------------------------------------------------------------------*)
+
+
+        ChangeHeight        : PROCEDURE(    AGanttOutline,
+                                            ascreeny,
+                                            ascreeny     );
+    (*------------------------------------------------------------------------
+        Change the vertical height of the Gantt Outline
+
+            Set the Upper and lower bound of the Gantt Chart.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditons:
+            The height of the Gantt Outline will be altered as necessary.
+            All necessary adjustments for the difference in size will be made.
+    ------------------------------------------------------------------------*)
+
+
+
+        GetLayout           : PROCEDURE(    AGanttOutline): AChartFormatPtr;
+
+    (*------------------------------------------------------------------------
+        Get the current layout record, which may have been modified for
+        scrolling of the columns.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditions:
+            A pointer to the (possibly modified) layout record will be 
+            returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        GetCursorColumn     : PROCEDURE(    AGanttOutline): CARDINAL;
+
+    (*------------------------------------------------------------------------
+        Get the current cursor column number.  This may range from 1 (for the
+        first column) to the number of columns in the current layout.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditions:
+            The number of the current cursor column will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+
+        GetColumnId         : PROCEDURE(    AGanttOutline): CARDINAL;
+
+    (*------------------------------------------------------------------------
+        Get the column id of the current cursor column.  This is the "magic"
+        number used by Captions to get task data.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditions:
+            The "magic" number of the current cursor column will be returned.
+    ------------------------------------------------------------------------*)
+
+
+
+        QueryScrollMode     : PROCEDURE(    AGanttOutline): BOOLEAN;
+
+    (*------------------------------------------------------------------------
+        Determine whether Gantt data columns scrolling is enabled or not.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditions:
+            Returns TRUE if data columns scrolling is enabled.
+    ------------------------------------------------------------------------*)
+
+
+
+        SetScrollMode       : PROCEDURE(    AGanttOutline,
+                                            BOOLEAN      );
+
+    (*------------------------------------------------------------------------
+        Set the state of Gantt data columns scrolling.  If scrolling is 
+        enabled, one data columns becomes the "current" column and displays
+        in a different video mode from other data columns.  Columns will be
+        scrolled on-screen from left or right as necessary to keep the 
+        "current" column on the screen.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditions:
+            Gantt data column scrolling will be enabled, or disabled, as
+            requested.
+    ------------------------------------------------------------------------*)
+
+
+        AlternateChangeTaskProc      : AnAlternateChangeTaskProc;
+    (*------------------------------------------------------------------------
+        Change the task record, using whatever the current method of change is.
+        This defaults to changing with the Task Form.  This is used by the
+        SpreadSheetView.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+            ATreeNode  is the cursor task node.
+
+        Postconditions:
+            The cursor node may have been changed, if TRUE is returned,
+            was not changed if FALSE is returned.
+    ------------------------------------------------------------------------*)
+
+
+
+        SetCursorColumn     : PROCEDURE(    AGanttOutline,
+                                            CARDINAL     );
+
+    (*------------------------------------------------------------------------
+        Set the current cursor column on the task table portion of the Gantt
+        chart.  This number can range from 1 to the number of columns defined
+        in the current layout.  If the given column number is not appropriate
+        to the current layout, the cursor column won't be changed.
+
+        Preconditions:
+            The Gantt Outline must be valid.
+
+        Postconditions:
+            The task table cursor column will be set as indicated, if 
+            possible.  Otherwise, it will not be changed.
+    ------------------------------------------------------------------------*)
+
+
+        GanttOutlineTag     : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsGanttOutline --
+
+    Initialize the indicated object as a Gantt outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid Gantt outline view object.  No storage 
+        allocation is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsGanttOutline(    GanttOutline : AGanttOutline;
+                                 SuperView    : AnActiveView;
+                                 ChartFormat  : AChartFormatPtr;
+                                 Ulx          : ascreenx;
+                                 Uly          : ascreeny;
+                                 Lrx          : ascreenx;
+                                 Lry          : ascreeny;
+                                 Box          : ABoxType;
+                                 VideoMode    : avidmode;
+                             VAR Title        : ARRAY OF CHAR;
+                                 HelpKey      : CARDINAL;
+                                 TakeRug      : BOOLEAN      );
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateGanttOutline --
+
+    Allocate storage for, and initialize the indicated object as a Gantt
+    outline view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid Gantt outline view object, and 
+        TRUE will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateGanttOutline(VAR GanttOutline : AGanttOutline;
+                                 SuperView    : AnActiveView;
+                                 ChartFormat  : AChartFormatPtr;
+                                 Ulx          : ascreenx;
+                                 Uly          : ascreeny;
+                                 Lrx          : ascreenx;
+                                 Lry          : ascreeny;
+                                 Box          : ABoxType;
+                                 VideoMode    : avidmode;
+                             VAR Title        : ARRAY OF CHAR;
+                                 HelpKey      : CARDINAL;
+                                 TakeRug      : BOOLEAN      ) 
+                                                              : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsGanttOutline --
+
+    UnInitialize the indicated object as a Gantt outline view.
+
+    Preconditions:
+        The object will be a valid Gantt outline view object. 
+
+    Postconditions:
+        The Gantt outline view will be invalidated.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsGanttOutline(    GanttOutline : AGanttOutline);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneGanttOutlineMethods --
+
+    Make a copy of the Gantt outline view methods into the indicated method 
+    object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The Gantt outline view methods will be copied into the indicated 
+        method object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneGanttOutlineMethods(    MethodObject : AGanttOutlineMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateGanttOutline --
+
+    Determine that the indicated object is in fact a valid Gantt outline view 
+    object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid Gantt outline view object, FatalError 
+        will be called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateGanttOutline(    GanttOutline : AGanttOutline);
+
+
+END GanttOutlines.
+

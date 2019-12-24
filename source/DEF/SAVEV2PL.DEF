@@ -1,0 +1,9 @@
+DEFINITION MODULE SaveV2Plot;
+
+FROM FileSystem   IMPORT File;
+
+PROCEDURE SavePlotterInfo(VAR f:File);
+
+
+END SaveV2Plot.
+

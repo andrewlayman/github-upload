@@ -1,0 +1,32 @@
+DEFINITION MODULE MemAvail;
+
+(*  =========================================================================
+    Last Edit : August 5, 1989 9:49PM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Supplant memory management for OS/2
+
+    MODIFICATION HISTORY:
+        05-Aug-89 WKH   Initial Version
+
+    =========================================================================
+*)
+
+    (*  =====================================================================
+        
+        OSMemAvail - 
+            Preconditions :
+
+            Postconditions :
+
+            Parameters :
+                Input:
+
+                Output:
+
+        =====================================================================
+    *)
+PROCEDURE OSMemAvail( size : CARDINAL ) : BOOLEAN;
+
+END MemAvail.

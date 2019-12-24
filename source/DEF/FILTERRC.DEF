@@ -1,0 +1,144 @@
+DEFINITION MODULE FilterRc;
+
+    (* MODIFICATION HISTORY:
+
+        11-May-89 AJL   Added the "Needs Update" field.
+        30-May-89 AJL   Improve the documentation. 
+        15-Jun-89 AJL   Removed F7Filtering.
+        07-Jul-89 LAA   Added fields to the record for comparing any task
+                        column against text entered by the user.
+        16-Jul-89 LAA   Put in the Inverted field, so that we can compare
+                        columnar data to be the inversed of a specified
+                        relationship.
+        16-Aug-89 EGK   Moved most procedures out of here into FilterUtility
+                        module.
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+    *)
+
+FROM RsrcMod                IMPORT
+    (* CONST *)                 ResourceNameLength;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM TimeFormat             IMPORT
+    (* TYPE *)                  ADateString;
+
+FROM Timei                  IMPORT 
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+TYPE
+    ASlackCheck             = (NoSlackCheck, CriticalCheck, 
+                               NearlyCriticalCheck);
+    AFltrType               = (FDate, FAnte, FDesc,
+                               FSlack, FMilestone,
+                               FNameHas, FWBSHas, FOBSHas, FAUXHas,
+                               FRNameHas,
+                               FResource0, FResource1, FResource2, FResource3,
+                               FComplete, FJoin, FResConflict, FLoop, FLate,
+                               FNeedsUpdate, FDataField1, FDataField2);
+
+    AFltrSet                = ARRAY [0..1] OF BITSET;
+    AFilterMatch            = (ItBegins, ItEnds, ItContains, ItMatches,
+                               ItIsEqual, ItIsNotEqual, ItIsGreater,
+                               ItIsGreaterEqual, ItIsLess, ItIsLessEqual);
+
+    AFilterRecordPointer    = POINTER TO AFilterRecord;
+
+    AFilterRecord           = RECORD
+        Tag                 : CARDINAL;
+        ID                  : CARDINAL;
+        Notes               : AText;
+        Name                : ARRAY [0..20] OF CHAR;
+        Any                 : BOOLEAN;
+        fltrset             : AFltrSet;
+        StartDateString     : ADateString;
+        EndDateString       : ADateString;
+        startdate           : ADate;
+        enddate             : ADate;
+        antetask            : ATreeNode;
+        desctask            : ATreeNode;
+        directly            : BOOLEAN;
+        SlackCheck          : ASlackCheck;
+        MilestoneCheck      : BOOLEAN;
+        LessThan            : BOOLEAN;
+        PercentComplete     : CARDINAL;
+        PartialJoinCheck    : BOOLEAN;
+        ConflictCheck       : BOOLEAN;
+        LoopCheck           : BOOLEAN;
+        LateCheck           : BOOLEAN;
+        Match               : ARRAY [FNameHas..FRNameHas] OF 
+                                  RECORD
+                                    Type    : AFilterMatch;
+                                    Pattern : ARRAY [0..30] OF CHAR;
+                                  END;
+        ResourceName        : ARRAY [FResource0..FResource3] OF 
+                                  ARRAY [0..ResourceNameLength] OF CHAR;
+        Negative            : BOOLEAN;
+        FilterFlags         : BITSET;
+        ResourceNode        : ARRAY [FResource0..FResource3] OF ATreeNode;
+        NeedsUpdate         : BOOLEAN;
+        DataField           : ARRAY [FDataField1..FDataField2] OF (* 07-Jul-89 LAA *)
+                                  RECORD
+                                      FieldId       : CARDINAL;   
+                                      CompareTo     : ARRAY [0..25] OF CHAR;
+                                      CompareAs     : AFilterMatch;
+                                      Inverted      : BOOLEAN;
+                                  END;
+                              END;
+
+
+VAR
+    HighlightFilter    : ARRAY [1..5] OF ATreeNode;
+
+    (*  [1]   =     Predecessor highlighting (internal)
+        [2]   =     Successor highlighting (internal)
+        [3]   =     User highlight #1
+        [4]   =     User highlight #2
+        [5]   =     User highlight #3
+
+        Highlights 1 and 2 are reserved to show the dependencies of the
+        cursor task, and are used as a pair.  They are not in the tree.
+    *)
+
+    RevealFilter            : ATreeNode;    (* Which tasks display. *)
+
+    EmptyFilterSet          : AFltrSet;
+    FilterTree              : ATree;
+
+
+(*----------------------------------------------------------------------------
+    FiltersNotifyDeleted -- 
+    
+    Please call this if you delete a task.   Pass the Task Node that is
+    being deleted.
+     
+----------------------------------------------------------------------------*)
+
+PROCEDURE FiltersNotifyDeleted(   Node      : ATreeNode);
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    DeleteFilter --
+
+    Deallocate storage for the given tree node and the filter record storage
+    it points to.
+----------------------------------------------------------------------------*)
+
+PROCEDURE DeleteFilter (VAR Node      : ATreeNode);
+
+
+
+
+
+
+
+END FilterRc.
+

@@ -1,0 +1,62 @@
+DEFINITION MODULE ParseReal;
+
+    (*  MODIFICATION HISTORY --
+        31-Aug-89 LAA   Added a new parameter to ParseAmountToReal so that the
+                        amount format can be specified by the caller.
+    *)
+
+
+
+FROM RealFormat             IMPORT
+    (* TYPE *)                  AnAmountFormat;
+
+
+
+  (* Amount To Real - Convert an LString to REAL value.  Handles internationals.
+
+      Preconditions  - Amount is the source LString to be converted.
+                              Amount EITHER:
+                              - Contains ONLY the real number, or
+                              - Is followed by a blank before any other chars.
+
+      Postconditions - Real is the real number (or zero).
+                       ok   is TRUE iff the number parsed corectly.
+  *)
+
+PROCEDURE AmountToReal( VAR Amount : ARRAY OF CHAR;   (* Input  *)
+                        VAR Real   : REAL;            (* Output *)
+                        VAR ok     : BOOLEAN );       (* Output *)
+
+
+
+
+
+
+  (* Parse Amount To Real - Convert an LString to REAL value.  Handles internationals.
+
+      Preconditions  - Amount is the source LString to be converted.
+                              Amount EITHER:
+                              - Contains ONLY the real number, or
+                              - Is followed by a blank before any other chars.
+                       Format is the AmountFormat defining the rules by which
+                              Amount will be parsed.
+
+      Postconditions - Real is the real number (or zero).
+                       ok   is TRUE iff the number parsed corectly.
+                       Stopped is the last byte examined.  If <= Len(Amount),
+                            then parsing stopped early.  if > len, then
+                            the entire string was digested.
+  *)
+
+PROCEDURE ParseAmountToReal( VAR Amount : ARRAY OF CHAR;   (* Input  *)
+                                 Format : AnAmountFormat;  (* Input  *)
+                             VAR Real   : REAL;            (* Output *)
+                             VAR ok     : BOOLEAN;         (* Output *)
+                             VAR Stopped: CARDINAL);       (* Output *)
+
+
+
+
+
+END ParseReal.
+

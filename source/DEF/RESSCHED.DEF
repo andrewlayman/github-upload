@@ -1,0 +1,555 @@
+DEFINITION MODULE ResScheduleTaskResources;
+
+
+(* Procedures to "schedule" and "free" resources used by a task
+   by updating the resource availability structures.
+
+    MODIFICATION HISTORY
+
+    Mar 1, 89 - JES -created
+    25-Jun-90  AJL  -Added UpdateResourceAvailability.
+    04-Sep-90 - JES -Added procedures FindEndDate, FindDuration, and
+                        MakeAssignments.
+    05-Sep-90 - JES -Added procedure MakeAssignments2, that takes
+       (instead of a known end date) a required duration, and that will
+       schedule through vacations if told to. Also changed MakeAssignments
+       so that it will schedule through vacations if told to.
+                    -Added parameter "StartDate" to procedure
+       UpdateResourceAvailability, so that availability structures
+       are only updated starting at that date. 
+   Sep 11, 90 - JES - MakeAssignments2 now has VAR parameter 
+        AssignmentEndDate, so we know when the assignment ends.
+   Oct 18, 90 - JES - The former procedure "UpdateResourceAvailability",
+        that took the varying assignment structures of a given
+        assignment array and subtracted resources used from the
+        residue availability structures, has been cloned into two
+        procedures: RemoveFromResourceAvailability and AddToResourceAvailability.
+        The former one is identical to the formerly existing procedure;
+        the latter one adds the resources back in, instead of subtracting
+        them. (It is used in deactivating tasks.)_
+   30-Oct-90  CL  - Create BackFindStartDate.
+                  - Rename FindEndDate to FwdFindEndDate and FindDuration
+                    to FwdFindDuration.
+    6-Nov-90  CL  - Rename MakeAssignments to AssignForInterval and
+                    MakeAssignments2 to AssignForDuration.
+   Nov 15, 90 JES - Moved procedures CreateSubstitutableResourceAssignments
+                    and CreateNonSubstitutableResourceAssignments into
+                    this module from ResActivate.
+   19-Nov-90  CL  - Added parameter HonorVacations to procedures  
+                    BackFindStartDate, FwdFindEndDate, and FwdFindDuration.
+   Dec 17, 90 JES - Added procedure BackCreateSubstitutableResAssignments,
+                    the backwards version of CreateSubstitutableResource
+                    Assignments. (The procedure was added to the .mod part
+                    on Dec 6.)
+   Dec 28, 90 JES - Added BOOLEAN VAR parameter AllWorkDone to procedure 
+                    BackCreateSubs. This parameter is set to TRUE if
+                    all the work can be done without running into 
+                    MinDate; otherwise it is set to FALSE (and the 
+                    TaskStartDate is set to MinDate).
+
+                  - Added BOOLEAN VAR parameter DurationSatisfied to
+                    procedure BackFindStartDate. This parameter is set
+                    to TRUE if the required duration can be satisfied
+                    without running into MinDate; otherwise it is set
+                    to FALSE (and the start date is set to MinDate).
+   Jan  3, 91  JES -Added procedure DeactivateTask.
+   Jan  4, 91  JES -Added procedures AddToLateResourceAvailability and
+                     RemoveFromLateResourceAvailability.
+   Jan 10, 91  JES -Changed BackCreateSubstitutableResourceAssignments
+                    as follows: (1) renamed the in parameter "TaskEndDate"
+                    to "MaxEndDate", since it may not be an actual
+                    end date in the sense of resources being at work
+                    at that date minus 1; (2) added the VAR parameter
+                    "TaskEndDate" that contains the actual end date
+                    corresponding to the start date returned.
+   Jan 11, 91  JES -Removed unused procedure AddToLateResourceAvailability.
+                   -Moved procedure CreateVaryingAssignments from
+                     ResActiv to here.
+                   -To procedure CreateVaryingAssignments and its
+                     subsidiaries CreateSubstitutable... and
+                     CreateNonSubstitutableResourceAssignments, added
+                     parameters:
+                      (1)  VAR AssignmentHandle -  handle to the assignments 
+                           array to be referenced and updated
+                      (2) a BOOLEAN "DoWeUseLateProfiles" - if no,
+                            accesses the usual ResidueAvailProfile of
+                            each resource in determining how much to
+                            schedule of each resource; if yes, accesses 
+                            resources'LateResidueAvailProfile.
+                            (This parameter not added to CreateNonSubsti
+                            tutable... since no residue availability
+                            profiles are referenced by it.
+
+    Jan 25, 91  JES - Added parameters to DeactivateTask to make it more
+                        flexible. Also moved procedure ActivateTask
+                        from ResActivate into here, so it could be
+                        used in more modules.
+    Jan 29, 91  JES - Made AssignmentsHandle a non-VAR parameter in
+                        CreateVaryingAssignments, CreateSubstitutable
+                        ResourceAssignments, and CreateNonSubstitutable
+                        ResourceAssignments.
+    Feb 22, 91  JES - Removed parameter HonorVacations from procedures
+                      BackFindStartDate, FwdFindEndDate, and FwdFindDuration.
+                      They now assume that vacations are always honored
+                      (the initial residue availability lists now make
+                      vacations invisible if HonorDaysOff is FALSE).
+    Feb 22, 91  JES - Removed parameter ScheduleThruVacations from procedures
+                      AssignForInterval and AssignForDuration,
+                      for the same reason as above.
+    Feb 26, 91  JES - Added procedure ActivateInfeasibleTask.
+    Mar  6, 91  JES - Added VAR parameter AllWorkDone to procedures
+                      ActivateTask, CreateVaryingAssignments,
+                      CreateSubstitutableResourceAssignments, and
+                      CreateNonSubstitutableResourceAssignments, 
+                      to take into account
+                      the possibility of running into MaxDate before
+                      the task has been completely scheduled.
+                      Similarly, added VAR parameter DurationSatisfied
+                      to procedures AssignForDuration and FwdFindEndDate.
+    Apr 16, 91  JES - Changed name of parameter "ActiveList" in procedure
+                      ActivateTask to "ActivationList" (because sometimes
+                      we call it with another list).
+    Apr 23, 91  JES - Removed unused parameter ActiveList from procedure
+                      DeactivateTask.
+    May 13, 91  JES - Fixed documentation in ActivateInfeasibleTask.
+    Jun 11, 91  AJL - Made Task a VAR parm to DeactivateTask so that it can
+                      be unlocked and relocked.
+    Jul 11, 91  JES - Added Warning parameter to procedure
+                        ActivateInfeasibleTask, so we can say either
+                        just "Can't schedule task" or the new warning
+                        "Can't schedule task - resources overassigned"
+                        or whatever other warnings we may choose later.
+    Jan 29, 92  AJL - Changed rate parameters to REAL.
+*)
+
+
+FROM Allocs        IMPORT
+    (* TYPE *)          ATaskPtr;
+
+FROM Assignments   IMPORT
+    (* TYPE *)          AnAssignmentArray;
+
+FROM FlexStor     IMPORT
+    (* TYPE *)          AnExtHandle;
+
+FROM ResWarnings   IMPORT
+    (* TYPE *)          AWarning;
+
+FROM RsrcMod       IMPORT 
+    (* TYPE *)	        AResourcePointer;
+
+FROM Timei         IMPORT
+    (* TYPE *)          ADate, ADuration;
+
+FROM VaryAssgnment IMPORT
+    (* TYPE *)          AVaryingAssgnList;
+
+(*-------------------------------------------------------------------
+
+    RemoveFromResourceAvailability
+
+    Update resource availability tables to reflect scheduling of
+    all the Task's resources for the Task's duration beginning
+    at the given start date.
+
+    This looks at the varying assignment structures in each assignment
+    and removes the assigned amounts from the resources residual
+    availability.
+
+    Input : AssignmentArray -- Reference to an assignment array, may
+                               be of any size.
+            Count           -- Actual number of entries in the array. 
+
+            StartDate       -- Update only on or after this date.
+---------------------------------------------------------------------*)
+
+PROCEDURE RemoveFromResourceAvailability(AssignmentArray : AnAssignmentArray;
+                                         Count           : CARDINAL;
+                                         StartDate       : ADate);
+
+(* -------------- RemoveFromLateResourceAvailability ------------------------
+
+   Just like RemoveFromResourceAvailability but references the resources'
+   LateResidueAvailProfiles instead of their ResidueAvailProfiles.
+*)
+
+PROCEDURE RemoveFromLateResourceAvailability(AssignmentArray : AnAssignmentArray;
+                                             Count           : CARDINAL;
+                                             StartDate       : ADate);
+
+
+(*-------------------------------------------------------------------
+
+    AddToResourceAvailability
+
+    Analogous to RemoveFromResourceAvailability but adds rather than
+    subtracts resource amounts from the residue availabilities.
+
+    Update resource availability tables to reflect the UNSCHEDULING of
+    all the Task's resources for the Task's duration beginning
+    at the given start date.
+
+    This looks at the varying assignment structures in each assignment
+    and ADDS BACK IN the assigned amounts to the resources residual
+    availability. 
+
+    Input : AssignmentArray -- Reference to an assignment array, may
+                               be of any size.
+            Count           -- Actual number of entries in the array. 
+
+            StartDate       -- Update only on or after this date.
+---------------------------------------------------------------------*)
+
+PROCEDURE AddToResourceAvailability(AssignmentArray : AnAssignmentArray;
+                                    Count           : CARDINAL;
+                                    StartDate       : ADate);
+
+
+(* ------- AddToLateResourceAvailability -------------------------------
+
+   Just like AddToResourceAvailability but references the resources'
+   LateResidueAvailProfiles instead of their ResidueAvailProfiles.
+*)
+
+PROCEDURE AddToLateResourceAvailability(AssignmentArray : AnAssignmentArray;
+                                        Count           : CARDINAL;
+                                        StartDate       : ADate);
+
+
+
+(* ---- BackFindStartDate ---- given an end date and the duration required,
+             searching thru the availability list backward to find a start
+             date such that the duration is satisfied. If this can be
+             done without hitting MinDate, DurationSatisfied is set to
+             TRUE and the resulting start date is returned. Otherwise,
+             DurationSatisfied is set to FALSE and start date is set
+             to MinDate. *)
+
+PROCEDURE BackFindStartDate ( Resource         : AResourcePointer;
+                              EndDate          : ADate;
+                              DurationRequired : ADuration;
+                          VAR StartDate        : ADate;
+                          VAR DurationSatisfied: BOOLEAN);
+
+(* ---- FwdFindEndDate ---- given a start date and the duration required,
+             searching thru the availability list forward to find an end
+             date such that the duration is satisfied. *)
+
+PROCEDURE FwdFindEndDate ( Resource          : AResourcePointer;
+                           StartDate         : ADate;
+                           DurationRequired  : ADuration;
+                       VAR DurationSatisfied : BOOLEAN) : ADate;
+
+
+
+(* ---- FwdFindDuration ---- given a start date and end date, skip
+             over vacations to find the resulting duration. *)
+
+PROCEDURE FwdFindDuration ( Resource       : AResourcePointer;
+                            StartDate      : ADate;
+                            EndDate        : ADate) : ADuration;
+
+
+(* ---- AssignForInterval ---- given a start date, end date, and 
+          resource rate, create varying assignment cells and
+          attach them to the given varying assignment list. 
+          Scheduling will not be done thru any vacations.
+
+          Note on error-handling: this procedure will set 
+          SchedulingAbandoned to TRUE if it fails
+          to create any of the necessary assignments. 
+          *)
+
+PROCEDURE AssignForInterval ( Resource              : AResourcePointer;
+                              StartDate             : ADate;
+                              EndDate               : ADate;
+                              RateToSchedule        : REAL;
+                          VAR VaryingAssignment: AVaryingAssgnList );
+
+
+(* ---- AssignForDuration ---- given a start date, duration, and
+          resource rate, create varying assignment cells and
+          attach them to the given varying assignment list. 
+          Vacations will be skipped over. 
+
+          Note on error-handling: this procedure will set 
+          SchedulingAbandoned to TRUE if it fails
+          to create any of the necessary assignments. 
+          *)
+
+PROCEDURE AssignForDuration ( Resource              : AResourcePointer;
+                              StartDate             : ADate;
+                              DurationToSchedule    : ADuration;
+                              RateToSchedule        : REAL;
+                          VAR AssignmentEndDate     : ADate;
+                          VAR VaryingAssignment     : AVaryingAssgnList;
+                          VAR DurationSatisfied     : BOOLEAN);
+
+
+(* ------ CreateVaryingAssignments ------------------------------
+
+   Calls either CreateSubstitutableResourceAssignments or
+   CreateNonSubstitutableResourceAssignments depending on
+   the task type.
+
+   TaskStartDate: the start date to use in creating the assignments.
+
+   DoWeForceSchedule: used if calling CreateSubstitutable... (i.e., if
+       effort-driven split task). If TRUE, schedules all resources
+       at max rate percent given in the task's assignment array,
+       does not do contour scheduling, and does not allow the task
+       to be split except for vacations. Otherwise, allows
+       contour scheduling and task splitting.
+
+   DoWeUseLateProfiles: if TRUE, references each resource's LateResidue
+       AvailProfile; if FALSE, references each resource's ResidueAvail
+       Profile.
+
+   AssignmentHandle: handle to the assignments array to be referenced
+        and updated.
+
+   TaskEndDate: the end date resulting from the given TaskStartDate.
+      I.e., the last working moment of all assignments created here.
+
+   AllWorkDone: true if the effort or duration of the task could be
+      scheduled without running into MaxDate.
+
+*)
+
+
+PROCEDURE CreateVaryingAssignments (Task                : ATaskPtr;
+                                    TaskStartDate       : ADate;
+                                    DoWeForceSchedule   : BOOLEAN;
+                                    DoWeUseLateProfiles : BOOLEAN;
+                                    AssignmentHandle    : AnExtHandle;
+                                VAR TaskEndDate         : ADate;
+                                VAR AllWorkDone         : BOOLEAN);
+
+
+
+(* --- CreateSubstitutableResourceAssignments ------------------
+
+  Create assignments such that the total amount of effort required
+  by the task is satisfied by all the resources combined. The resulting
+  end date of the task is returned via TaskEndDate.
+
+  The procedure creates a "breadth first" set of assignments to minimize
+  the task end date. 
+
+  TaskStartDate : the start date to use in creating the assignments.
+
+  DoWeForceSchedule : if  TRUE, we honor vacations but ignore 
+                      resource availability problems. If FALSE,
+                      we split assignments around any periods of
+                      unavailability (either due to vacations or other
+                      tasks).
+
+  DoWeUseLateProfiles : if TRUE, references each resource's LateResidue
+                         AvailProfile; if FALSE, references each resource's
+                         ResidueAvailProfile.
+
+  DoWeContour: if TRUE, the procedure allows multi-valued resource assignments
+               that can vary between 0 and the task's assigned amount of the
+               resource  (the procedure will always use as much as is 
+               available between those two limits). If FALSE, the procedure 
+               creates two-valued assignments, where the two values allowed 
+               are 0 and the resource's maximum amount. 
+               NOTE: If "DoWeForceSchedule" is TRUE, the value of 
+              "DoWeContour" will be ignored, and a two-valued assignment will be
+               produced (as described above under "DoWeForceSchedule").
+
+  DoWeCreateVAssignments : If TRUE, we will record the assignment into the 
+                           task's VaryingAssignment structure. if FALSE,
+                           the only effect of this procedure is to calculate
+                           an assignment (but not implement it), and to
+                           return what would be the resulting task end date.
+
+  Assignments : the assignments array to be referenced and updated.
+
+  TaskEndDate : the resulting end date (i.e., the last moment of any
+                  assignment created)
+  AllWorkDone : true if the effort could be scheduled without running
+                  into MaxDate.
+
+*)
+
+PROCEDURE CreateSubstitutableResourceAssignments (Task                   : ATaskPtr;
+                                                  TaskStartDate          : ADate;
+                                                  DoWeForceSchedule      : BOOLEAN;
+                                                  DoWeUseLateProfiles    : BOOLEAN;
+                                                  DoWeContour            : BOOLEAN;
+                                                  DoWeCreateVAssignments : BOOLEAN;
+                                                  AssignmentHandle       : AnExtHandle;
+                                              VAR TaskEndDate    : ADate;
+                                              VAR AllWorkDone    : BOOLEAN);
+
+
+
+(* ---- CreateNonSubstitutableResourceAssignments ------------------------------------
+    compute a varying assignment for given fixed duration and level
+    for each resource assigned to the
+    task, and add it to the varying assignment structure of the
+    resource assignment record. Return the task end date (highest
+    end date of all assignments).
+*)
+
+PROCEDURE CreateNonSubstitutableResourceAssignments(Task           : ATaskPtr;
+                                                    TaskStartDate  : ADate;
+                                                    Assignments    : AnExtHandle;
+                                                VAR TaskEndDate    : ADate;
+                                                VAR AllWorkDone    : BOOLEAN);
+
+
+
+
+(* ------- BackCreateSubstitutableResAssignments --------------------------
+   Just like CreateSubstitutableResourceAssignments, with these differences:
+
+   1. Instead of given a TaskStartDate and producing a TaskEndDate, this
+   procedure takes a MaxTaskEndDate and produces a TaskStartDate. 
+   The MaxEndDate may not be the actual end date of the task in the
+   sense that a resource is at work at MaxEndDate - 1.
+   
+   2. The procedure creates
+   assignments backwards in time (starting as close as possible to
+   MaxEndDate) until all the work is done. 
+   If all the work can be done without hitting MinDate, the procedure
+   returns the resulting start date in TaskStartDate and the
+   corresponding actual task end date in TaskEndDate, and sets
+   AllWorkDone to TRUE. Otherwise, sets TaskStartDate and TaskEndDate
+   to MinDate and AllWorkDone to FALSE. 
+
+   3. The procedure does not allow for using each resource's LateResidue
+   AvailProfile (as in CreateSubstitutable...); instead it uses
+   each resource's ResidueAvailProfile. Also, the procedure does not
+   provide a varying assignment structure as a parameter, but instead
+   assumes we use the one attached to the task.
+*)
+
+PROCEDURE BackCreateSubstitutableResAssignments (Task               : ATaskPtr;
+                                                 MaxEndDate         : ADate;
+                                                 DoWeForceSchedule  : BOOLEAN;
+                                                 DoWeContour        : BOOLEAN;
+                                                 DoWeCreateVAssignments    : BOOLEAN;
+                                                 DoWeUseLateAvailabilities : BOOLEAN;
+                                             VAR TaskStartDate      : ADate;
+                                             VAR TaskEndDate        : ADate;
+                                             VAR AllWorkDone        : BOOLEAN);
+
+
+
+
+
+(*------ ActivateTask------------------------------------------
+
+     0. The task's "count2" field is set to the ScheduleAtDate, for
+        possible future use.
+
+     1. If the task is Future, then the early
+        start date is set to ScheduleAtDate. 
+        (Otherwise it is left as cpm set it.) 
+
+     2. Varying resource assignments are computed for the unspent
+        portion of the task, beginning at ScheduleAtDate. The procedure
+        that creates the varying assignment also determines the
+        task's end date (the highest end date of all assignments).
+        The task's early end date is set to that date. If all the
+        required work could be scheduled, AllWorkDone is set to TRUE;
+        otherwise it is set to FALSE.
+
+        Note: if DoWeForceSchedule is TRUE, it means that the activation
+        date is not actually a feasible start date for the task,
+        but some other conditions (typically an upper bound) forced
+        us to activate it there. This information is used if we
+        are activing an effort-driven split task, since then
+        we ignore resource conflicts and do not allow the task
+        splitting that is usually allowed in activating these
+        kinds of tasks. Otherwise, in creating assignments for
+        effort-driven split tasks, we allow splitting around
+        other tasks (i.e., around periods of reduced availability
+        of the resource). EXCEPTION: No assignments created for
+        "AlreadyScheduled" tasks.
+
+     3. The residue resource availabilities are updated by
+        the varying assignments. EXCEPTION: not done for
+        "AlreadyScheduled" tasks.
+
+     4. If DoWeForceSchedule is TRUE or if the task is "AlreadyScheduled",
+        the task's DontBump flag is set.
+
+     5. The task is added to the ActivationList in EarlyStartDate order.
+
+     EXCEPTION: If the task is a summary task, we just set the
+                early start and end to the ScheduleAtDate 
+                (which is the latest antecedant end date) and
+                move the task to the ActivationList; we do not
+                create any varying assignments.
+
+*)
+
+PROCEDURE ActivateTask (TaskHandle        : AnExtHandle;
+                        Task              : ATaskPtr;
+                        ScheduleAtDate    : ADate;
+                        DoWeForceSchedule : BOOLEAN;
+                        ActivationList    : AnExtHandle;
+                    VAR AllWorkDone       : BOOLEAN);
+
+
+
+(*------ ActivateInfeasibleTask------------------------------------------
+
+    This procedure is called when ActivateCandidates has determined that
+    there is no feasible start date for the task (probably because the
+    assignments exceed their absolute limits).
+
+    It sets the task's count and early end date fields to the 
+    latest antecedant end date, and sets also the early start date
+    field to that if the task is future.
+    
+    The task is moved to the active list.
+
+    A warning is issued to the user that the task cannot be scheduled,
+    and the task's "NeedsRecalculate" and "DontBump" flags are set.
+
+    No varying assignments are created.
+    (Note 2/26/91: later we may decide to create varying assts
+    for such tasks, but then we would have to determine the correct
+    start date to make the resulting end date be MaxDate, etc.)
+*)
+
+PROCEDURE ActivateInfeasibleTask (TaskHandle        : AnExtHandle;
+                                  Task              : ATaskPtr;
+                                  Warning           : AWarning;
+                                  ActiveList        : AnExtHandle );
+
+
+
+
+
+
+(* ------- DeactivateTask ----------------------------
+
+   Deactivate the part of the task on and after DeactivationStartDate.
+   Specifically:
+
+   1. Move the task from the active list to the scheduled list
+      (if DoWeMoveToUnscheduledList is TRUE);
+
+   2. Starting at DeactivationStartDate: remove all varying
+      assignments (if DoWeRemoveVaryingAssignments is TRUE);
+
+   3. Add back in all the corresponding resource usage
+      to the resource availabilities (if DoWeFreeTaskResources is TRUE).
+
+*)
+
+PROCEDURE DeactivateTask (    TaskHandle                    : AnExtHandle;
+                          VAR Task                          : ATaskPtr;
+                              DeactivationStartDate         : ADate;
+                              UnscheduledList               : AnExtHandle;
+                              DoWeRemoveVaryingAssignments  : BOOLEAN;
+                              DoWeFreeTaskResources         : BOOLEAN;
+                              DoWeMoveToUnscheduledList     : BOOLEAN);
+
+END ResScheduleTaskResources.
+

@@ -1,0 +1,99 @@
+DEFINITION MODULE GoTo;
+
+
+(*  =========================================================================
+    Last Edit : September 19, 1989 7:04PM by WKH
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        
+
+    MODIFICATION HISTORY:
+
+        13-Mar-89   RSC Added "DoGoToWithPrompts" for column names.
+                        The cursor item can have a prompt displayed
+                        for it.
+        19-Sep-89   WKH Added procedure AmIVisible to determine if a task
+                        is "really" visible despite GoTo temporarily
+                        opening up the entire tree.
+        01-Aug-91   LAA Added MouseKeys parameter to DoGoToWithPrompt so 
+                        that callers can decide whether to have Insert,
+                        Delete, Help, etc. buttons or not.  Bug #4772.
+    =========================================================================
+*)
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM Codes                  IMPORT
+    (* TYPE *)                  ACode;
+
+FROM OutlineViews           IMPORT
+    (* TYPE *)                  AnOutlineView;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+TYPE
+    AGoToCheckProc          = PROCEDURE (AnOutlineView, ATree, VAR ACode);
+
+    AGoToNameProc           = PROCEDURE (ATreeNode, VAR ARRAY OF CHAR);
+
+
+PROCEDURE AmIVisible        (VAR Node    : ATreeNode) : BOOLEAN;
+
+PROCEDURE SaveVisibility    (VAR Node    : ATreeNode;
+                                 Context : ADDRESS  );
+
+
+PROCEDURE RestoreVisibility    (VAR Node    : ATreeNode;
+                                    Context : ADDRESS  );
+
+
+PROCEDURE NullGoToCheckProc(    Outline     : AnOutlineView;
+                                Tree        : ATree;
+                            VAR Code        : ACode         );
+
+
+PROCEDURE DoGoTo (      Tree        : ATree;
+                        Ulx         : ascreenx;
+                        Uly         : ascreeny;
+                        Lrx         : ascreenx;
+                        Lry         : ascreeny;
+                    VAR Title       : ARRAY OF CHAR;
+                        OpenTree    : BOOLEAN;
+                        CheckProc   : AGoToCheckProc;
+                        NameProc    : AGoToNameProc;
+                    VAR Node        : ATreeNode    )
+                                                    : BOOLEAN;
+
+    (*  DoGoToWithPrompts --
+
+        MouseKeys will be or'd in with the default buttons for a GoToOutline
+                  when a mouse is present.  Only HasInsert, HasDelete,
+                  HasHelp and HasEdit will be allowed to have an effect.
+    *)
+
+PROCEDURE DoGoToWithPrompts (       Tree        : ATree;
+                                    Ulx         : ascreenx;
+                                    Uly         : ascreeny;
+                                    Lrx         : ascreenx;
+                                    Lry         : ascreeny;
+                                VAR Title       : ARRAY OF CHAR;
+                                    OpenTree    : BOOLEAN;
+                                    CheckProc   : AGoToCheckProc;
+                                    NameProc    : AGoToNameProc;
+                                    PromptProc  : AGoToNameProc;
+                                    MouseKeys   : ABoxType;
+                                VAR Node        : ATreeNode    )
+                                                    : BOOLEAN;
+END GoTo.
+
+

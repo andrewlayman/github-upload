@@ -1,0 +1,48 @@
+DEFINITION MODULE ExportLinkage;
+
+ (* Export Linkage - common linkage area for exporters and tlputit.
+
+     MODIFICATION HISTORY:
+
+        RSC  11/10/87  First version.
+        RSC  2-Feb-89  Remove "ParseCallChain".  Use "ParseString" from Words.
+        RSC  6-Feb-89  Remove "ExportersOK".     Use "PackageOK"   from Overlays.
+        EGK  7-Feb-89  Move "InterFile" here from IntFileIO.
+        EGK 15-Mar-89  Added "SelectiveSave" boolean.
+        MWP  5-Jul-89  Added "IsImportable" boolean.
+ *)
+
+FROM FileSystem   IMPORT File;
+
+
+VAR
+    ExportMedia         : ARRAY [0..80] OF CHAR;  (* drive and path  *)
+    ExportName          : ARRAY [0..13] OF CHAR;  (* Name and .<ext> *)
+    NewFile             : BOOLEAN;
+    SaveConfiguration,
+    SaveSchedule        : BOOLEAN;
+    SelectiveSave       : BOOLEAN;      (* Just the visible stuff *)
+
+    InterFile           : File;         (* The intermediate file *)
+    InterFileOpen       : BOOLEAN;
+
+    IsImportable        : BOOLEAN;
+
+
+
+
+ (* Parse A Flag - Parse a Y/N/? flag from the string in In.
+
+        Preconditions  - In is the source string
+                         StartAt is where the flag starts.
+
+        Postconditions - Out is the flag char or 0C if not found.
+                         StartAt has been updated to be past Out.
+  *)
+PROCEDURE ParseAFlag( VAR In      : ARRAY OF CHAR;
+                      VAR Out     : CHAR;
+                      VAR StartAt : CARDINAL );
+
+
+END ExportLinkage.
+

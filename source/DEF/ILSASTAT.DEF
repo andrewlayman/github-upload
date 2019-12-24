@@ -1,0 +1,734 @@
+DEFINITION MODULE IlsaStatic;
+
+(*
+    Ilsa Static     - Record definitions for ILSA.
+
+    Issues of creating, initializing, and saving the records are not
+    up to the client, but to this module and the schedule load/save
+    routines.
+
+
+    Modification History:
+
+        RSC  12-Apr-89  First Version.
+        WKH  26-Apr-89  Put GetDefaultFontSpecs in here and zapped the
+                        FontName module.  FontName used to support selectable
+                        fonts but since exhaustive testing of Ilsa forms
+                        showed that font selection capabilities were
+                        overkill.  Hence, FontName is no more.  However, we
+                        did have to implement GetDefaultFontSpecs here and
+                        change it so that it no longer references a 
+                        dynamically built font tree.  Instead, the values
+                        are hard coded.
+        WKH  08-May-89  Removed 1 byte from all the spare fields.  This is so
+                        all of Sedona's old schedules with bad holder records
+                        will work with this new and improved system!!!
+        WKH  09-May-89  Removed another byte.
+        LAA  09-May-89  Changed the TLGS Setup Record to contain new fields
+                        made necessary by recent meetings with Sedona, and
+                        renamed some things which dealt with PERT but were
+                        called Plot.
+        LAA  10-May-89  Further changes to the PageRecord and SetupRecord.
+        WKH  10-May-89  Massive changes to support totally new forms!!! 
+        WKH  16-May-89  Totally changed the structure of the TLGSPlotRecord
+                        to reflec "new streamlined" form.
+        LAA  18-May-89  Incorporated Waynes changes as detailed above into
+                        my version of this module, and further cleaned up the
+                        record definitions in preparpation for moving them
+                        from Holder to the heap.
+        LAA  26-May-89  Started changing this module to use FlexStor rather
+                        than keeping its records on the heap.  This will be
+                        done in stages; today's stage takes on the TitleBlock
+                        and Palette records.
+        LAA  31-May-89  Created a new record type, the Config record, and
+                        moved some fields from the Setup record to there.  
+                        This record will be kept in the Config file, and
+                        represents user preferences rather than information
+                        about a specific device.
+        LAA  08-Jun-89  Renamed the PrimPageX & Y and PlotAreaX & Y as Tall
+                        and Wide since they will reflect sometimes X and 
+                        sometimes Y depending on rotation.
+        LAA  10-Jun-89  Added the PaletteTree array to support a scrolling 
+                        list of palettes, one for each chart type.  The 
+                        DefaultPalette is used by all.  Also added Palette
+                        fields to the Gantt, Pert, and Tree records.
+        LAA  14-Jun-89  Added two spare palette trees for future use.
+                        Removed procedures which dealt with 
+                        TLGSColorAssignments, because they're now accessible
+                        from the Gantt and Pert records.
+        LAA  22-Jun-89  Put two new fields in the SetupRecord to keep around
+                        the plottable area of a page, because we have to swap
+                        the existing fields for Sedona if Rotate is TRUE.
+        LAA  01-Dec-89  'twas the night before code-freeze, and all through
+                        the house, not a damn thing was working, not even 
+                        DOS!  And I just returned from enjoying my perks, to
+                        find that having a DefaultPalette shared between Gantt 
+                        and PERT palettes just doesn't work!  
+                        Even the identical color items are not mapped to the 
+                        same element of the array.  So I've changed the 
+                        DefaultPalette to be an array.
+        WKH  21-Dec-89  Added AutoSave field in TLGSPageRecord to support
+                        autosaving schedule before plot.
+        WKH  28-Dec-89  Will this never end?!?  Added a field to the 
+                        TLGSPage record to identify the calling chart type.
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+*)
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADate;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+FROM TypoGraph              IMPORT
+    (* TYPE *)                  ATypoSpec, ATypoLineSpec, ATypoBorderSpec;
+
+
+(* ****************** TLGS SHARED SECTION ************************* *)
+
+TYPE
+    ATLGSChartType          = (TLGSGanttChart, TLGSPertChart, TLGSTreeChart); 
+
+
+
+    (*  GetDefaultFontSpecs --
+
+            Retrieves specs of the default font.
+
+        Preconditions:
+            None
+
+        Postconditions:
+            Default font info is returned, presently this info is hard coded
+
+    *)
+PROCEDURE GetDefaultFontSpecs(VAR FontSpec : ATypoSpec);
+
+
+(* ****************** TLGS TITLE SECTION ************************* *)
+
+
+TYPE
+
+    ATextLine               = RECORD
+                                LineOfText : ARRAY [0..81] OF CHAR;
+                                TextSpec   : ATypoSpec;
+                                LineSpec   : ATypoLineSpec;
+                              END;
+
+    ATLGSScale              = (SHours, SDays, SWeeks, SMonths, SQuarters, 
+                               SYears);
+
+    ATLGSTitlePlacement     = (SUpLeft, SUpCenter, SUpRight, 
+                               SLowLeft, SLowCenter, SLowRight);
+
+    ATLGSTitleBlock         = RECORD
+                                ExistTitle   : BOOLEAN;
+                                TitlePlace   : ATLGSTitlePlacement;
+                                TitleBorder  : ATypoBorderSpec;
+                                ExistLegend  : BOOLEAN;
+                                LegendPlace  : ATLGSTitlePlacement;
+                                LegendBorder : ATypoBorderSpec;
+                                ExistSymbol  : BOOLEAN;
+                                SymbolPlace  : ATLGSTitlePlacement;
+                                SymbolBorder : ATypoBorderSpec;
+                                Title        : ARRAY [1..3] OF ATextLine;
+                                Legend       : ARRAY [1..5] OF ATextLine;
+                                Spare        : ARRAY [0..63] OF CHAR;
+                              END;
+
+    ATLGSTitleBlockPtr      = POINTER TO ATLGSTitleBlock;
+                                
+
+
+(* LockTLGSTitleBlockRecord - Return the TLGSTitleBlock pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, it is locked and a pointer is 
+                    returned to it. Otherwise, the record is created and 
+                    locked, and a pointer is returned to the newly 
+                    initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE LockTLGSTitleBlock( TitleClient : ATLGSChartType ) : ATLGSTitleBlockPtr; 
+
+
+
+(*  UnlockTLGSTitleBlockRecord --
+
+    Unlock a previously locked Title Block record.
+
+    Preconditions:
+        The indicated TitleBlockRecord must have been previously locked, and
+        not yet unlocked.
+
+    Postconditions:
+        The lock on the TitltBlockRecord will be released.  Any pointer to 
+        that record should be considered invalid after this call is made.
+*)
+
+PROCEDURE UnlockTLGSTitleBlock( TitleClient : ATLGSChartType);
+
+
+
+
+
+(* TLGSTitleBlockExists - Does the TLGS Title Block exist?
+
+    This is intended for use only by "schedule save", as TLGSTitleBlock
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSTitleBlockExists( TitleClient : ATLGSChartType ) : BOOLEAN; 
+
+
+
+
+
+
+
+
+
+  (* ************ TLGS PERT SECTION *************** *)
+
+CONST
+    TlgsPertTagNumber    = 8221; (* LAA's Extension *)
+
+
+TYPE
+
+    (* For TLGSPert *)
+
+    ATLGSGridStyle          = (Thin, Thick, Hollow);
+    ATLGSCorner             = (Square, Round);
+    AnOrientation           = (Tall, Wide);
+    ATLGSTaskArrangement    = (Actual, Baseline);
+
+    ATLGSPertRecord         = RECORD
+                                  Tag               : CARDINAL;
+                                  ID                : CARDINAL;
+                                  Name              : ARRAY [0..21] OF CHAR;
+                                  Layout            : ARRAY [0..21] OF CHAR;
+                                  TaskBoxStyle      : ATLGSGridStyle;
+                                  TaskBoxCorners    : ATLGSCorner;
+                                  TaskBoxShadows    : BOOLEAN; 
+                                  DependLineStyle   : ATLGSGridStyle;
+                                  DependLineCorners : ATLGSCorner;
+                                  DependLineShadows : BOOLEAN; 
+                                  PeriodicPert      : BOOLEAN;
+                                  Group             : ATLGSScale;
+                                  TaskArrangement   : ATLGSTaskArrangement;
+                                  Compressed        : BOOLEAN;
+                                  DefaultSpec       : ATypoSpec;
+                                  Palette           : ARRAY [0..21] OF CHAR;
+                                  Spare             : ARRAY [0..102] OF CHAR;
+                              END;
+
+    ATLGSPertRecordPtr      = POINTER TO ATLGSPertRecord;
+
+
+
+(* TLGS Pert Record - Return the TLGSPertRecord pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, a pointer is returned to it.
+                    Otherwise, the record is created and a pointer is
+                    returned to the newly initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE TLGSPertRecord()       : ATLGSPertRecordPtr;
+
+
+
+
+
+
+
+(* TLGSPertRecordExists - Does the TLGS Pert Record exist?
+
+    This is intended for use only by "schedule save", as TLGSPertRecord
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSPertRecordExists() : BOOLEAN;
+
+
+
+
+(* ******************** TLGS COLOR SECTION *********************** *)
+
+
+CONST
+    TLGSColorTagNumber   = 8223; (* Janet's extension *)
+
+(* The following are used to initialize the "ColorFor" and form value array *)
+                                    
+
+    (* Gantt Chart Palette Fields *)
+
+    TILG                    =  2; (* Title & Legend           *)
+    TXHD                    =  3; (* Text Heading             *)
+    BRDR                    =  4; (* Borders                  *)
+    ASOF                    =  5; (* As-of date               *)
+    MJGD                    =  6; (* Major grid               *)
+    MNGD                    =  7; (* Minor grid               *)
+    PAGE                    =  8; (* Page                     *)
+    BKHD                    =  9; (* Background Heading       *)
+    DATA                    = 10; (* Data Columns             *)
+    TKBR                    = 11; (* Task Bars                *)
+    F1FG                    = 12; (* Filter 1 Foreground      *)
+    F1BG                    = 13; (* Filter 1 Background      *)
+    F2FG                    = 14; (* Filter 2 Foreground      *)
+    F2BG                    = 15; (* Filter 2 Background      *)
+    F3FG                    = 16; (* Filter 3 Foreground      *)
+    F3BG                    = 17; (* Filter 3 Background      *)
+    OSTK                    = 18; (* Open Summary Tasks       *)
+    AOTK                    = 19; (* All Other Tasks          *)
+    OSBR                    = 20; (* Open Summary Bars        *)
+    AOTB                    = 21; (* All Other Task Bars      *)
+    MILE                    = 22; (* MileStones               *)
+    BASE                    = 23; (* Baseline                 *)
+    ACMT                    = 24; (* Achievement              *)
+    SLAK                    = 25; (* Slack                    *)
+
+
+    (* Pert Chart Palette Fields *)
+
+    PTILG                   =  2; (* Title & Legend           *)
+    PTXHD                   =  3; (* Text Heading             *)
+    PBRDR                   =  4; (* Borders                  *)
+    PPAGE                   =  5; (* Background Page          *)
+    PBKHD                   =  6; (* Background Heading       *)
+    PBKCH                   =  7; (* Background Chart         *)
+    PBKTB                   =  8; (* Background Task Boxes    *)
+    PF1FG                   =  9; (* Filter 1 Foreground      *)
+    PF1BG                   = 10; (* Filter 1 Background      *)
+    PF2FG                   = 11; (* Filter 2 Foreground      *)
+    PF2BG                   = 12; (* Filter 2 Background      *)
+    PF3FG                   = 13; (* Filter 3 Foreground      *)
+    PF3BG                   = 14; (* Filter 3 Background      *)
+    POPST                   = 15; (* Open Summary Tasks       *)
+    PAOTK                   = 16; (* All Other Tasks          *)
+    POPSB                   = 17; (* Open Summary Boxes       *)
+    PAOBX                   = 18; (* All Other Boxes          *)
+    PMSBX                   = 19; (* Milestone Boxes          *)
+    PPTDP                   = 20; (* PERT Dependencies        *)
+
+
+TYPE
+    ATLGSColorAssignment    = RECORD
+                                  Tag          : CARDINAL;
+                                  ID           : CARDINAL;
+                                  Name         : ARRAY [0..21] OF CHAR;     (* 27-Jan-89 LAA *)
+                                  Notes        : AText; 
+                                  ColorFor     : ARRAY [0..49] OF CARDINAL;
+                                  PaletteFlags : BITSET;
+                                  Spare        : ARRAY [0..61] OF CHAR;
+                              END;
+
+    ATLGSColorAssignmentPtr = POINTER TO ATLGSColorAssignment;
+
+VAR
+    PaletteTree             : ARRAY ATLGSChartType OF ATree;
+    DefaultPalette          : ARRAY ATLGSChartType OF ATreeNode;
+    SparePaletteTree1       : ATree;
+    SparePaletteTree2       : ATree;
+
+
+(* ******************** TLGS GANTT SECTION ************************** *)
+
+
+
+CONST
+    TlgsGanttTagNumber    = 8224; (* WKH's extension *)
+
+
+
+TYPE
+    ATLGSSymbology          = (Piston, SAMSO);
+
+    ATLGSPosition           = (SLeft, SRight, SAbove, SBelow);
+
+    ATLGSLabelRecord        = RECORD
+                                ColumnID    : CARDINAL; 
+                                Width       : CARDINAL; 
+                                Position    : ATLGSPosition;
+                              END;
+
+    ATLGSGanttRecord        = RECORD
+                                Tag         : CARDINAL;
+                                ID          : CARDINAL;
+                                Name        : ARRAY [0..21] OF CHAR;
+                                Leading     : CARDINAL;
+                                TimeScale   : REAL;     (* hrs/Sedona units *)
+                                IndentLevel : CARDINAL;
+                                Group       : ATLGSScale;
+                                Layout      : ARRAY [0..21] OF CHAR;
+                                HorizGrid   : BOOLEAN;
+                                VertGrid    : BOOLEAN;
+                                ExtraSpacing: BOOLEAN;
+                                DefaultSpec : ATypoSpec;
+                                GridStyle   : ATLGSGridStyle;
+                                Corners     : ATLGSCorner;
+                                Label1      : ATLGSLabelRecord; 
+                                Label2      : ATLGSLabelRecord; 
+                                Label3      : ATLGSLabelRecord; 
+                                Label4      : ATLGSLabelRecord; 
+                                Symbology   : ATLGSSymbology;
+                                ShowActuals : BOOLEAN;
+                                Starting    : ARRAY [0..17] OF CHAR;
+                                StartDate   : ADate;
+                                Ending      : ARRAY [0..17] OF CHAR;
+                                EndDate     : ADate;
+                                Palette     : ARRAY [0..21] OF CHAR;
+                                Spare       : ARRAY [0..41] OF CHAR;
+                              END;
+
+    ATLGSGanttRecordPtr     = POINTER TO ATLGSGanttRecord;
+
+    
+
+    AGraphStyle             = (DraftQ, PresentationQ);
+
+
+
+(* TLGS Gantt Record - Return the TLGSGanttRecord pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, a pointer is returned to it.
+                    Otherwise, the record is created and a pointer is
+                    returned to the newly initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE TLGSGanttRecord( HoursMinChars : REAL )  : ATLGSGanttRecordPtr;
+
+
+
+
+
+
+
+(* TLGSGanttRecordExists - Does the TLGS Gantt Record exist?
+
+    This is intended for use only by "schedule save", as TLGSGanttRecord
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSGanttRecordExists() : BOOLEAN;
+
+
+
+
+
+(* *************************** TLGS PAGE SECTION ************************ *)
+
+TYPE
+    ATLGSPageRecord         = RECORD
+                                ImageXVirtual    : REAL;  (* Natural graph size in SU's *)
+                                ImageYVirtual    : REAL;
+                                Border1XVirtual  : REAL;  (* Left border size in SU's *)
+                                Border2XVirtual  : REAL;  (* Right border size in SU's *)
+                                Border1YVirtual  : REAL;  (* Top border size in SU's *)
+                                Border2YVirtual  : REAL;  (* Bottom border size in SU's *)
+                                Scale            : REAL;  (* Convert SU's into real units *)
+                                PagesAcross      : REAL;
+                                PagesDown        : REAL;
+                                On1Page          : BOOLEAN;
+                                Borders          : BOOLEAN;
+                                GraphStyle       : AGraphStyle;
+                                Preview          : BOOLEAN;
+                                Rotated          : BOOLEAN;
+                                AutoSave         : BOOLEAN; (* 21-Dec-89 WKH  *)
+                                WhatsMyChart     : ATLGSChartType;  (* 28-Dec-89 WKH  *)
+                                Spare            : ARRAY [0..61] OF CHAR;
+                              END;
+
+    ATLGSPageRecordPtr      = POINTER TO ATLGSPageRecord;
+
+
+
+
+(* TLGS Page Record - Return the TLGSPageRecord pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, a pointer is returned to it.
+                    Otherwise, the record is created and a pointer is
+                    returned to the newly initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE TLGSPageRecord()       : ATLGSPageRecordPtr;
+
+
+
+
+
+
+
+(* TLGSPageRecordExists - Does the TLGS Page Record exist?
+
+    This is intended for use only by "schedule save", as TLGSPageRecord
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSPageRecordExists() : BOOLEAN;
+
+
+
+
+(* *************************** TLGS SETUP SECTION ************************ *)
+
+TYPE
+
+        (*  The DeviceDescription text is composed of the following lines: 
+            0 - device name, for display on forms.
+            1 - page size name, to be passed to Sedona.
+        *)
+
+    AGraphicsOrientation    = (Portrait, Landscape, BestFit);
+
+    ATLGSSetupRecord        = RECORD
+                                PhysPageWide     : REAL; (* Paper dimensions *)
+                                PhysPageHigh     : REAL;
+                                PlotAreaWide     : REAL; (* Plotable area *)
+                                PlotAreaHigh     : REAL;
+                                PrimColorDesc    : AText;
+                                DeviceDescription: AText;
+                                Orientation      : AGraphicsOrientation;
+                                AskContinuous    : BOOLEAN;
+                                ContinuousPrint  : BOOLEAN;
+                                OrigPlotAreaWide : REAL;  (* from device setup *)
+                                OrigPlotAreaHigh : REAL;
+                                Spare            : ARRAY [0..111] OF CHAR;
+                              END;
+
+    ATLGSSetupRecordPtr     = POINTER TO ATLGSSetupRecord;
+
+
+
+
+
+
+(* TLGS Setup Record - Return the TLGSSetupRecord pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, a pointer is returned to it.
+                    Otherwise, the record is created and a pointer is
+                    returned to the newly initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE TLGSSetupRecord()  : ATLGSSetupRecordPtr;
+
+
+
+
+
+
+
+(* TLGSSetupRecordExists - Does the TLGS Setup Record exist?
+
+    This is intended for use only by "schedule save", as TLGSSetupRecord
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSSetupRecordExists() : BOOLEAN;
+
+
+
+
+
+(* *************************** TLGS CONFIG SECTION ************************ *)
+
+TYPE
+
+        (*  The ConfigDescription text is composed of the following lines: 
+            0 - drive and path of the parameters file.
+            1 - filename (without extension) of the parameters and values 
+                files. Parameters file is .$GP, values is .$GV.
+        *)
+
+    AUserUnit               = (Inches, Centimeters);
+
+    ATLGSConfigRecord        = RECORD
+                                ConfigDescription: AText;
+                                OutputToFile     : BOOLEAN;
+                                Units            : AUserUnit;
+                                Spare            : ARRAY [0..31] OF CHAR;
+                              END;
+
+    ATLGSConfigRecordPtr     = POINTER TO ATLGSConfigRecord;
+
+
+
+
+
+
+(* TLGS Config Record - Return the TLGSConfigRecord pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, a pointer is returned to it.
+                    Otherwise, the record is created and a pointer is
+                    returned to the newly initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE TLGSConfigRecord()  : ATLGSConfigRecordPtr;
+
+
+
+
+
+
+
+(* TLGSConfigRecordExists - Does the TLGS Config Record exist?
+
+    This is intended for use only by "schedule save", as TLGSConfigRecord
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSConfigRecordExists() : BOOLEAN;
+
+
+
+
+
+(* ************************ TLGS TREE SECTION ************************ *)
+
+
+
+
+CONST
+    TLGSTreeTagNumber    = 8222;  (* RSC's extension *)
+
+
+
+TYPE
+    ATLGSTreeRecord         = RECORD
+                                Tag         : CARDINAL;
+                                ID          : CARDINAL;
+                                Name        : ARRAY [0..21] OF CHAR;
+                                Leading     : CARDINAL;
+                                Layout      : ARRAY [0..21] OF CHAR;
+                                Orientation : AnOrientation;
+                                Shadows     : BOOLEAN; (* kluge so Sedona stays in synch*)
+                                DefaultSpec : ATypoSpec;
+                                Corners     : ATLGSCorner;
+                                GridStyle   : ATLGSGridStyle;
+                                Palette     : ARRAY [0..21] OF CHAR;
+                                Spare       : ARRAY [0..41] OF CHAR;
+                              END;
+
+    ATLGSTreeRecordPtr      = POINTER TO ATLGSTreeRecord;
+
+
+
+
+
+
+
+(* TLGS Tree Record - Return the TLGSTreeRecord pointer.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, a pointer is returned to it.
+                    Otherwise, the record is created and a pointer is
+                    returned to the newly initialized record.
+
+                    If the pointer comes back as NIL, there was not
+                    enough memory to allocate the record.
+*)
+PROCEDURE TLGSTreeRecord()  : ATLGSTreeRecordPtr;
+
+
+
+
+
+
+
+(* TLGSTreeRecordExists - Does the TLGS Tree Record exist?
+
+    This is intended for use only by "schedule save", as TLGSTreeRecord
+    will create the record if need be.
+
+    Preconditions
+                    None.
+
+    Postconditions
+                    If the record exists, TRUE is returned.
+                    Otherwise, FALSE is returned.
+*)
+PROCEDURE TLGSTreeRecordExists() : BOOLEAN;
+
+
+
+END IlsaStatic.
+

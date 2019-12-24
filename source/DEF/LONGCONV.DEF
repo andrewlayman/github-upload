@@ -1,0 +1,22 @@
+DEFINITION MODULE LongConvert;
+
+(* Procedures to convert between REAL and LONGINT.
+
+        Modification History:
+
+        Mar 16, 89 - JES - created from a procedure by RSC.
+
+
+*)
+
+
+
+PROCEDURE LongToReal(LongInt : LONGINT) : REAL;
+
+PROCEDURE RealToLong(RealValue : REAL) : LONGINT;
+
+PROCEDURE LongToString(LongInt: LONGINT; VAR Text: ARRAY OF CHAR);
+
+
+END LongConvert.
+

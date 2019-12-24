@@ -1,0 +1,7 @@
+DEFINITION MODULE MsgLog;
+
+PROCEDURE LogAMessage ( VAR Msg : ARRAY OF CHAR );
+
+
+END MsgLog.
+

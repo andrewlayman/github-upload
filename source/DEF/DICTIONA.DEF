@@ -1,0 +1,95 @@
+DEFINITION MODULE Dictionary;
+
+ (* RSC 4/14/88 initial version.
+ *)
+
+FROM SYSTEM      IMPORT ADDRESS;
+FROM TreeObjects IMPORT ATreeNode;
+
+  (* Dictionary  - Implement a simple dictionary of items.
+
+        > Multiple concurrent dictionaries can be active.
+        > Provides "IS IT THERE?" and "FOR EACH ITEM" access.
+        > Items are TreeNodes
+        > Keys are any user-supplied LString.
+        > Items can be added, but not removed.
+        > The Number of items allowed is limited by FlexStor.
+  *)
+
+
+TYPE
+    ADictionary;  (* Invisible dictionary *)
+
+    AGetIdProc  = PROCEDURE( ATreeNode, VAR ARRAY OF CHAR );
+    AForAllProc = PROCEDURE( ATreeNode, ADDRESS );
+
+
+ (* Create Dictionary
+
+                Create a dictionary.
+
+        Preconditions  - GetIdProc is a supplied procedure that, given a
+                            tree node, returns an LString that is the KEY to
+                            the dictionary.
+        Postconditions - A Dictionary is created and returned to you.
+ *)
+PROCEDURE CreateDictionary( GetIdProc : AGetIdProc ) : ADictionary;
+
+ (* Expunge Dictionary
+
+                Eliminate the dictionary.
+
+        Preconditions  - Dictionary must have been created.
+        Postconditions - Dictionary is eliminated.
+ *)
+PROCEDURE ExpungeDictionary( VAR Dictionary : ADictionary );
+
+ (* Add To Dictionary
+
+                Add one item to the dictionary.  It may be a duplicate
+                of an item allready in the dictionary.
+
+        Preconditions  - Node is the tree node that, when supplied to the
+                            dictionary's GetIdProc, yields an LString KEY.
+                         Dictionary must have been created.
+        Postconditions - Dictionary is updated and TRUE is returned.
+                         FALSE is returned if the dictionary is too big
+                         (FlexStor limitations, perhaps).
+ *)
+PROCEDURE AddToDictionary( Node       : ATreeNode;
+                           Dictionary : ADictionary ) : BOOLEAN;
+
+ (* In Dictionary
+
+                Search the dictionary for the given key.  Return the
+                tree node associated with it or NIL.
+
+        Preconditions  - Key is the key to search for.  It must EXACTLY match
+                            the key in the tree node(s).
+                         Dictionary must have been created.
+        Postconditions - If found, the FIRST occurance's tree node is
+                         returned.  If NOT FOUND, then NIL is returned.
+ *)
+PROCEDURE InDictionary(VAR Key        : ARRAY OF CHAR;
+                           Dictionary : ADictionary ) : ATreeNode;
+
+
+ (* For All Keys
+
+                Call the user-supplied proc for each of the keys in the
+                dictionary.  EACH TIME THE ForAllProc IS CALLED, ONE LOCK
+                IS ALREADY IN EFFECT!!
+
+        Preconditions  - Dictionary is the current dictionary
+                         ForAllProc is the users proc called once with
+                             each tree node in the dictionary.
+                         Context is passed to the ForAllProc.
+        Postconditions - ForAllProc has been called once for each node in
+                             the dictionary.
+ *)
+PROCEDURE ForAllKeys  ( Dictionary : ADictionary;
+                        ForAllProc : AForAllProc;
+                        Context    : ADDRESS      );
+
+END Dictionary.
+

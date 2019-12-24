@@ -1,0 +1,97 @@
+DEFINITION MODULE PrintCommon;
+    (* MODIFICATION HISTORY:
+
+         1-Aug-89   MWP - In the beginning...
+        18-Aug-89   KKC - Rewrite PickADevice and move it to DeviceColumns
+    *)
+
+FROM CommStatic IMPORT
+    (* TYPE *)      ACommFormContext;
+
+FROM SYSTEM     IMPORT
+    (* TYPE *)      ADR, TSIZE, ADDRESS;
+
+FROM Text       IMPORT
+    (* TYPE *)      AText;
+
+
+CONST
+    MaxSections             = 25;
+    Unused                  = 65535;
+
+TYPE
+    AFileSectionRecord      = RECORD
+                                Section     : CARDINAL;
+                                Contents    : AText;
+                              END;
+    AFileSectionsArray      = ARRAY [1..MaxSections] OF AFileSectionRecord;
+
+VAR
+    ValuesFileFound         : BOOLEAN;
+
+PROCEDURE ErrorMessage(    PhraseNo         : CARDINAL);
+
+
+PROCEDURE ReadParametersFile(VAR PathName    : ARRAY OF CHAR;
+                             VAR FileName    : ARRAY OF CHAR;
+                             VAR Extension   : ARRAY OF CHAR;
+                                 Parameters  : ADDRESS ) : BOOLEAN;
+
+
+PROCEDURE ReadValuesFile(VAR PathName       : ARRAY OF CHAR;
+                         VAR FileName       : ARRAY OF CHAR;
+                         VAR Extension      : ARRAY OF CHAR;
+                             Values         : ADDRESS ) : BOOLEAN;
+
+PROCEDURE InitializeCommFormContext(     ParamsArray    : ADDRESS;
+                                         ValuesArray    : ADDRESS;
+                                         CommFrmContext : ADDRESS ) : BOOLEAN;
+
+PROCEDURE PutCommFormContext ( CommFormContext : ADDRESS;
+                               ValuesArray     : ADDRESS ) : BOOLEAN;
+
+
+PROCEDURE WriteValuesFile( VAR PathName      : ARRAY OF CHAR;
+                           VAR FileName      : ARRAY OF CHAR;
+                           VAR Extension     : ARRAY OF CHAR;
+                               ValuesArray   : ADDRESS ) : BOOLEAN;
+
+
+PROCEDURE FindOrCreateValuesSection(    Section     : CARDINAL;
+                                    VAR Index       : CARDINAL;
+                                        ValuesArray : ADDRESS );
+
+PROCEDURE RealExpression(    Value          : REAL;
+                             Id             : CARDINAL;
+                         VAR Expression     : ARRAY OF CHAR);
+
+PROCEDURE BoolExpression(    Value          : BOOLEAN;
+                             Id             : CARDINAL;
+                         VAR Expression     : ARRAY OF CHAR);
+
+PROCEDURE EnumExpression(    Value          : CARDINAL;
+                             Id             : CARDINAL;
+                         VAR Expression     : ARRAY OF CHAR);
+
+
+PROCEDURE StringExpression(VAR Value        : ARRAY OF CHAR;
+                               Id           : CARDINAL;
+                           VAR Expression   : ARRAY OF CHAR);
+
+PROCEDURE FindSection(VAR SectionsArray     : AFileSectionsArray;
+                          TheSection        : CARDINAL;
+                      VAR I                 : CARDINAL          )
+                                                                 : BOOLEAN;
+
+PROCEDURE FindNewSection(VAR SectionsArray  : AFileSectionsArray;
+                         VAR I              : CARDINAL          )
+                                                                 : BOOLEAN;
+
+PROCEDURE GetTextLine( VAR TheText      : AText;
+                           LogicalLine  : CARDINAL;
+                       VAR PhysLine     : CARDINAL;
+                       VAR s            : ARRAY OF CHAR ) : BOOLEAN;
+
+END PrintCommon.
+
+

@@ -1,0 +1,59 @@
+DEFINITION MODULE MacKeys;
+
+(*--------------------------------------------------------------------------
+
+            (c) Copyright 1988 Lawrence V. Koepke & Cybersoft
+                           All Rights Reserved  
+            Developed with LOGITECH MODULA-2/86, version 3.03 
+                  Many thanks to Breakthrough Software
+                  
+      8-Jan-90  RSC - Expand the range of extended keys to allow for mice.
+
+---------------------------------------------------------------------------*)
+
+
+   (*
+      The decimal value of the extended character is 256 + decimal (aux. byte).
+      The decimal value of the character is calculated.
+      The decimal is ([index]+271); the character is Key[decimal-271].
+      These characters begin with Reverse-Tab; aux. byte = 15; (256 + 15 = 271).
+        - For all reasonable purposes, this is first extended character.
+      There are 118 - 23 = 95 of these extended keys.
+      The missing two keys from Norton's list are Ctrl-PrtSc and Would-be-null.
+
+   *)
+
+FROM Codes       IMPORT ASetOfCodes;
+
+
+EXPORT QUALIFIED SetUpExKeys, SetUpNormKeys, SetUpCommands,   (* PROC *)
+                 SetUpEditCodeSet, SetUpEditNavSet;
+(*
+these have been moved to MacVars.
+
+TYPE
+     name = ARRAY [0..10] OF CHAR;
+
+CONST
+    KeyOffset = 271;
+
+VAR
+    XKey              : ARRAY [0..182] OF name;
+    NormKey           : ARRAY [0..31] OF name;
+    Command           : ARRAY [0..10] OF name;
+    ExtendedCharSet,
+    SpecialCharSet    : ASetOfCodes;
+*)
+
+PROCEDURE SetUpExKeys;
+
+PROCEDURE SetUpNormKeys;
+
+PROCEDURE SetUpCommands;
+
+PROCEDURE SetUpEditCodeSet;
+
+PROCEDURE SetUpEditNavSet;
+
+END MacKeys.
+

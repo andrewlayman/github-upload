@@ -1,0 +1,14 @@
+DEFINITION MODULE Tracer;
+
+
+
+PROCEDURE PrintString( VAR S : ARRAY OF CHAR );
+
+
+
+
+PROCEDURE EndTrace();
+
+
+END Tracer.
+

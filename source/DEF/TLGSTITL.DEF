@@ -1,0 +1,28 @@
+DEFINITION MODULE TLGSTitle;
+
+(*
+    Modification History:
+
+        18-Apr-89 RSC  Changed to allow titles record to be passed in
+                       and retrieved from IlsaStatic.
+        11-May-89 WKH  Changed def of EditPageDescrip to just take a type
+*)
+
+
+FROM Forms                  IMPORT
+    (* TYPE *)                  AForm;
+
+FROM IlsaStatic             IMPORT
+    (* TYPE *)                  ATLGSChartType;
+
+
+
+
+PROCEDURE EditPageDescrip(    ParentForm   : AForm;
+                              ChartType    : ATLGSChartType );
+
+
+
+
+END TLGSTitle.
+

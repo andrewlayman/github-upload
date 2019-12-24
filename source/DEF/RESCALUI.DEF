@@ -1,0 +1,119 @@
+DEFINITION MODULE ResCalUI;
+
+    (* Resource Calendar Data Structure for the UI.
+
+       This is the part of the calendar that the UI sees.  A structure
+       which, among other things, contains a rate list.  The rate list
+       is a series of On/Off values (Rate = 1/0) for working/nonworking.
+
+       29 May 90  AJL  - Initial version, based on work by Janet Somers.
+       12-Jun-90  RSC    Split into this UI module from the ResCal module.
+       27-Jun-90  AJL  - Added CopyCalendar. 
+        2-Jul-90  RSC  - Changed RateList to DateList.
+        9-Jul-90  RSC  - Added ACalendarEntry.
+       10-Jul-90  RSC  - Added AnAvailabilityRate, changed format of
+                         "MakeAvailabilityIntoResidue".
+       30-Apr-91  AJL  - Improved the documentation.
+    *)
+
+
+FROM DateLists              IMPORT
+    (* TYPE *)                  ADateList;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+
+
+
+TYPE
+
+    (* ACalendarEntry --
+
+       TRUE if the interval is a vacation.
+
+    *)
+
+
+    ACalendarEntry      = RECORD
+        Vacation,                   (* Is this vacation time or work time? *)
+        Filler          : BOOLEAN;
+    END;
+
+
+    AResourceCalendar   = RECORD
+        Tag                 : CARDINAL;                (* Debug aid. *)
+        Number              : CARDINAL;                (* Calendar id number. *)
+        CalendarIntervals   : ADateList;               (* Vacation list. *)
+        Name                : ARRAY [0..31] OF CHAR;   (* Calendar name. *)
+        Notes               : AText;                   (* Notes text. *)
+        Extras              : AText;                   (* Auxilliary fields. *)
+    END;
+
+    AResourceCalendarPointer = POINTER TO AResourceCalendar;                                  
+
+
+        (* AnAvailabilityRate -- 
+
+           How many of the resource are available at a given moment.
+           This is split into two parts.  Multiplying them together
+           gives 100 times the number of Full Time Equivalents of the
+           resource (or, the percent of that resource).
+
+           For example, if there is a singel resource available at 100%,
+           Amount would be 1 and Percent 100.
+
+           If there were three resources, each available at 37%, then 
+           Amount would be 3 and Percent 37.
+        *)
+
+    AnAvailabilityRate  = RECORD    (* Availability list record *)
+        Amount,
+        Percent         : CARDINAL;
+    END;
+
+
+      (*-------------------------------------------------------------------
+
+        CreateCalendar
+
+        Create an empty, unnamed calendar.
+
+        ------------------------------------------------------------------*)
+
+
+
+PROCEDURE CreateCalendar() : AResourceCalendarPointer;
+
+
+
+      (*-------------------------------------------------------------------
+
+        DisposeCalendar
+
+
+        ------------------------------------------------------------------*)
+
+
+
+PROCEDURE DisposeCalendar( VAR Calendar : AResourceCalendarPointer );
+
+
+
+
+      (*-------------------------------------------------------------------
+
+        CopyCalendar
+
+        Deep copy the calendar.
+
+        ------------------------------------------------------------------*)
+
+
+PROCEDURE CopyCalendar( VAR Dest   : AResourceCalendarPointer;
+                            Source : AResourceCalendarPointer );
+
+
+END ResCalUI.
+
+

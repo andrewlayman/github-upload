@@ -1,0 +1,324 @@
+DEFINITION MODULE AVPViews;          (* A subclass of GanttViews *)
+
+    (*  An AVP (Actual-vs.-Plan) view functions like a Gantt view but takes
+        two lines to display a task, one for the plan and another for the
+        baseline.   *)
+
+
+    (*  MODIFICATION HISTORY:
+
+        28-Jul-89 EGK       Added "GetRecordedEvent" method.
+        14-Dec-89 KKC       Patched AnAVPViewStatus to 16 bits.
+    *)
+
+FROM ActiveViews            IMPORT
+    (* TYPE *)                  AnActiveViewMethods;
+
+FROM Boxes                  IMPORT
+    (* TYPE *)                  ABoxType;
+
+FROM ChartForms             IMPORT
+    (* TYPE *)                  AChartFormatPtr;
+
+FROM Events                 IMPORT
+    (* TYPE *)                  AnEvent;
+
+FROM Kbio                   IMPORT
+    (* TYPE *)                  ascreenx, ascreeny, avidmode;
+
+FROM Objects                IMPORT
+    (* TYPE *)                  AnObject, AnObjectMethods;
+
+FROM ObjectViews            IMPORT
+    (* TYPE *)                  AnObjectView;
+
+FROM Rugs                   IMPORT
+    (* TYPE *)                  ARug;
+
+
+
+TYPE
+    AnAVPView              = POINTER TO AnAVPViewRecord;
+
+
+    AnAVPViewMethods       = POINTER TO AnAVPViewMethodsRecord;
+
+
+    AnAVPViewRecord        = RECORD
+                               Methods     : AnAVPViewMethods;
+                             END;
+
+
+
+
+
+TYPE
+        (*  These types are re-definitions of types exported from ObjectViews,
+            with new values added for AVPViews
+        *)
+
+    AnAVPViewStatus        = (RugTaken, OnScreen, NeedsRedisplay, ViewHidden,
+                              CursorOn, NeedsBugsDisplay, 
+                              NeedsTaskNameDisplay, NeedsGanttBarDisplay,
+                              NeedsGanttCursorDisplay,
+                              AVPViewSpare9);
+
+    AnAVPViewStatusSet     = SET OF AnAVPViewStatus;
+
+
+    AnAVPViewSpecificChange = (BugsChange, TaskNameChange, GanttBarChange,
+                               GanttCursorChange);
+
+
+
+
+
+
+
+
+    (*  These are the methods for AnAVPView objects.  The inherit and
+        redefine methods from GanttViews.
+    *)
+
+TYPE
+    AnAVPViewMethodsRecord  = RECORD
+
+          Methods           : AnObjectMethods;
+
+          Clone             : PROCEDURE(    AnAVPView,
+                                        VAR AnAVPView )
+                                                       : BOOLEAN;
+          StoreOn           : PROCEDURE(    AnAVPView,
+                                            AnObject  );
+
+          Discard           : PROCEDURE(VAR AnAVPView );
+
+          SuperclassMethods : AnObjectMethods;
+
+          MethodSize        : CARDINAL;
+
+          ObjectMethodsTag  : CARDINAL;
+
+
+          GetExternalXY     : PROCEDURE(    AnAVPView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+          GetInternalXY     : PROCEDURE(    AnAVPView,
+                                        VAR ascreenx,
+                                        VAR ascreeny,
+                                        VAR ascreenx,
+                                        VAR ascreeny  );
+
+          (*------------------------------------------------------------------
+            GetTitle --
+
+                In this module, GetTitle returns the name of the viewed
+                task, NOT the title of this view's box, which may or may
+                not be displaying.
+
+            Preconditions:
+                The view must be a valid Filter view object.
+
+            Postconditions:
+                If the view object of this view is not NIL, the task name
+                associated with this view will be returned.  Otherwise, a
+                zero-length string will be returned.
+          ------------------------------------------------------------------*)
+
+          GetTitle          : PROCEDURE(    AnAVPView,
+                                        VAR ARRAY OF CHAR);
+
+          SetObject         : PROCEDURE(    AnAVPView,
+                                            AnObject );
+
+          GetObject         : PROCEDURE(    AnAVPView )
+                                                       : AnObject;
+
+          Move              : PROCEDURE(    AnAVPView,    
+                                            ascreenx,        
+                                            ascreeny  );
+
+          Display           : PROCEDURE(    AnAVPView );
+
+          GetHelp           : PROCEDURE(    AnAVPView );
+
+          HideView          : PROCEDURE(    AnAVPView );
+
+          RevealView        : PROCEDURE(    AnAVPView );
+
+          NotifyOfChange    : PROCEDURE(    AnAVPView );
+
+          ObjectViewTag     : CARDINAL;
+
+
+          RecordEvent       : PROCEDURE(    AnAVPView,
+                                            AnEvent   );
+
+          GetRecordedEvent  : PROCEDURE(    AnAVPView,
+                                            CARDINAL,
+                                        VAR AnEvent   );
+
+          ActOnEvent        : PROCEDURE(    AnAVPView,
+                                            AnEvent,
+                                        VAR AnEvent   );
+
+          GetCursor         : PROCEDURE(    AnAVPView )   
+                                                       : BOOLEAN;
+
+          SetCursor         : PROCEDURE(    AnAVPView,   
+                                            BOOLEAN   );
+
+          SetCursorMode     : PROCEDURE(    AnAVPView,
+                                            avidmode  );
+
+
+          ActiveViewTag      : CARDINAL;
+
+
+          NoteSpecificChange : PROCEDURE(   AnAVPView,
+                                            AnAVPViewSpecificChange);
+
+
+
+          GanttViewTag      : CARDINAL;
+
+          AVPViewTag        : CARDINAL;
+                              END;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    InitAsAVPView --
+
+    Initialize the indicated object as an AVP view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        The object will be a valid AVP view object.  No storage allocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE InitAsAVPView(    AVPView       : AnAVPView;
+                            SuperView     : AnObjectView;
+                            ChartFormat   : AChartFormatPtr;
+                            Ulx           : ascreenx;
+                            Uly           : ascreeny;
+                            Lrx           : ascreenx;
+                            Lry           : ascreeny;
+                            Box           : ABoxType;
+                            VideoMode     : avidmode;
+                            HelpKey       : CARDINAL        );
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    UnInitAsAVPView --
+
+    Un-Initialize the indicated object as an AVP view.
+
+    Preconditions:
+        The object must be a valid AVP View object.
+
+    Postconditions:
+        The object will no longer be a valid AVP view object, and all
+        effects of InitAsAVPView will be undone.  No storage deallocation
+        is done by this procedure.
+----------------------------------------------------------------------------*)
+
+PROCEDURE UnInitAsAVPView(    AVPView   : AnAVPView);
+ 
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CreateAVPView --
+
+    Allocate storage for, and initialize the indicated object as an AVP
+    view.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        Iff there is sufficient heap space available, the object will be 
+        allocated and initialized as a valid AVP view object, and TRUE
+        will be returned.  
+----------------------------------------------------------------------------*)
+
+PROCEDURE CreateAVPView(VAR AVPView       : AnAVPView;
+                            SuperView     : AnObjectView;
+                            ChartFormat   : AChartFormatPtr;
+                            Ulx           : ascreenx;
+                            Uly           : ascreeny;
+                            Lrx           : ascreenx;
+                            Lry           : ascreeny;
+                            Box           : ABoxType;
+                            VideoMode     : avidmode;
+                            HelpKey       : CARDINAL        )
+                                                             : BOOLEAN;
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    CloneAVPViewMethods --
+
+    Make a copy of the AVP view methods into the indicated method object.
+
+    Preconditions:
+        None.
+
+    Postcondition:
+        The AVP view methods will be copied into the indicated method 
+        object.
+----------------------------------------------------------------------------*)
+
+PROCEDURE CloneAVPViewMethods(    MethodObject : AnAVPViewMethods);
+
+
+
+
+
+
+
+
+
+(*----------------------------------------------------------------------------
+    ValidateAVPView --
+
+    Determine that the indicated object is in fact a valid AVP view object.
+
+    Preconditions:
+        None.
+
+    Postconditions:
+        If the object is not a valid AVP view object, FatalError will be
+        called.
+----------------------------------------------------------------------------*)
+
+PROCEDURE ValidateAVPView(    AVPView   : AnAVPView);
+
+
+
+END AVPViews.
+

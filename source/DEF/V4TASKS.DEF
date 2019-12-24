@@ -1,0 +1,88 @@
+DEFINITION MODULE V4Tasks;
+
+
+(* MODIFICATION HISTORY:
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+        27-Jul-90 RSC   Upgraded from V3Tasks.
+        12-Sep-90 RSC   Fixed for new Allocs.Def
+*)
+
+FROM Allocs                 IMPORT
+    (* TYPE *)                  arectag, ATaskName, ADurationMethod, ATask,
+                                AFixType, ATaskFlagSet,
+                                ATaskFilterSet, ATaskStatusSet,
+                                AStartStatus, ARollupStatus,
+                                AnAssignmentSummary;
+
+FROM Edges                  IMPORT
+    (* TYPE *)                  AnEdgePtr;
+
+FROM FlexStor               IMPORT
+    (* TYPE *)                  AnExtHandle;
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  BYTE, ADDRESS;
+
+FROM Text                   IMPORT
+    (* TYPE *)                  AText;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADuration, ADurationUnit;
+
+FROM V3Tasks                IMPORT
+    (* TYPE *)                  AV3BigDateBlock, AV3DateAssignmentBlock;
+
+TYPE
+    AV4BigDateBlock     = AV3BigDateBlock;
+
+    ATaskV4 = RECORD
+                rectag                      : arectag;
+                TaskID                      : INTEGER;   (* Unique identifier *)
+                taskname                    : ATaskName; (* 31 bytes *)
+                DurationMethod              : ADurationMethod;
+                duration                    : ADuration;
+                fixation                    : AFixType;
+                scale                       : ADurationUnit;
+                EffortScale                 : ADurationUnit;
+                CostPlace                   : BYTE;     (* ACostPlace *)
+                priority                    : CARDINAL;
+                TaskFlags                   : ATaskFlagSet;
+                FilterSet                   : ATaskFilterSet;
+                PercentComplete             : CARDINAL;
+                TaskStatusSet               : ATaskStatusSet;
+                StartStatus                 : AStartStatus;
+                rollupstatus                : ARollupStatus;
+                XX,YY  (* Temp *)           : CARDINAL;
+                count,
+                count2                      : CARDINAL;
+                TaskSortOrder               : CARDINAL; 
+                antetasks                   : AnEdgePtr;  (* List of tasks that must
+                                                             precede this one. *)
+                desctasks                   : AnEdgePtr;  (* List of tasks that must follow
+                                                             this one. *)
+                Prevlink                    : AnExtHandle;  (* Prior task. *)
+                Nextlink                    : AnExtHandle;  (* Next task.  *)
+                WorkSpace                   : ADDRESS; (* Temporary use *)
+                BaseLineSummary             : AnAssignmentSummary;
+                ToGoSummary                 : AnAssignmentSummary;
+                CompletedSummary            : AnAssignmentSummary;
+                Plan                        : AV3DateAssignmentBlock;
+                BaseLine                    : AV3DateAssignmentBlock;
+                Coding                      : AText;    (* 5/3/89 EGK *)
+                notes                       : AText;
+                summarizes                  : AText;  (* other file name. *)
+                BCWSDollars                 : REAL;   (* RSC 10/13/87     *)
+                BCWP                        : REAL;   (* RSC  2/01/88     *)
+                TopoOrder                   : CARDINAL;
+                Temp3                       : CARDINAL;
+    END;
+
+
+
+PROCEDURE ConvertTaskFromV4 (   VAR OldTask         : ATaskV4;
+                                VAR NewTask         : ATask     );
+
+
+END V4Tasks.
+

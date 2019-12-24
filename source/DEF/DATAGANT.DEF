@@ -1,0 +1,54 @@
+DEFINITION MODULE DataGantt;
+   
+    (*  MODIFICATION HISTORY
+        15-Jun-89  CMH  New form changes.
+        23-Oct-89  CMH  Moved variable to def.
+     *)
+     
+FROM ChartForms             IMPORT  
+   (* TYPE *)			AChartFormatPtr;
+
+FROM Gantt                  IMPORT 
+    (* TYPE *)                  ASlackStyle;
+
+FROM IlsaStatic             IMPORT 
+   (* TYPE *)                   ATLGSCorner, ATLGSPosition;
+  
+CONST 
+ (* gantt bar label positions *)
+    LEFTOFBAR	 = 1;
+    RIGHTOFBAR	 = 2;
+    TOPOFBAR	 = 3;
+    BOTTOMOFBAR	 = 4;
+    
+VAR
+    SlackType          : ASlackStyle;
+    TopFirstChannel,
+    LeftBarLabelSize,
+    RightBarLabelSize,
+    TopBarLabelSize,
+    BottomBarLabelSize,
+    NumberOfLabels,
+    ExtraSpaceLevel,
+    BarLabel1ID,
+    BarLabel2ID,
+    BarLabel3ID,
+    BarLabel4ID,
+    BarLabel1Width,
+    BarLabel2Width,
+    BarLabel3Width,
+    BarLabel4Width     : CARDINAL;
+    BarLabel1Pos,
+    BarLabel2Pos,
+    BarLabel3Pos,
+    BarLabel4Pos       : ATLGSPosition;
+    FrameCornerStyle   : ATLGSCorner;(* 23-Oct-89 CMH *)
+    GanttChartLayout   : AChartFormatPtr;
+    ShowBaseLineBars,
+    ExtraSpaceOnGantt,
+    ShowGanttArea      : BOOLEAN;
+
+PROCEDURE InitializeGanttData();
+PROCEDURE WriteGanttChartData();
+
+END DataGantt.

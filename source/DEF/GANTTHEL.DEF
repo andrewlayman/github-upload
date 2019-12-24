@@ -1,0 +1,92 @@
+DEFINITION MODULE GanttHelper;
+
+    (*  MODIFICATION HISTORY
+        14-Dec-89 LAA   Created this module from GanttOutlines by extracting
+                        the processing for the GoTo Key.  This was necessary
+                        because GanttOutlines had too many symbols to compile.
+        18-Dec-89 LAA   Added procedures PutVScroll and PutHScroll so Ed can
+                        use them in the PERT view.
+    *)
+
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATree, ATreeNode;
+
+
+
+
+(*  DoGanttGotoKey --
+        Process the Goto key from GanttOutlines, by putting up an appropriate
+        GoTo list and returning the selected cursor node.
+    Preconditions:
+        Should be called only from the ActOnEvent proc of GanttOutlines. The
+        ViewObject must be the task tree, the CursorColumn and CursorNode
+        must be valid (non-zero, non-NIL).
+    Postconditons:
+        TRUE, and an updated cursor node will be returned iff the user pressed
+        Enter or F10 from the GoTo list.
+*)
+
+PROCEDURE DoGanttGotoKey (     Ulx          : CARDINAL;
+                               Uly          : CARDINAL;
+                               Lrx          : CARDINAL;
+                               Lry          : CARDINAL;
+                               ViewObject   : ATree;
+                               GoToColumn   : CARDINAL;
+                               CursorColumn : CARDINAL;
+                           VAR CursorNode   : ATreeNode      ): BOOLEAN;
+
+(*  WantToQuit --
+        Ask the user if he really wants to quit Time Line.
+    Preconditons:
+        None.
+    Postconditons:
+        Completion code and State are set as appropriate.  This proc requests
+        permission through notices to quit Time Line.
+*)
+
+PROCEDURE WantToQuit()  : BOOLEAN;
+
+
+(*  PutHScrollBar --
+        Write a horizontal scrollbar to the screen at the indicated 
+        coordinates.  This scrollbar will consist of a left arrow at
+        the left end, a right arrow at the right end, and a separator bar
+        in the middle.  Either a left or right separator (or both) can be
+        requested to separate this scroll area from an adjacent one.
+    Preconditons:
+        Video must be initialized.
+    Postconditons:
+        The indicated screen coordinates will be overwritten.
+*)
+
+PROCEDURE PutHScrollBar(     Ulx       : CARDINAL;
+                             Uly       : CARDINAL;
+                             Lrx       : CARDINAL;
+                             LeftSep   : BOOLEAN;
+                             RightSep  : BOOLEAN );
+
+
+
+
+
+(*  PutVScrollBar --
+        Write a vertical scroll bar to the screen at the indicated 
+        coordinates.  This scroll bar will consist of an up arrow at the top,
+        a down arrow at the bottom, and a horizontal separator line in the
+        middle.
+    Preconditions:
+        Video must be initialized.
+    Postconditions:
+        The indicated screen coordinates will be overwitten with the scroll
+        bar.
+*)
+
+PROCEDURE PutVScrollBar(     Ulx        : CARDINAL;
+                             Uly        : CARDINAL;
+                             Lry        : CARDINAL );
+
+
+
+END GanttHelper.
+

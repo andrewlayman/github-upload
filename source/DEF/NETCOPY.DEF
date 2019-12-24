@@ -1,0 +1,15 @@
+DEFINITION MODULE NetCopy;
+
+    (*  This module handles the loading and saving of the data contained
+        in NetSave.  It knows about the internal structure of the objects
+        as well as the locations (in NetStatic) where the data is loaded
+        from and saved to.
+    *)
+        
+
+PROCEDURE GetNetData () : BOOLEAN;
+
+PROCEDURE SaveNetData () : BOOLEAN;
+
+END NetCopy.
+

@@ -1,0 +1,37 @@
+DEFINITION MODULE RegCapacity;
+
+(*  =========================================================================
+    Last Edit : February 13, 1991 3:12PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        RegCapacity - Just the "QCapacity" request - smaller code than
+                      is found in RegSupport.
+        
+
+    MODIFICATION HISTORY:
+
+       28-Sep-89 RSC    Initial version from RegSupport.
+       13-Feb-91 RSC    Remove Init() call and replace with GetRegistryInfo.
+
+    =========================================================================
+*)
+
+
+FROM Registry   IMPORT
+    (* TYPE *)      ARegistryDataRecord;
+
+
+
+(* Same as GetRegistryInfo from Registry, but supports the QCapacity
+   request with minimal overhead.
+*)
+PROCEDURE GetRegistryInfo( VAR UserName    : ARRAY OF CHAR;
+                           VAR ProductName : ARRAY OF CHAR;
+                               InfoRequest : CARDINAL;
+                           VAR ReturnValue : ARegistryDataRecord
+                         ) : BOOLEAN;
+
+END RegCapacity.
+

@@ -1,0 +1,66 @@
+DEFINITION MODULE SaveCommon;
+
+    (* Save Common - common code for saving the schedule and the config file.
+
+       MODIFICATION HISTORY:
+
+       11-Nov-87 RSC    Created from TLXTL3.
+       17-Mar-89 EGK    Added "Offset" parameter to WriteNodeInfo,
+                        primarily for use by selective schedule save.
+      30-Mar-90  RSC    Made Timeu to Timei/TimeForm conversions.
+    *)
+
+FROM FileSystem    IMPORT
+        (* TYPE *)      File;
+
+FROM Holder        IMPORT
+        (* TYPE *)      AHoldType;
+
+FROM Text          IMPORT
+        (* TYPE *)      AText;
+
+FROM Timei         IMPORT
+        (* TYPE *)      ADate;
+
+FROM TreeObjects   IMPORT
+        (* TYPE *)      ATreeNode;
+
+
+
+
+
+
+VAR f : File;
+
+
+
+
+PROCEDURE WriteDate(VAR f:File; Date:ADate; Type:CARDINAL);
+
+
+(*----------------------------------------------------------------------------
+    WriteText --
+
+    Write the text to the file, giving each record the type specified.
+----------------------------------------------------------------------------*)
+
+PROCEDURE WriteText(VAR F                   : File;                (* in/out *)
+                        Text                : AText;               (* in/out *)
+                        Type                : CARDINAL);           (* in     *)
+
+
+    (*  "Offset" is a number to subtract from the node's actual
+        indentation level before writing it.
+    *)
+
+PROCEDURE WriteNodeInfo  ( VAR  f           : File;
+                                Node        : ATreeNode;
+                                ParentID    : CARDINAL;
+                                Offset      : CARDINAL  );
+
+PROCEDURE WriteTaskID(VAR f : File; TaskNode : ATreeNode; Type:CARDINAL);
+
+PROCEDURE SaveCommonData( HoldType : AHoldType; Where : CARDINAL );
+
+END SaveCommon.
+

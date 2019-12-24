@@ -1,0 +1,96 @@
+DEFINITION MODULE Space;
+
+    (*  MODIFICATION HISTORY
+        02-Feb-88 LAA   Changed parameters of HeapSpaceLeft, and removed
+                        SpaceForOverlays.
+        17-Feb-88 LAA   Exported ALLOCATE and DEALLOCATE.
+        11-Mar-88 LAA   Exported ChunkSize, LeastMemoryLevel.
+    *)
+
+FROM SYSTEM                 IMPORT
+    (* TYPE *)                  ADDRESS;
+
+
+CONST
+    ChunkSize               = 1000;
+
+TYPE
+    AMemoryRequest          = (Contiguous, NonContiguous);
+
+    APurgeRequest           = (PurgeForSpace, NoPurge);
+
+VAR
+    LeastMemoryLevel   : CARDINAL;
+
+
+    (* SetHeapLevels -- Set the levels (in 1000's) for low memory
+                        detection.  Warnings are issued for
+                        low memory when HeapAvailable is called. *)
+
+
+PROCEDURE SetHeapLevels(    Warning,  Minimum : CARDINAL );
+
+
+    (* GetHeapLevels -- What are the current settings for low
+                        memory detection. *)
+
+
+PROCEDURE GetHeapLevels( VAR Warning,  Minimum : CARDINAL );
+
+
+
+    (* StackSpaceLeft -- Return TRUE iff there are Amount
+                         bytes of stack space left. *)
+
+
+
+PROCEDURE StackSpaceLeft(   Amount : CARDINAL ) : BOOLEAN;
+
+
+    (* HeapAvailable -- Check to see if there is room left on the
+                        heap. *)
+
+
+PROCEDURE HeapAvailable() : BOOLEAN;
+
+
+
+
+    (* HeapSpaceLeft -- Check for room on the heap, but DON'T display
+                        the space light, or put up any messages.  This
+                        procedure is mostly for use by MsgFile.  *)
+
+PROCEDURE HeapSpaceLeft(    Size            : CARDINAL;
+                            Contiguity      : AMemoryRequest;
+                            Purge           : APurgeRequest ) 
+                                                             : BOOLEAN;
+
+
+
+
+
+    (* Available --  Determine if a given number of bytes is available for
+                     allocation.  Like Storage.Available, but issues a low
+                     memory notice and tries again before it returns FALSE. *)
+
+PROCEDURE Available(    Size                : CARDINAL) : BOOLEAN;
+
+    (*  DisplaySpaceLight -- Put up the light which indicates whether we're 
+                             low on memory.  *)
+
+PROCEDURE DisplaySpaceLight();
+
+
+    (*  Use these instead of Storage or BTStorage procedure, so that memory 
+        will be flushed to make space available.
+    *)
+
+PROCEDURE ALLOCATE(VAR HeapItem             : ADDRESS;
+                       Size                 : CARDINAL);
+
+
+PROCEDURE DEALLOCATE(VAR HeapItem           : ADDRESS;
+                         Size               : CARDINAL);
+
+END Space.
+

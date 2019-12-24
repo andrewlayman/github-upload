@@ -1,0 +1,48 @@
+DEFINITION MODULE FormStatic;
+
+    (* MODIFICATION HISTORY:
+
+        1/10/89     RSC     First version, from FormRead.
+       13-Jun-89    RSC     Remove "FormFileShared".  It always is in LAZLO.
+
+       22-Jan-91    RSC     Added Holder's global list header here.
+                            Why here?  Welllllllll, holder is used a lot
+                            by forms.  And I needed a spot to put it.
+    *)
+
+FROM FileSystem     IMPORT
+    (* TYPE *)          File;
+
+FROM SYSTEM         IMPORT
+    (* TYPE *)          ADDRESS;
+
+
+
+
+VAR
+    HolderListHead          : ADDRESS; (* Maybe not a good spot, but it *)
+                                       (* only has to hold in EVE, not  *)
+                                       (* MARILYN.  Sorry.              *)
+
+
+
+    FormFile                : File;
+    FormFileName            : ARRAY [0..13] OF CHAR;  (* no path. *)
+
+    FormFileIsOpen          : BOOLEAN;
+
+
+
+    (* SetFormFileName -- Supply a file name that is to be used instead
+                          of the default file name for the forms file.
+                          This allows an alternate file to be used.
+                          Call this before the first call to a form. *)
+
+PROCEDURE SetFormFileName( VAR S : ARRAY OF CHAR );
+
+
+
+
+END FormStatic.
+
+

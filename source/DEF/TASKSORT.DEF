@@ -1,0 +1,22 @@
+DEFINITION MODULE TaskSort;
+
+FROM TreeObjects            IMPORT
+    (* TYPE *)                  ATreeNode;
+
+
+TYPE
+    ASortType  = (SortByDate, SortByEndDate, SortByName, SortSlack, 
+                  SortByPriority, SortWBS, SortOBS, SortAUX);
+
+    ATaskCompareProc =  PROCEDURE (ATreeNode, ATreeNode) : BOOLEAN;
+
+VAR
+    SortType    : ASortType;
+    OldSortType : ASortType;
+
+PROCEDURE SortTasksInStandardOrder(SortType:ASortType);
+
+PROCEDURE SortTasks(Compare:ATaskCompareProc);
+
+END TaskSort.
+

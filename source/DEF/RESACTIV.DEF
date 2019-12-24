@@ -1,0 +1,65 @@
+DEFINITION MODULE ResActivate;
+
+     (* Procedures used by resource levelling to activate tasks on the
+        candidates list. 
+    
+        MODIFICATION HISTORY:
+        
+        May, 89    JES - created.
+        30-Mar-90  RSC   Made Timeu to Timei/TimeForm conversions.
+        Oct 1, 90  JES - exported CreateSubstitutableResourceAssignments
+                          so that cpm can use it.
+        Oct. 3, 90 AJL - Added two more parameters to 
+                         CreateSubstitutableResourceAssignments.
+        Oct  4, 90 JES - Removed one of the above parameters since it
+                         had no effect.
+         6-Nov-90  CL  - To CreateSubstitutableResourceAssignment, add	 
+		                 a parameter Contour.
+        Nov 15, 90 JES - Moved the procedure
+                         CreateSubstitutableResourceAssignments
+                         from this module to the ResSched module, since
+                         it is now used at several other levels.
+        May 21, 91 JES - Added VAR parameter "WeActivatedSomething" to
+                          ActivateCandidates.                          
+        May 26, 91 JES - Added VAR parameter "WeBumpedSomething" to
+                          ActivateCandidates.
+        Jun 18, 91 JES - Changed name of VAR parameter UnscheduledList
+                          to PreCandidatesList in ActivateCandidates.
+     *)
+
+FROM Allocs     IMPORT
+   (* TYPE *)        ATaskPtr;
+
+FROM FlexStor   IMPORT
+   (* TYPE *)        AnExtHandle;
+
+FROM Timei      IMPORT
+   (* TYPE *)        ADate;
+
+(*  Examine each task on the candidates list, either
+    activating or bypassing. "Day" is a desired
+    upper bound on all start dates for this iteration;
+    it is controlled by the caller.
+
+    The return parameter "WeActivatedSomething" is set to
+    TRUE iff any tasks were moved to the active list by this
+    procedure, with the following exception: any task that
+    was moved to the active list but (a) has its DontBump
+    flag set and (b) could not possibly have affected resource
+    availabilities in its activation (e.g., the task was marked
+    "AlreadyScheduled" by cpm), will not cause "WeActivatedSomething"
+    to be set to TRUE.
+*)
+
+PROCEDURE ActivateCandidates (ActiveList           : AnExtHandle;
+                              CandidatesList       : AnExtHandle;
+                              PreCandidatesList    : AnExtHandle;
+                              Day                  : ADate;
+                              TimeConstrained      : BOOLEAN;
+                          VAR WeActivatedSomething : BOOLEAN;
+                          VAR WeBumpedSomething    : BOOLEAN);
+
+
+
+END ResActivate.
+

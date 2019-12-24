@@ -1,0 +1,38 @@
+DEFINITION MODULE Windows;
+
+(*  =========================================================================
+    Last Edit : March 19, 1991 6:44PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+        Detects presence of Windows.
+
+
+
+    MODIFICATION HISTORY:
+
+    19-Mar-91 RSC First version, from MSJ Vol 6 # 2, March 1991.
+
+    =========================================================================
+*)
+
+
+TYPE
+    AWindowsType = (WindowsNotRunning,
+                    Windows2,
+                    Windows3Real,
+                    Windows3Standard,
+                    Windows3Enhanced,
+                    Windows4Enhanced);  (* Well, Vers 4+ *)
+
+
+
+PROCEDURE WindowsIsRunning() : AWindowsType;
+
+
+
+
+END Windows.
+
+

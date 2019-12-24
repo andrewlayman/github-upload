@@ -1,0 +1,222 @@
+DEFINITION MODULE TimeFormat;
+
+
+(*  =========================================================================
+    Last Edit : January 22, 1991 9:11PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description: 
+        Format times into external representations.
+        Format WorkHours/LongTics into external representations.
+
+    MODIFICATION HISTORY:
+
+        12/16/88  RSC  Extracted these routines from FormatAs.
+
+        12-Nov-90 PFG   Added AbsTimeAsEndDateStyle so exporters can ignore
+                        fiscal years.
+
+        14-May-91 AJL   Added Fiscal formatting to dates, and 
+                        CheckDateFormatLength.
+    =========================================================================
+*)
+
+
+
+
+
+FROM Timei     IMPORT ADuration, ADurationUnit, ADate, ASetOfADurationUnit,
+                      ATimeInfo;
+
+
+
+
+
+
+    (* ATimeFormat specifies how to compose a printable date and
+       time given the date and time as numbers.
+
+       Special rules:
+
+       1.  If Format[4].FollowBy is not an empty string, then
+           this will signal 12-hour (am/pm) format.
+
+       2.  Size will force exact sizing of non-text items.
+
+       3.  For text items, Size indicates maximum size.
+
+       4.  Text is only applicable to month names and day of
+           week names.
+
+       5.  A Unit of Weeks will insert the day of the week,
+           Monday, Tuesday, etc.
+
+       6.  FillChar supplies a character (or none) to be
+           filled in at the left if necessary to bring the entry
+           up to its size.  This is not used for text entries.
+
+
+    *)
+
+
+
+TYPE
+    ATimeFormat =     ARRAY [0..4] OF RECORD
+                          Unit        : ADurationUnit;
+                          Size        : CARDINAL;
+                          FillChar    : ARRAY [0..1] OF CHAR;   (* LString *)
+                          Text        : BOOLEAN;
+                          FollowBy    : ARRAY [0..3] OF CHAR;   (* LString *)
+                      END;
+    AnEndDateStyle     = (EndOfDay,StartOfNextDay);  (* RSC 10/8/87 *)
+    ADateDisplayOption = (ShowDate, ShowTime, ShowDateAndTime);
+    AMonthString       = ARRAY [0..3] OF CHAR;  (* LString *)
+    ADateString        = ARRAY [0..17] OF CHAR;  (* LString *)
+
+VAR
+    DefaultDateAndTimeFormat,
+    DefaultDateFormat,
+    DefaultTimeFormat          : ATimeFormat;
+    DefaultDateOption : ADateDisplayOption;
+    EndDateStyle      : AnEndDateStyle;  (* RSC 10/8/87 *)
+    USADate           : BOOLEAN;
+
+    (* Month Name Array is intended to provide names for the fiscal months.
+       some companies have 13 fiscal months, so allow for that.
+    *)
+
+    MonthNameArray   : ARRAY [0..12] OF ARRAY [0..20] OF CHAR;
+
+
+
+
+
+
+
+  (* TimeStringLength - How long will a time format be?
+
+        Preconditions  - A Valid TimeFormat that you intend to pass down
+                         to TimeToString.
+
+        Postconditions - RETURN is the length of the largest time that can
+                         be returned.
+   *)
+
+PROCEDURE TimeStringLength( VAR Format : ATimeFormat ) : CARDINAL;
+
+
+
+
+  (* TimeToString - Convert cardinal time to printable international date
+                    string.  This handles many formats and languages.
+
+      Preconditions  - Year, Month, Day, Hour, Minute are valid
+                       TimeFormat is filled in properly.
+
+      Postconditions - S must be big enough for the returned date.  To see
+                       how big that will be, use TimeStringLength.  Anyway,
+                       S will contain the returned date.
+
+                       If the (global) year is is fiscal year, that is, it
+                       does not begin in January, then the letters "FY" (or
+                       local equivalent) are added before the year numbers.
+  *)
+
+PROCEDURE TimeToString(     TimeInfo : ATimeInfo;
+                        VAR Format : ATimeFormat;
+                        VAR S      : ARRAY OF CHAR );
+
+
+
+
+
+
+
+ (* Routines from Timeu: *)
+
+
+PROCEDURE TimeUtoS (TimeU:ADate; VAR s:ARRAY OF CHAR);
+
+
+    (*  DtoS -- Formats the date as a string. *)
+PROCEDURE DtoS ( TimeInfo : ATimeInfo; VAR s:ARRAY OF CHAR);
+
+
+PROCEDURE CtoM(i:CARDINAL; VAR m:ARRAY OF CHAR);
+
+
+    (*  Return the name of the month. *)
+
+PROCEDURE CtoMonth(month:CARDINAL; VAR s:ARRAY OF CHAR);
+
+
+
+    (*  CtoDay  returns the name of a day, Sun..Sat. *)
+
+PROCEDURE CtoDay(C:CARDINAL; VAR s:ARRAY OF CHAR);
+
+
+ (* RSC 10/8/87 *)
+PROCEDURE FormatAsEndDateStyle( TheTime : ADate;
+                            VAR s       : ARRAY OF CHAR );
+
+
+
+
+  (* Time As End Date Style - Return the customizable end date style.
+
+     AbsTimeAsEndDateStyle is also available.  TimeAsEndDateStyle converts
+     to fiscal years.  AbsTimeAsEndDateStyle does not.  Both call 
+     TtoEndDateStyle.
+
+
+      Preconditions - TheTime            Starting time unit.
+                      (EndDateStyle)     (From our DEF), defined as either
+                                         EndOfDay or StartOfNextDay.
+
+      Postconditions - Year, Month, Day,
+                       Hour, Minute      Returned date.  Either exactly
+                                         implied by TheTime, or last
+                                         minute of previous day.
+
+  Based on the date style, return the date as either the start of the
+  new day or the end of the old day.  This only applies to dates that
+  fall exactly on day boundaries.  RSC 10/9/87
+  *)
+
+
+PROCEDURE TimeAsEndDateStyle( TheTime      : ADate;
+                              EndDateStyle : AnEndDateStyle;
+                              VAR TimeInfo : ATimeInfo
+                            );
+
+PROCEDURE AbsTimeAsEndDateStyle( TheTime      : ADate;      (* 12-Nov-90 PFG *)
+                                 EndDateStyle : AnEndDateStyle;
+                                 VAR TimeInfo : ATimeInfo
+                               );
+
+
+    (*  PartialDateToDate  -- Takes the date and a set of which components are
+                              valid, and returns the earliest or latest date
+                              that could match.   If Earliest is TRUE,
+                              we return the earliest possible date.  *)
+
+PROCEDURE PartialDateToDate  (     TimeInfo : ATimeInfo;
+                                   DurationUnitsFound : ASetOfADurationUnit;
+                                   Earliest       : BOOLEAN;
+                               VAR Date           : ADate     ) : BOOLEAN;
+
+
+    (* CheckDateFormatLength -- Verify that the dates as formatted would 
+                            not exceed the maximum size of ADateString.
+                            If they would exceed that limit,  RETURN FALSE.
+    *)
+
+PROCEDURE CheckDateFormatLength( VAR Format : ATimeFormat ): BOOLEAN;
+
+
+
+PROCEDURE InitializeTimeFormat;
+
+END TimeFormat.
+

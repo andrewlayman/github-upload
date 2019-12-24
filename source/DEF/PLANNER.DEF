@@ -1,0 +1,150 @@
+DEFINITION MODULE Planner;
+
+ (* 4/20/88 rsc  added schedule start date.  Did NOT add any code to support
+                 it, only did the def change.
+        AJL  20 Apr 89  Added new variables, TimeConstrained and Smoothing.   
+        AJL  14 May 89  Added new MoveFutureTasks variable.
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+        31-May-90 AJL   Changed the exported variables.  Eliminated the
+                        PlanLevel stuff, and added new options.
+        29-Aug-90 AJL   Added the FreezeStartedTasks option.
+         9-Sep-90 AJL   Rename FreezeStartedTasks to KeepEffortContiguous.
+         3-Oct-90 AJL   Added a record containing uncommitted flags,
+                        RecalcOptions.
+        27-Nov-90 AJL   Export ResetPlannerDefaults.
+        11-Dec-90 AJL   Added SomeBaselineExists.
+                        Added RollupWeighting.
+         8-Feb-91 AJL  -Added the RollEffort type.
+         5-Mar-91 AJL  -Removed all CalcComponents except Scheduling.  This
+                        means that if a recalc is done, all of it is done.
+ *)
+
+FROM Timei          IMPORT
+    (* TYPE *)          ADate;
+
+
+
+
+
+TYPE
+        (* Different types of data in TL are computed by the scheduling
+           process.  Some of these may be valid while others are not
+           computed, either because the user switched off the option, or
+           an error occurred. *)
+
+    ACalcComponent = ( Scheduling );
+
+    AWhenToCalc    = ( AutoCalc, ManualCalc, NeverCalc );
+
+    ACalcStepState = RECORD
+                         DataIsValid,   (* The computation ran to completion,
+                                           and fully reflects the most recent
+                                           user input.   False if either the
+                                           data was changed or the calc failed. *)
+                         Abandoned      (* The calculation failed. *)
+                                        : BOOLEAN;
+                         When           : AWhenToCalc;
+                         Filler         : BOOLEAN;
+                     END;
+
+    ACalculationState = ARRAY ACalcComponent OF ACalcStepState;
+
+    ARollupWeighting  = (RollBaseCost, RollBaseEffort, 
+                         RollEffort, RollDuration, RollOne );
+
+
+    
+    (* Context for the TLPlan overlay. *)
+    
+    
+    APlannerContext         = POINTER TO APlannerContextRecord;
+     
+    APlannerContextRecord   = RECORD
+                                Tag         : CARDINAL;
+                                StartDate   : ADate;
+                                Computed    : BOOLEAN;
+                                DoAllSteps  : BOOLEAN;
+                              END;
+
+VAR
+    CalculationState : ACalculationState;
+
+
+
+
+    ScheduleStartDate,               (* Added 4/20/88 by rsc *)
+    ScheduleEndDate    : ADate;
+
+    ScheduleComputedOk : BOOLEAN;
+    SomeBaselineExists : BOOLEAN;
+
+    Levelling          : BOOLEAN;    (* Level *) 
+    TimeConstrained    : BOOLEAN;    (* Level within slack. *)
+
+    HonorDaysOff       : BOOLEAN;    (* Honor calendar holidays. *)
+
+    MoveFutureTasks    : BOOLEAN;   (* FALSE: Future tasks are allowed left of 
+                                              the as of date line.
+                                        TRUE: Future tasks are kept to the right
+                                              of the as of date line.
+                                     *) 
+
+    KeepEffortContiguous : BOOLEAN;  (* If true, started and done efforts are
+                                        not segregated from future efforts during
+                                        recalc, but are instead scheduled
+                                        contiguously. *)
+
+    RecalcOptions : RECORD
+                        AllowNegativeSlack : BOOLEAN;    (* Allow late start < early start. *)
+                        Smoothing          : BOOLEAN;    (* Try to reduce peaks and fill valleys. *)
+                        RollupWeighting    : ARollupWeighting;
+                        Filler             : ARRAY [0..48] OF BOOLEAN;
+                    END;
+
+
+    (* -------------------------------------------------------------------
+
+       WeShouldRecalc --
+
+       Purpose : Tells whether a recalc should be done.
+
+       Imputs  : 
+                 CalculationState : The current state of recalc.
+                 ManualRequest : True indicates that the user has
+                                 explicitly requested a recalc.
+
+        Outputs : TRUE if a recalc would compute new data, which the
+                  user has said should be recomputed.
+
+    -------------------------------------------------------------- *)
+
+
+
+PROCEDURE WeShouldRecalc( VAR  CalculationState : ACalculationState;
+                               WhenIsThis: AWhenToCalc):BOOLEAN;
+
+
+(*  Plan the schedule. Start no earlier than
+        StartDate.  *)
+
+PROCEDURE Pert(   StartDate     : ADate;
+                  WhenIsThis: AWhenToCalc):BOOLEAN;
+
+
+
+    (* ----------------------------------------------------------
+
+       ResetPlannerDefaults
+
+       Reset the values of the variables defined in this procedure
+       to defaults.
+
+       ------------------------------------------------------------ *)
+
+
+PROCEDURE ResetPlannerDefaults();
+
+
+END Planner.
+
+

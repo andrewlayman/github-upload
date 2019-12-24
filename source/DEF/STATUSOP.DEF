@@ -1,0 +1,42 @@
+DEFINITION MODULE StatusOptions;
+
+(* MODIFICATION HISTORY:
+
+        30-Mar-90 RSC   Made Timeu to Timei/TimeForm conversions.
+*)
+
+FROM TimeFormat             IMPORT
+    (* TYPE *)                  ADateString;
+
+FROM Timei                  IMPORT
+    (* TYPE *)                  ADuration;
+
+
+TYPE
+    AReportSetting          = RECORD
+                                DaysStart       : ADateString;
+                                WeeksStart      : ADateString;
+                                MonthsStart     : ADateString;
+                                DaysPeriod      : ADuration;
+                                WeeksPeriod     : ADuration; 
+                                MonthsPeriod    : ADuration;
+                                AllTasks        : BOOLEAN;
+                                Paged           : BOOLEAN;
+                                RepeatHeaders   : BOOLEAN;
+                                RepeatFooters   : BOOLEAN;
+                                RepeatTitles    : BOOLEAN;
+                                DoStrips        : BOOLEAN;
+                                HonorMargins    : BOOLEAN;
+                              END;
+
+    AReportSettingPointer   = POINTER TO AReportSetting;
+
+VAR
+    ReportSettings          : AReportSettingPointer;
+
+
+PROCEDURE DoPrintDialog() : BOOLEAN;
+
+
+END StatusOptions.
+

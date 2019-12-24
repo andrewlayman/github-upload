@@ -1,0 +1,8 @@
+DEFINITION MODULE UndoViews;
+
+FROM TreeObjects IMPORT ATreeNode;
+
+PROCEDURE GetUndoInfo   (       Node    : ATreeNode;
+                            VAR s       : ARRAY OF CHAR );
+END UndoViews.
+

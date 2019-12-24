@@ -1,0 +1,30 @@
+DEFINITION MODULE ChartMgr;
+
+
+TYPE
+    AChartDisplayProcedure = PROCEDURE();
+
+
+    (* This module keeps track of procedures for displaying the
+       charts on the screen, and can push procedures on an internal
+       stack. *)
+
+    (* Sets the current procedure.  Pushes the stack. *)
+
+PROCEDURE PushChartDisplayProcedure (  P    : AChartDisplayProcedure );
+
+    (* Pops the stack, but never empties it. *)
+
+PROCEDURE PopChartDisplayProcedure;
+
+    (* Sets the stack to contain only one, the earliest, proc. *)
+
+PROCEDURE ResetChartStack;
+
+    (* Calls the current display procedure. *)
+
+PROCEDURE DisplayCurrentChart;
+
+
+END ChartMgr.
+

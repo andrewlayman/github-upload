@@ -1,0 +1,44 @@
+DEFINITION MODULE V4Assignments;
+
+(*  =========================================================================
+    Last Edit : May 7, 1991 3:58PM by RSC
+    Language  : Logitech Modula-2/86 Version 3
+
+    Description:
+
+    This module maps version 3 and 4 assignment arrays from a schedule
+    file into a version 4.5 assignment array.
+
+
+    MODIFICATION HISTORY:
+
+    27-Jul-90  RSC  First version.
+     7-May-91  RSC  Added DuplicateAssignments parameter.
+
+    =========================================================================
+*)
+
+
+FROM FileSystem     IMPORT
+    (* TYPE *)          File;
+
+FROM FlexStor       IMPORT
+    (* TYPE *)          AnExtHandle;
+
+
+
+
+
+PROCEDURE ReadV4AssignmentArray( VAR f                    : File;
+                                     Length               : CARDINAL;
+                                 VAR Handle               : AnExtHandle;
+                                 VAR BadAssignments       : CARDINAL;
+                                 VAR DuplicateAssignments : BOOLEAN
+                                ) : BOOLEAN;
+
+
+
+
+END V4Assignments.
+
+
