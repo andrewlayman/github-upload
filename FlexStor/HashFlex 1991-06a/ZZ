@@ -1,0 +1,51 @@
+LOGITECH MODULA-2 M2Check Utility, DOS, Rel. 3.40, Mar 90
+Copyright (C) 1987, 1989 Logitech, Inc.
+Copyright (C) 1990 MultiScope, Inc.
+
+   source file> tlswapf.MOD /b
+
+Syntax And Declaration Analysis
+   Codes    in file: F:\SYM\Codes.SYM
+   CRC16    in file: F:\SYM\CRC16.SYM
+   Dialog   in file: F:\SYM\Dialog.SYM
+   Director in file: F:\SYM\Director.SYM
+   DOSIO    in file: F:\SYM\DOSIO.SYM
+   FlexData in file: D:FlexData.SYM
+   FlexStor in file: F:\SYM\FlexStor.SYM
+   LStrings in file: F:\SYM\LStrings.SYM
+   Menus    in file: F:\SYM\Menus.SYM
+   MsgFile  in file: F:\SYM\MsgFile.SYM
+   Overlays in file: F:\SYM\Overlays.SYM
+   OvTree   in file: F:\SYM\OvTree.SYM
+   PageSupp in file: F:\SYM\PageSupp.SYM
+   ParmLine in file: F:\SYM\ParmLine.SYM
+   SwapFile in file: F:\SYM\SwapFile.SYM
+Code Analysis
+Listing Generation
+
+  65       (* PROCS *)                 DOSOpen, DOSClose, DOSDelete, DOSRefresh,
+ *****                                                 ^501
+ * 501:  identifier not referenced
+
+  76       (* PROC *)                  SetString, Fill, LStringToTString, SetLengthOf,
+ *****                                               ^501              ^501
+ * 501:  identifier not referenced
+
+  77                                   ConcatLS, Copy, ConcatS, Remove, LengthOf,
+ *****                                        ^501           ^501    ^501
+ * 501:  identifier not referenced
+
+  78                                   TStringToLString, CtoS, Procustes, LJust;
+ *****                                                ^501  ^501       ^501   ^501
+ * 501:  identifier not referenced
+
+ 885           PagesNowFreeList[i] := {};
+ *****                        ^502
+ * 502:  assignment to a FOR or WITH variable
+
+
+Termination
+End Analysis
+   source file> D:.MOD
+  ---- no default file
+   source file> 

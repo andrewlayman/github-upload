@@ -1,0 +1,15 @@
+
+
+Recalc on CPMTEST5, March 18, 1991
+
+    Max Items    Max Bytes     Hit %   Miss %
+
+    32           16K           .63      .37
+
+    64           24K           .72      .28      (decrease of .09)
+
+    64           16K           .72      .28
+
+    128          16K           .80      .2
+
+

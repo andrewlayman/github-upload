@@ -1,0 +1,38 @@
+This directory contains versions of FlexStor that keep all the locked 
+items on the heap, and keep generation numbers in the pages, not in the 
+cell table.
+
+The goals of this are to reduce memory consumption in FlexStor by moving the 
+generation numbers out of memory (which would require also reducing the
+size of a cell table entry, say by reducing the range of page numbers).
+
+Additionally, since locked items do not require pages to remain in memory,
+we can use only a single disk buffer and a single EMS page frame to support
+swapping.  For disk swapping, this allows two buffers to be returned to the
+heap (probably net a 4K gain, approx.) and for EMS it allows 3 pages at 
+16K each, total of 48K, to be added to the heap.  With a little more work,
+we could arrange the timing of when EMS pages are mapped in and add all
+64 additional K to the heap.
+
+--------------------------------------
+
+The EMSFLEXS module has been modified to use only one EMS page (the EMSFLEXM
+module is a version that still uses four pages.)
+
+TLSWAPF1 is a version of TLSWAPF that uses only a single page, but performance
+is very slow, so I haven't substituted it for TLSWAPF.
+
+---------------------------------------
+
+As of 22 Jan 91, FlexStor is only using the record cache for Locks.  Creating
+new objects or changing the sizes or speed classes of objects still requires
+updating the home page, and none of this is deferred.  That is why the 
+TLSWAPF1 is so slow.
+
+An additional area of optimization would be to take advantage of each read of
+a page to transfer any dirty records to the page, thereby making them clean
+and eliminating any need to read the page again later.
+
+These two optimizations primarily benefit disk swapping, but may be necessary
+to gain the space saving possible with TLSWAPF1.
+
