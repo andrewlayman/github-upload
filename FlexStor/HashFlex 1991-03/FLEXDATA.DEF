@@ -1,0 +1,183 @@
+DEFINITION MODULE FlexData;
+
+    (* MODIFICATION HISTORY
+    
+       19 Jan 88  AJL -Added FreeBytes to APageInfo record.
+       24 Oct 88  AJL -Boosted MaxPages to 256 and MaxRecords to 65535;  
+       22 Feb 89  AJL -Boosted APageNo to a CARDINAL from a BYTE.
+                      -Made MaxPages a variable and allocate the PageTable
+                       from the Heap.
+       13-Nov-89  RSC -Bumped up the limit of MaxCellPerBlock from 255C to
+                       377C, so we use all of the "ARRAY CHAR OF ...".
+       12-Jun-90  AJL -Upped the official limit of APageTable to 5000 entries.
+                       Since this is allocated from the heap, unless range 
+                       checking is turned on somewhere the number doesn't
+                       really matter, so long as it is below the maximum size
+                       permitted by the compiler.
+                      -Added the EnlargePageTable procedure.
+        2-Jan-91  AJL -Removed the LockSets from the pages.  Added a
+                       Generation array to each page.
+                      -Removed Generation from ACellInfo.
+       19-Jan-91  AJL -Restrict us to a maximum of 255 pages by storing
+                       only a CHAR in the cell table for page number.  (This
+                       reduces the size of the cell table by half.)
+       15-Mar-91  AJL -Add InitFlexData.
+
+    *)
+
+FROM PageSupply    IMPORT
+    (* TYPE *)     APageClass, APageHandle;
+
+
+    (*$A+*)    (* Alignment on. *)
+
+CONST
+    MaxDataSize           = 07FFFH;
+    MaxUserRecordsPerPage = 256;    (* CHAR *)
+    MaxRecordsPerPage     = MaxUserRecordsPerPage + 2;
+    MaxRecordSize         = 07FFFH;   (* 16 bits. *)
+CONST
+    MaxRecords            = 65535;
+     (* MaxPages must be <= ??? 
+    MaxPages              = MaxRecords DIV MaxUserRecordsPerPage;
+     *)
+    MaxGeneration         = 00FFH;
+    MaxCellPerBlock       = 377C; (* Was 255C.  RSC 13-Nov-89 *)  (* MAX(CHAR) *)
+    BPBS                  = 16 (* BitsPerBitSet *);
+    BitsetsPerPageSet     = ( MaxRecordsPerPage + BPBS - 1) DIV BPBS;
+
+TYPE
+
+    ACellBlockNumber = CHAR;
+    ACellNo          = CHAR;
+    APageNo          = CARDINAL;
+    AGeneration      = CHAR;
+    ARecordNo        = [ 0..MaxRecordsPerPage ];
+
+
+
+
+        (* Each handle points to ACellInfo. *)
+
+    ACellInfo        = RECORD
+                           PageNo     : CHAR;
+                           RecordNo   : CHAR;
+                       END;
+
+    ACellBlock       = ARRAY ACellNo OF ACellInfo;
+
+    ACellPointer     = POINTER TO ACellInfo;
+
+    ACellBlockPointer = POINTER TO ACellBlock;
+
+
+        (* The internal structure of each page. *)
+
+
+    APageIndexArray  = ARRAY ARecordNo OF [0..MaxDataSize];
+
+    APageSet         = ARRAY [0..BitsetsPerPageSet] OF BITSET;
+
+    APageHeader      = RECORD
+                              (* If you change this structure,
+                                 you must also change InitializePage()
+                                 or the init code for the calculation
+                                 of the page overhead. *)
+                           Check        : CARDINAL;   (* Must be first field. *)
+                           PageNumber   : APageNo;    (* Must be second field. *)
+                           PageSize,
+                           DataBytesThisPage : CARDINAL;
+                           LockCount    : CARDINAL;
+                           LastEntry    : ARecordNo;  (* Index of free zone at end. *)
+                           Dirty        : BOOLEAN;    (* Used by PageSupply *)
+                           NeedsSqueeze : BOOLEAN;
+                       END;
+
+    APage            = RECORD
+                           Header       : APageHeader;
+                           FreeSet      : APageSet;
+                           Generation   : ARRAY ARecordNo OF AGeneration;
+                           StartAt      : APageIndexArray;
+                              (* Plus Data, the extent is excessive *)
+                           Data         : ARRAY [0..MaxDataSize] OF CHAR;
+                       END;
+
+
+
+        (* In a page, StartAt[Header.LastEntry] is the first byte of
+           data that is at the end of the page and is free.
+           StartAt[Header.LastEntry+1] is the index of the byte just
+           past the end of data. *)
+
+    APagePointer     = POINTER TO APage;
+
+
+
+        (* A Directory that tells us where the pages are stored. *)
+
+
+    APageInfo        = RECORD
+                           Location       : APagePointer;
+                           HomeAddress    : APageHandle;
+                           FreeBytes      : CARDINAL;    (* May not be contiguous. *)  
+                           StorageClass   : APageClass;
+                           Valid          : BOOLEAN;
+                       END;
+
+    APageTable       = ARRAY [1..255] OF APageInfo;  (* Max is 64K / TSIZE(APageInfo) *)
+
+    APageTablePointer = POINTER TO APageTable;
+
+
+        (* The real internal structure of a handle. *)
+
+    AHandlesInternals = RECORD
+                            CASE BOOLEAN OF
+                                TRUE :  CellPointer : ACellPointer
+                              | FALSE:
+                                        LowByte         : CHAR;
+                                        Gen             : AGeneration;
+                                        HighWord        : CARDINAL
+                            END;
+                        END;
+
+
+VAR
+    CellBlockTable     : ARRAY ACellBlockNumber OF ACellBlockPointer;
+    TopCellBlock       : ACellBlockNumber;
+    PageTable          : APageTablePointer;
+    MaxPages           : CARDINAL;               (* Size of PageTable *)
+    CellTableCheck,
+    PageTableCheck     : CARDINAL;
+    InitIndex          : CARDINAL;
+    Quantity           : CARDINAL;
+    MaxPageSize,
+    MinPageSize        : CARDINAL;
+    PageOverhead       : CARDINAL;
+    MaxDataBytesPerPage : CARDINAL;
+    ClassPageSize      : ARRAY APageClass OF CARDINAL;
+
+
+
+    (* EnlargePageTable
+
+       Attempts to make a bigger page table.
+       If it succeeds, TRUE is returned.
+
+       Warning: This changes the exported variables PageTable and MaxPages,
+                so don't call if you are in the middle of using either of 
+                those.  It allocates memory, so it may cause rearrangement
+                of memory, low memory notices, etc.
+
+     *)
+
+PROCEDURE EnlargePageTable( ByHowMuch : CARDINAL ):BOOLEAN;
+
+
+(* Call this ONCE before using this module. *)
+
+PROCEDURE InitFlexData();
+
+
+END FlexData.
+

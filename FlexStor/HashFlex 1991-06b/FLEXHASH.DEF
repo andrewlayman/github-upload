@@ -1,0 +1,94 @@
+DEFINITION MODULE FlexHash;
+
+
+FROM FlexStor IMPORT AnExtHandle;
+
+FROM SYSTEM   IMPORT ADDRESS;
+
+
+
+
+TYPE
+        (* AHashRecord contains the location and state of a FlexStor
+           object which is in memory. It is linked to other records. *)
+
+    AHashRecord = RECORD
+                      Handle : AnExtHandle;  (* Handle of object. *)
+                      Loc    : ADDRESS;      (* Location of object. *)
+                      Size   : CARDINAL;     (* Size of object. *)
+                      Locks  : CARDINAL;     (* Lock count this handle. *)
+                      Time   : CARDINAL;     (* "Clock" *)
+                      Next   : CARDINAL;     (* Link to next record. *)
+                      Dirty  : BOOLEAN;      (* Needs write to page. *)
+                  END;
+
+CONST
+    HashTableSize       = 53;     (* Should be a nice prime number,
+                                     not too close to a multiple of two. *)
+    MaxItemsToKeep      = 64;     (* Max items kept in memory. *)
+
+VAR
+    Clock              : CARDINAL;    (* For aging of records. *)
+    ItemsInMemory      : CARDINAL;    (* Number of objects. *)
+    BytesInMemory,                    (* Total bytes now in memory. *)
+    LockedBytesInMemory: LONGINT;
+    MaxBytesToKeep     : LONGINT;     (* Max bytes, except locked items. *)
+
+        (* Each entry in the HashTable is the starting index of a linked
+           list of HashRecords *)
+
+    HashTable          : ARRAY [0..HashTableSize-1] OF CARDINAL;
+
+        (* HashRecords either have a Handle of NIL or contain a
+           valid entry. *)
+
+    HashRecords        : ARRAY [1..MaxItemsToKeep+1] OF AHashRecord;
+
+
+    (* Statistics *)
+VAR
+   OutstandingLocks,        (* Number of handles which are locked.  Multiple
+                               locks of the same handle count only as 1. *)
+   MostOutstandingLocks   : CARDINAL;
+   TotalLocksEver         : LONGINT;         
+   Hits,
+   Misses                 : LONGINT;
+   MaxBytesInMemory       : LONGINT;
+   MaxLockedBytesInMemory : LONGINT;
+   MemoryFlushNotices     : LONGINT;
+
+
+
+    (* LocateTableIndex -- Look in the HashRecords for the Handle.
+           If found, return its index and TRUE.
+           Otherwise, RETURN FALSE.
+     *)
+
+PROCEDURE LocateRecordIndex(     Handle : AnExtHandle;
+                             VAR HashRecordIndex : CARDINAL) : BOOLEAN;
+
+
+    (* Adds Handle to the hash tables, and returns the index
+       into the HashRecord array. *)
+
+PROCEDURE AddToTable( TheHandle : AnExtHandle; VAR i : CARDINAL ):BOOLEAN;
+
+    (* Removes Handle from the hash tables. *)
+
+PROCEDURE RemoveFromTable( TheHandle : AnExtHandle );
+
+    (* Allocates space in a special heap used for flexstor.  
+       If no space, fails and halts program. *)
+
+PROCEDURE AllocateSpace( VAR Where : ADDRESS; Size : CARDINAL);
+
+
+PROCEDURE DeAllocateSpace( VAR Where : ADDRESS; Size : CARDINAL);
+
+PROCEDURE SpaceAvailable ( Size : CARDINAL ) : BOOLEAN;
+
+
+
+
+END FlexHash.
+

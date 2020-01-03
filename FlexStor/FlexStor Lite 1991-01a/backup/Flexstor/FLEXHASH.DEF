@@ -1,0 +1,56 @@
+DEFINITION MODULE FlexHash;
+
+
+FROM FlexStor IMPORT AnExtHandle;
+
+FROM SYSTEM   IMPORT ADDRESS;
+
+
+
+
+TYPE
+    AHashRecord         = RECORD
+                              Handle : AnExtHandle;
+                              Loc    : ADDRESS;
+                              Size   : CARDINAL;
+                              Locks  : CARDINAL; 
+                              Time   : CARDINAL;
+                              Dirty  : BOOLEAN;
+                          END;
+CONST
+    HashTableSize       = 32;     (* Should be a power of 2. *)
+        (* Limit the hash table to 80% full? *)
+    MaxItemsToKeep      = HashTableSize;      (* Max items kept in memory. *)
+
+VAR
+    Clock              : CARDINAL;    (* For aging of records. *)
+    ItemsInMemory      : CARDINAL;
+    BytesInMemory,
+    LockedBytesInMemory: LONGINT;
+    MaxBytesToKeep     : LONGINT;     (* Max bytes, except locked items. *)
+    HashTable          : ARRAY [0..HashTableSize-1] OF AHashRecord;
+
+
+    (* Statistics *)
+VAR
+   OutstandingLocks,        (* Number of handles which are locked.  Multiple
+                             locks of the same handle count only as 1. *)
+   MostOutstandingLocks   : CARDINAL;
+   TotalLocksEver         : LONGINT;         
+   Hits,
+   Misses                 : LONGINT;
+   MaxBytesInMemory       : LONGINT;
+   MaxLockedBytesInMemory : LONGINT;
+   MemoryFlushNotices     : LONGINT;
+
+
+
+PROCEDURE LocateTableIndex(     Handle : AnExtHandle;
+                           VAR Found : BOOLEAN) : CARDINAL;
+
+
+PROCEDURE AddToTable( TheHandle : AnExtHandle; VAR i : CARDINAL ):BOOLEAN;
+
+
+END FlexHash.
+

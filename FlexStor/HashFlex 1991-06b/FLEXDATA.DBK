@@ -1,0 +1,389 @@
+Modula-2 OBJ File Decoder Rel. 3.30  Dec 89
+----------------------------------------------
+decoding   : D:flexdata.OBJ
+output file: flexdata.DEC
+
+Module Name        : FLEXDATA
+
+Library Import List: M2RTS
+                     M2LIB
+                     M2USER
+                     
+
+Objects Import List: Space
+                     PageSupply
+                     RTSMain
+                     
+
+Logical Names      : 
+                     CODE
+                     FAR_DATA
+                     FLEXDATA_DATA
+                     FLEXDATA_TEXT
+                     MODULE_TABLE_DATA
+                     FAR_BSS
+                     INIT_FLAG_DATA
+                     DGROUP
+                     CONST
+                     
+
+DATA        Segment: FLEXDATA_DATA
+            Length : 1056
+
+0000  CellBlockTable__FlexData    DUP     1024
+0400  TopCellBlock__FlexData      DUP        2
+0402  PageTable__FlexData         DUP        4
+0406  MaxPages__FlexData          DUP        2
+0408  CellTableCheck__FlexData    DUP        2
+040A  PageTableCheck__FlexData    DUP        2
+040C  InitIndex__FlexData         DUP        2
+040E  Quantity__FlexData          DUP        2
+0410  MaxPageSize__FlexData       DUP        2
+0412  MinPageSize__FlexData       DUP        2
+0414  PageOverhead__FlexData      DUP        2
+0416  MaxDataBytesPerPage__FlexData DUP        2
+0418  ClassPageSize__FlexData     DUP        6
+041E  CurrentPageTableSize__FlexData DUP        2
+
+
+CODE        Segment: FLEXDATA_TEXT
+            Length : 630
+
+  0000  00 00                     DB    '..'
+
+  0002                            ; PROCEDURE S__AllocateForNPages__FlexData
+
+  0002  ; *** line #41            ; BEGIN
+  0002                            
+  0002  BB 0E 00                  MOV   BX,000E
+  0005  9A 00 00 00 00            CALLF StackCheck__RTSMain
+  000A  55                        PUSH  BP
+  000B  8B EC                     MOV   BP,SP
+
+  000D  ; *** line #45            ; Size := CARDINAL(BITSET( TSIZE(APageInfo) + 1 ) * BITSET( 0FFFEH )) * N;
+  000D  C4 5E 0C                  LES   BX,[BP+000C]
+  0010  26 8B 07                  MOV   AX,ES:[BX]
+  0013  B9 0C 00                  MOV   CX,000C
+  0016  F7 E1                     MUL   CX
+  0018  73 05                     JNB   001F
+  001A  9A 00 00 00 00            CALLF CardOvf__RTSError
+  001F  8B C8                     MOV   CX,AX
+  0021  C4 5E 04                  LES   BX,[BP+0004]
+  0024  26 89 0F                  MOV   ES:[BX],CX
+
+  0027  ; *** line #46            ; IF (Available(Size)) THEN
+  0027  51                        PUSH  CX
+  0028  9A 00 00 00 00            CALLF L__Available__Space
+  002D  3C 00                     CMP   AL,00
+  002F  74 1A                     JE    004B
+
+  0031  ; *** line #47            ; ALLOCATE( P, Size );
+  0031  C4 5E 08                  LES   BX,[BP+0008]
+  0034  06                        PUSH  ES
+  0035  53                        PUSH  BX
+  0036  C5 76 04                  LDS   SI,[BP+0004]
+  0039  FF 34                     PUSH  [SI]
+  003B  9A 00 00 00 00            CALLF L__ALLOCATE__Space
+
+  0040  ; *** line #48            ; RETURN TRUE;
+  0040  B0 01                     MOV   AL,01
+  0042  89 EC                     MOV   SP,BP
+  0044  5D                        POP   BP
+  0045  C2 0C 00                  RET   000C
+
+  0048  E9 08 00                  JMP   0053
+
+  004B  ; *** line #49            ; ELSE
+  004B  ; *** line #50            ; RETURN FALSE;
+  004B  B0 00                     MOV   AL,00
+  004D  89 EC                     MOV   SP,BP
+  004F  5D                        POP   BP
+  0050  C2 0C 00                  RET   000C
+
+  0053  ; *** line #51            ; END;
+  0053  ; *** line #52            ; END AllocateForNPages;
+  0053  9A 00 00 00 00            CALLF FctRetError__RTSError
+  0058  90                        NOP
+
+  0059                            ; PROCEDURE L__EnlargePageTable__FlexData
+
+  0059  ; *** line #61            ; BEGIN
+  0059  BB 36 00                  MOV   BX,0036
+  005C  9A 00 00 00 00            CALLF StackCheck__RTSMain
+  0061  55                        PUSH  BP
+  0062  8B EC                     MOV   BP,SP
+  0064  83 EC 0A                  SUB   SP, 0A
+
+  0067  ; *** line #62            ; WHILE (ByHowMuch > 0) DO
+  0067  83 7E 06 00               CMP   [BP+0006], 00
+  006B  76 02                     JBE   006F
+  006D  EB 03                     JMP   0072
+  006F  E9 6D 01                  JMP   01DF
+
+  0072  ; *** line #63            ; NewMaxPages := MaxPages + ByHowMuch;
+  0072  B9 00 00                  MOV   CX,SEG FLEXDATA_DATA
+  0075  8E D9                     MOV   DS,CX
+  0077  A1 00 00                  MOV   AX,[MaxPages__FlexData]
+  007A  03 46 06                  ADD   AX,[BP+0006]
+  007D  73 05                     JNB   0084
+  007F  9A 00 00 00 00            CALLF CardOvf__RTSError
+  0084  89 46 FA                  MOV   [BP-0006],AX
+
+  0087  ; *** line #65            ; IF (NewMaxPages > MaxPageNumber) THEN
+  0087  81 7E FA FF 00            CMP   [BP-0006], 00FF
+  008C  76 05                     JBE   0093
+
+  008E  ; *** line #66            ; NewMaxPages := MaxPageNumber;
+  008E  C7 46 FA FF 00            MOV   [BP-0006],00FF
+
+  0093  ; *** line #67            ; END;
+  0093  ; *** line #69            ; IF (NewMaxPages <= MaxPages) THEN
+  0093  8B 46 FA                  MOV   AX,[BP-0006]
+  0096  B9 00 00                  MOV   CX,SEG FLEXDATA_DATA
+  0099  8E D9                     MOV   DS,CX
+  009B  3B 06 00 00               CMP   AX,[MaxPages__FlexData]
+  009F  77 0B                     JNBE  00AC
+
+  00A1  ; *** line #70            ; RETURN FALSE;
+  00A1  B0 00                     MOV   AL,00
+  00A3  89 EC                     MOV   SP,BP
+  00A5  5D                        POP   BP
+  00A6  CA 02 00                  RET   0002
+
+  00A9  E9 30 01                  JMP   01DC
+
+  00AC  ; *** line #71            ; ELSIF AllocateForNPages(NewMaxPages,NewPageTable,NewSize) THEN
+  00AC  8D 5E FA                  LEA   BX,[BP-0006]
+  00AF  16                        PUSH  SS
+  00B0  53                        PUSH  BX
+  00B1  8D 76 F6                  LEA   SI,[BP-000A]
+  00B4  16                        PUSH  SS
+  00B5  56                        PUSH  SI
+  00B6  8D 7E FC                  LEA   DI,[BP-0004]
+  00B9  16                        PUSH  SS
+  00BA  57                        PUSH  DI
+  00BB  E8 00 00                  CALLS S__AllocateForNPages__FlexData
+  00BE  3C 00                     CMP   AL,00
+  00C0  74 02                     JE    00C4
+  00C2  EB 03                     JMP   00C7
+  00C4  E9 0D 01                  JMP   01D4
+
+  00C7  ; *** line #73            ; FOR i := 0 TO MaxPages DO
+  00C7  8D 5E FE                  LEA   BX,[BP-0002]
+  00CA  36 C7 07 00 00            MOV   SS:[BX],0000
+  00CF  B9 00 00                  MOV   CX,SEG FLEXDATA_DATA
+  00D2  8E D9                     MOV   DS,CX
+  00D4  A1 00 00                  MOV   AX,[MaxPages__FlexData]
+  00D7  36 39 07                  CMP   SS:[BX],AX
+  00DA  76 03                     JBE   00DF
+  00DC  E9 BA 00                  JMP   0199
+  00DF  36 FF 0F                  DEC   SS:[BX]
+  00E2  36 FF 07                  INC   SS:[BX]
+  00E5  50                        PUSH  AX
+  00E6  53                        PUSH  BX
+
+  00E7  ; *** line #74            ; IF i <= MaxPages THEN
+  00E7  8B 4E FE                  MOV   CX,[BP-0002]
+  00EA  BA 00 00                  MOV   DX,SEG FLEXDATA_DATA
+  00ED  8E DA                     MOV   DS,DX
+  00EF  3B 0E 00 00               CMP   CX,[MaxPages__FlexData]
+  00F3  77 68                     JNBE  015D
+
+  00F5  ; *** line #75            ; NewPageTable^[i] := PageTable^[i];
+  00F5  C5 36 00 00               LDS   SI,[PageTable__FlexData]
+  00F9  83 FE FF                  CMP   SI, FF
+  00FC  75 05                     JNE   0103
+  00FE  9A 00 00 00 00            CALLF AddrOvf__RTSError
+  0103  8B 7E FE                  MOV   DI,[BP-0002]
+  0106  4F                        DEC   DI
+  0107  B9 FE 00                  MOV   CX,00FE
+  010A  3B CF                     CMP   CX,DI
+  010C  73 05                     JNB   0113
+  010E  9A 00 00 00 00            CALLF RangeError__RTSError
+  0113  8B C7                     MOV   AX,DI
+  0115  B9 0C 00                  MOV   CX,000C
+  0118  F7 E1                     MUL   CX
+  011A  73 05                     JNB   0121
+  011C  9A 00 00 00 00            CALLF CardOvf__RTSError
+  0121  8B F8                     MOV   DI,AX
+  0123  03 F7                     ADD   SI,DI
+  0125  C4 7E F6                  LES   DI,[BP-000A]
+  0128  83 FF FF                  CMP   DI, FF
+  012B  75 05                     JNE   0132
+  012D  9A 00 00 00 00            CALLF AddrOvf__RTSError
+  0132  8B 5E FE                  MOV   BX,[BP-0002]
+  0135  4B                        DEC   BX
+  0136  B8 FE 00                  MOV   AX,00FE
+  0139  3B C3                     CMP   AX,BX
+  013B  73 05                     JNB   0142
+  013D  9A 00 00 00 00            CALLF RangeError__RTSError
+  0142  8B C3                     MOV   AX,BX
+  0144  B9 0C 00                  MOV   CX,000C
+  0147  F7 E1                     MUL   CX
+  0149  73 05                     JNB   0150
+  014B  9A 00 00 00 00            CALLF CardOvf__RTSError
+  0150  8B D8                     MOV   BX,AX
+  0152  03 FB                     ADD   DI,BX
+  0154  B9 06 00                  MOV   CX,0006
+  0157  FC                        CLD   
+  0158  F2                        REPNZ 
+  0159  A5                        MOVSW 
+  015A  E9 32 00                  JMP   018F
+
+  015D  ; *** line #76            ; ELSE
+  015D  ; *** line #77            ; NewPageTable^[i].Valid := FALSE;
+  015D  C4 5E F6                  LES   BX,[BP-000A]
+  0160  83 FB FF                  CMP   BX, FF
+  0163  75 05                     JNE   016A
+  0165  9A 00 00 00 00            CALLF AddrOvf__RTSError
+  016A  8B 76 FE                  MOV   SI,[BP-0002]
+  016D  4E                        DEC   SI
+  016E  B8 FE 00                  MOV   AX,00FE
+  0171  3B C6                     CMP   AX,SI
+  0173  73 05                     JNB   017A
+  0175  9A 00 00 00 00            CALLF RangeError__RTSError
+  017A  8B C6                     MOV   AX,SI
+  017C  B9 0C 00                  MOV   CX,000C
+  017F  F7 E1                     MUL   CX
+  0181  73 05                     JNB   0188
+  0183  9A 00 00 00 00            CALLF CardOvf__RTSError
+  0188  8B F0                     MOV   SI,AX
+  018A  26 C6 40 0B 00            MOV   ES:[BX+SI+000B],00
+  018F  5B                        POP   BX
+  0190  58                        POP   AX
+  0191  36 39 07                  CMP   SS:[BX],AX
+  0194  73 03                     JNB   0199
+  0196  E9 49 FF                  JMP   00E2
+
+  0199  ; *** line #78            ; END;
+  0199  ; *** line #79            ; END;
+  0199  ; *** line #81            ; DEALLOCATE( PageTable, CurrentPageTableSize );
+  0199  B9 00 00                  MOV   CX,SEG FLEXDATA_DATA
+  019C  8E D9                     MOV   DS,CX
+  019E  BB 00 00                  MOV   BX,PageTable__FlexData
+  01A1  1E                        PUSH  DS
+  01A2  53                        PUSH  BX
+  01A3  FF 36 00 00               PUSH  [CurrentPageTableSize__FlexData]
+  01A7  9A 00 00 00 00            CALLF L__DEALLOCATE__Space
+
+  01AC  ; *** line #83            ; PageTable := NewPageTable;
+  01AC  C4 5E F6                  LES   BX,[BP-000A]
+  01AF  B9 00 00                  MOV   CX,SEG FLEXDATA_DATA
+  01B2  8E D9                     MOV   DS,CX
+  01B4  89 1E 00 00               MOV   [PageTable__FlexData],BX
+  01B8  8C 06 00 00               MOV   [0404],ES
+
+  01BC  ; *** line #84            ; MaxPages := NewMaxPages;
+  01BC  8B 46 FA                  MOV   AX,[BP-0006]
+  01BF  A3 00 00                  MOV   [MaxPages__FlexData],AX
+
+  01C2  ; *** line #85            ; CurrentPageTableSize := NewSize;
+  01C2  8B 56 FC                  MOV   DX,[BP-0004]
+  01C5  89 16 00 00               MOV   [CurrentPageTableSize__FlexData],DX
+
+  01C9  ; *** line #86            ; RETURN TRUE;
+  01C9  B0 01                     MOV   AL,01
+  01CB  89 EC                     MOV   SP,BP
+  01CD  5D                        POP   BP
+  01CE  CA 02 00                  RET   0002
+
+  01D1  E9 08 00                  JMP   01DC
+
+  01D4  ; *** line #87            ; ELSE
+  01D4  ; *** line #88            ; ByHowMuch := ByHowMuch DIV 2;
+  01D4  8B 46 06                  MOV   AX,[BP+0006]
+  01D7  D1 E8                     SHR   AX,1
+  01D9  89 46 06                  MOV   [BP+0006],AX
+  01DC  E9 88 FE                  JMP   0067
+
+  01DF  ; *** line #89            ; END;
+  01DF  ; *** line #90            ; END;
+  01DF  ; *** line #92            ; RETURN FALSE;
+  01DF  B0 00                     MOV   AL,00
+  01E1  89 EC                     MOV   SP,BP
+  01E3  5D                        POP   BP
+  01E4  CA 02 00                  RET   0002
+
+  01E7  ; *** line #94            ; END EnlargePageTable;
+  01E7  9A 00 00 00 00            CALLF FctRetError__RTSError
+  01EC  90                        NOP
+
+  01ED                            ; PROCEDURE L__InitFlexData__FlexData
+
+  01ED  ; *** line #103           ; BEGIN
+  01ED  BB 1C 02                  MOV   BX,021C
+  01F0  9A 00 00 00 00            CALLF StackCheck__RTSMain
+  01F5  55                        PUSH  BP
+  01F6  8B EC                     MOV   BP,SP
+  01F8  81 EC 08 02               SUB   SP, 0208
+
+  01FC  ; *** line #117           ; PageData := ADR( DummyPage^.Data );
+  01FC  B8 00 00                  MOV   AX,0000
+  01FF  8E C0                     MOV   ES,AX
+  0201  26 C4 1E 00 00            LES   BX,ES:[0000]
+  0206  83 FB FF                  CMP   BX, FF
+  0209  75 05                     JNE   0210
+  020B  9A 00 00 00 00            CALLF AddrOvf__RTSError
+  0210  26 8D 9F 3C 03            LEA   BX,ES:[BX+033C]
+  0215  89 5E F8                  MOV   [BP-0008],BX
+  0218  8C 46 FA                  MOV   [BP-0006],ES
+
+  021B  ; *** line #118           ; PageOverhead := PageData.OFFSET;
+  021B  B9 00 00                  MOV   CX,SEG FLEXDATA_DATA
+  021E  8E D9                     MOV   DS,CX
+  0220  89 1E 00 00               MOV   [PageOverhead__FlexData],BX
+
+  0224  ; *** line #122           ; MaxPages     := 128;
+  0224  C7 06 00 00 80 00         MOV   [MaxPages__FlexData],0080
+
+  022A  ; *** line #130           ; END;
+  022A  ; *** line #136           ; IF NOT AllocateForNPages(MaxPages,PageTable,CurrentPageTableSize) THEN
+  022A  BE 00 00                  MOV   SI,MaxPages__FlexData
+  022D  1E                        PUSH  DS
+  022E  56                        PUSH  SI
+  022F  BF 00 00                  MOV   DI,PageTable__FlexData
+  0232  1E                        PUSH  DS
+  0233  57                        PUSH  DI
+  0234  BB 00 00                  MOV   BX,CurrentPageTableSize__FlexData
+  0237  1E                        PUSH  DS
+  0238  53                        PUSH  BX
+  0239  E8 00 00                  CALLS S__AllocateForNPages__FlexData
+  023C  3C 00                     CMP   AL,00
+  023E  75 05                     JNE   0245
+
+  0240  ; *** line #137           ; HALT;
+  0240  9A 00 00 00 00            CALLF M2Halt__RTSMain
+
+  0245  ; *** line #138           ; END;
+  0245  ; *** line #140           ; END InitFlexData;
+  0245  89 EC                     MOV   SP,BP
+  0247  5D                        POP   BP
+  0248  CB                        RET   
+
+  0249                            ; PROCEDURE $BODY__FlexData
+
+  0249  ; *** line #146           ; BEGIN
+  0249  55                        PUSH  BP
+  024A  8B EC                     MOV   BP,SP
+
+  024C  ; *** line #147           ; END FlexData.
+  024C  89 EC                     MOV   SP,BP
+  024E  5D                        POP   BP
+  024F  CB                        RET   
+
+
+  0250                            ; PROCEDURE $INIT__FlexData
+  0250  B8 00 00                  MOV   AX,SEG INIT_FLAG_DATA
+  0253  8E D8                     MOV   DS,AX
+  0255  B0 01                     MOV   AL,01
+  0257  86 06 00 00               XCHG  AL,[CellBlockTable__FlexData]
+  025B  0A C0                     OR    AL,AL
+  025D  74 01                     JE    0260
+  025F  CB                        RET   
+  0260  55                        PUSH  BP
+  0261  8B EC                     MOV   BP,SP
+  0263  9A 00 00 00 00            CALLF $INIT__RTSMain
+  0268  9A 00 00 00 00            CALLF $INIT__Space
+  026D  9A 00 00 00 00            CALLF $INIT__PageSupply
+  0272  5D                        POP   BP
+  0273  E9 00 00                  JMP   $BODY__FlexData

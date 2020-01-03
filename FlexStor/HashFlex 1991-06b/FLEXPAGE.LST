@@ -1,0 +1,39 @@
+ 184  PROCEDURE CopyBytes( From, To : ADDRESS;  Length : CARDINAL );
+ *****        ^ 86
+ *  86: incompatible versions of symbolic modules
+
+ 671                ......
+ *****               ^ 23, 52
+ *  23: ';' expected
+ *  52: error in statement sequence
+
+ 678      ..... Get rid of most of what follows:
+ *****     ^ 23, 52
+ *  23: ';' expected
+ *  52: error in statement sequence
+
+ 723  .... but this looks like it should be kept:
+ ***** ^ 23, 52
+ *  23: ';' expected
+ *  52: error in statement sequence
+
+ 727  ... should we continue to assume that pages have the Generations?
+ ***** ^ 40, 20, 23, 25                                               ^ 0
+ *  40: END expected
+ *  20: identifier expected
+ *  23: ';' expected
+ *  25: error in block
+ *   0: illegal character in source file
+
+ 732      RETURN TRUE;
+ *****         ^ 38
+ *  38: BEGIN expected
+
+ 734  END AddRecordToPage;
+ *****  ^ 101           ^ 24, 84, 53
+ * 101: undeclared identifier in export list of the module
+ *  24: block name at the END does not match
+ *  84: not all defined procedures or hidden types implemented
+ *  53: '.' expected
+
+
